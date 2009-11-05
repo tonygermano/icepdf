@@ -364,8 +364,6 @@ public class SwingViewBuilder {
      * Construct a SwingVewBuilder with all of the default settings
      *
      * @param c SwingController that will interact with the GUI
-     * @param documentViewType view type to build , single page, single column etc.
-     * @param documentPageFitMode fit mode to initially load document with.
      */
     public SwingViewBuilder(SwingController c, int documentViewType,
                             int documentPageFitMode) {
@@ -469,7 +467,6 @@ public class SwingViewBuilder {
     public JMenuBar buildCompleteMenuBar() {
         JMenuBar menuBar = new JMenuBar();
         addToMenuBar(menuBar, buildFileMenu());
-        addToMenuBar(menuBar, buildEditMenu());
         addToMenuBar(menuBar, buildViewMenu());
         addToMenuBar(menuBar, buildDocumentMenu());
         addToMenuBar(menuBar, buildWindowMenu());
@@ -610,48 +607,6 @@ public class SwingViewBuilder {
                 null, KeyStroke.getKeyStroke(KeyEventConstants.KEY_CODE_EXIT, KeyEventConstants.MODIFIER_EXIT));
         if (viewerController != null && mi != null)
             viewerController.setExitMenuItem(mi);
-        return mi;
-    }
-
-    public JMenu buildEditMenu() {
-        JMenu viewMenu = new JMenu(messageBundle.getString("viewer.menu.edit.label"));
-        viewMenu.setMnemonic(messageBundle.getString("viewer.menu.edit.mnemonic").charAt(0));
-        addToMenu(viewMenu, buildCopyMenuItem());
-        viewMenu.addSeparator();
-        addToMenu(viewMenu, buildSelectAllMenuItem());
-        addToMenu(viewMenu, buildDeselectAllMenuItem());
-        viewMenu.addSeparator();
-
-        return viewMenu;
-    }
-
-    public JMenuItem buildCopyMenuItem() {
-        JMenuItem mi = makeMenuItem(
-                messageBundle.getString("viewer.menu.edit.copy.label"),
-                null, KeyStroke.getKeyStroke(KeyEventConstants.KEY_CODE_COPY,
-                        KeyEventConstants.MODIFIER_COPY));
-        if (viewerController != null && mi != null)
-            viewerController.setCopyMenuItem(mi);
-        return mi;
-    }
-
-    public JMenuItem buildSelectAllMenuItem() {
-        JMenuItem mi = makeMenuItem(
-                messageBundle.getString("viewer.menu.edit.selectAll.label"),
-                null, KeyStroke.getKeyStroke(KeyEventConstants.KEY_CODE_SELECT_ALL,
-                        KeyEventConstants.MODIFIER_SELECT_ALL));
-        if (viewerController != null && mi != null)
-            viewerController.setSelectAllMenuItem(mi);
-        return mi;
-    }
-
-    public JMenuItem buildDeselectAllMenuItem() {
-        JMenuItem mi = makeMenuItem(
-                messageBundle.getString("viewer.menu.edit.deselectAll.label"),
-                null, KeyStroke.getKeyStroke(KeyEventConstants.KEY_CODE_DESELECT_ALL,
-                        KeyEventConstants.MODIFIER_DESELECT_ALL));
-        if (viewerController != null && mi != null)
-            viewerController.setDselectAllMenuItem(mi);
         return mi;
     }
 
@@ -874,8 +829,7 @@ public class SwingViewBuilder {
 
             shortenDocumentOrigins(windowDocOriginList);
 
-            List<JMenuItem> windowListMenuItems =
-                    new ArrayList<JMenuItem>(Math.max(count, 1));
+            List windowListMenuItems = new ArrayList(Math.max(count, 1));
             for (int i = 0; i < count; i++) {
                 String number = Integer.toString(i + 1);
                 String label = null;
@@ -1222,7 +1176,6 @@ public class SwingViewBuilder {
         JToolBar toolbar = new JToolBar();
         commonToolBarSetup(toolbar, false);
         addToToolBar(toolbar, buildPanToolButton());
-        addToToolBar(toolbar, buildTextSelectToolButton());
         addToToolBar(toolbar, buildZoomInToolButton());
         addToToolBar(toolbar, buildZoomOutToolButton());
         return toolbar;
@@ -1242,16 +1195,6 @@ public class SwingViewBuilder {
                 "pan", buttonFont);
         if (viewerController != null && btn != null)
             viewerController.setPanToolButton(btn);
-        return btn;
-    }
-
-    public JToggleButton buildTextSelectToolButton() {
-        JToggleButton btn = makeToolbarToggleButton(
-                messageBundle.getString("viewer.toolbar.tool.text.label"),
-                messageBundle.getString("viewer.toolbar.tool.text.tooltip"),
-                "text", buttonFont);
-        if (viewerController != null && btn != null)
-            viewerController.setTextSelectToolButton(btn);
         return btn;
     }
 
@@ -1328,7 +1271,7 @@ public class SwingViewBuilder {
     }
 
     public SearchPanel buildSearchPanel() {
-        SearchPanel searchPanel = new SearchPanel(viewerController);
+        SearchPanel searchPanel = new SearchPanel(viewerController, null);
         if (viewerController != null)
             viewerController.setSearchPanel(searchPanel);
         return searchPanel;
@@ -1517,10 +1460,58 @@ public class SwingViewBuilder {
         return jmi;
     }
 
+    /**
+     * void javax.swing.JToolBar.setRollover(boolean) does not exist in Java 1.3.
+     * Since it was introduced in Java 1.4, so we use reflection to call it,
+     * if it exists.
+     * We don't treat it as an error if this fails, since it's only an enhancement,
+     * and is not critical.
+     *
+     * @param jtoolbar javax.swing.JToolBar to call setRollover( val ) on
+     * @param val      Argument to jtoolbar.setRollover( val )
+     */
+    protected void reflectJToolBarSetRollover(JToolBar jtoolbar, boolean val) {
+        try {
+            Class toolBar = jtoolbar.getClass();
+            Method rolloverMethod =
+                    toolBar.getMethod("setRollover",
+                            Boolean.TYPE);
+            if (rolloverMethod != null) {
+                rolloverMethod.invoke(jtoolbar, (val ? Boolean.TRUE : Boolean.FALSE));
+            }
+        }
+        catch (Throwable t) {
+        }
+    }
+
+    /**
+     * void java.awt.Component.setFocusable(boolean) does not exist in Java 1.3.
+     * Since it was introduced in Java 1.4, so we use reflection to call it,
+     * if it exists.
+     * We don't treat it as an error if this fails, since it's only an enhancement,
+     * and is not critical.
+     *
+     * @param comp java.awt.Component to call setFocusable( val ) on
+     * @param val  Argument to comp.setFocusable( val )
+     */
+    protected void reflectComponentSetFocusable(Component comp, boolean val) {
+        try {
+            Class component = comp.getClass();
+            Method rolloverMethod =
+                    component.getMethod("setFocusable",
+                            Boolean.TYPE);
+            if (rolloverMethod != null) {
+                rolloverMethod.invoke(comp, (val ? Boolean.TRUE : Boolean.FALSE));
+            }
+        }
+        catch (Throwable t) {
+        }
+    }
+
     protected void commonToolBarSetup(JToolBar toolbar, boolean isMainToolBar) {
         if (!isMainToolBar) {
-            toolbar.requestFocus();
-            toolbar.setRollover(true);
+            reflectComponentSetFocusable(toolbar, true);
+            reflectJToolBarSetRollover(toolbar, true);
         }
         if (toolbarStyle == TOOL_BAR_STYLE_FIXED) {
             toolbar.setFloatable(false);

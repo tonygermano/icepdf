@@ -37,7 +37,6 @@ import org.icepdf.core.events.PaintPageListener;
 import org.icepdf.core.io.SequenceInputStream;
 import org.icepdf.core.pobjects.annotations.Annotation;
 import org.icepdf.core.pobjects.graphics.Shapes;
-import org.icepdf.core.pobjects.graphics.text.PageText;
 import org.icepdf.core.util.ContentParser;
 import org.icepdf.core.util.GraphicsRenderingHints;
 import org.icepdf.core.util.Library;
@@ -51,8 +50,8 @@ import java.io.InputStream;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
-import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * <p>This class represents the leaves of a <code>PageTree</code> object known
@@ -117,6 +116,7 @@ public class Page extends Dictionary implements MemoryManageable {
 
     // Flag for call to init method, very simple cache
     private boolean isInited = false;
+    private final Object isInitedLock = new Object();
 
     // resources for page's parent pages, default fonts, etc.
     private Resources resources;
@@ -128,6 +128,9 @@ public class Page extends Dictionary implements MemoryManageable {
     private Vector<Stream> contents;
     // Container for all shapes stored on page
     private Shapes shapes = null;
+
+    // extracted text from page
+    private Vector<StringBuffer> extractedText;
 
     // the collection of objects listening for page paint events
     private Vector<PaintPageListener> paintPageListeners = new Vector<PaintPageListener>();
@@ -198,6 +201,12 @@ public class Page extends Dictionary implements MemoryManageable {
             if (shapes != null) {
                 shapes.dispose();
                 shapes = null;
+            }
+
+            // clear extracted text
+            if (extractedText != null) {
+                extractedText.clear();
+                extractedText = null;
             }
 
             // work through resources and null any images in the image hash
@@ -303,8 +312,8 @@ public class Page extends Dictionary implements MemoryManageable {
      * child elements.  Once a page has been initialized, it can be painted.
      */
     public synchronized void init() {
-        try {
-            // make sure we are not revisiting this method
+        try{
+        // make sure we are not revisiting this method
             if (isInited) {
                 return;
             }
@@ -361,7 +370,7 @@ public class Page extends Dictionary implements MemoryManageable {
                         sis.close();
                     }
                     catch (IOException e) {
-                        logger.log(Level.FINE, "Error closing page stream.", e);
+                         logger.log(Level.FINE, "Error closing page stream.", e);
                     }
                 }
             }
@@ -372,9 +381,9 @@ public class Page extends Dictionary implements MemoryManageable {
             // set the initiated flag
             isInited = true;
 
-        } catch (InterruptedException e) {
+        }catch(InterruptedException e){
             // keeps shapes vector so we can paint what we have but make init state as false
-            // so we can try to re parse it later.
+            // so we can try to reparse it later.
             isInited = false;
             logger.log(Level.SEVERE, "Page initializing thread interrupted.", e);
         }
@@ -663,7 +672,6 @@ public class Page extends Dictionary implements MemoryManageable {
         // Rotated sideways
         else if (totalRotation == 90 || totalRotation == 270) {
             float temp = width;
-            // flip with and height.
             width = height;
             height = temp;
         }
@@ -1010,38 +1018,21 @@ public class Page extends Dictionary implements MemoryManageable {
     }
 
     /**
-     * Gest the PageText data structure for this page.  PageText is made up
-     * of lines, words and glyphs which can be used for searches, text extraction
-     * and text highlighting.  The coordinates system has been normalized
-     * to page space.
-     *
-     * @return list of text sprites for the given page.
-     */
-    public synchronized PageText getViewText() {
-        if (!isInited) {
-            init();
-        }
-        return shapes.getPageText();
-    }
-
-    /**
-     * Gest the PageText data structure for this page using an accelerated
-     * parsing technique that ignores none text elements. This method should
-     * be used for straight text extraction.
+     * Gets a vector of Strings where each index represents a text block inside
+     * this page's content streams.  Due to limitations in how PDF documents are encoded,
+     * it is not always possible to extract valid ASCII or unicode text and order
+     * is not always guaranteed.
      *
      * @return vector of Strings of all text objects inside the specified page.
      */
-    public synchronized PageText getText() {
+    public synchronized Vector<StringBuffer> getText() {
 
         // we only do this once per page
-        if (isInited) {
-            if (shapes != null && shapes.getPageText() != null) {
-                return shapes.getPageText();
-            }
+        if (extractedText != null) {
+            return extractedText;
         }
 
-        Shapes textBlockShapes = null;
-        try {
+        try{
             /**
              * Finally iterate through the contents vector and concat all of the
              * the resouse streams together so that the contant parser can
@@ -1073,7 +1064,7 @@ public class Page extends Dictionary implements MemoryManageable {
                 try {
                     ContentParser cp = new ContentParser(library, resources);
                     // custom parsing for text extraction, should be faster
-                    textBlockShapes = cp.parseTextBlocks(sis);
+                    extractedText = cp.parseTextBlocks(sis);
                 }
                 catch (Exception e) {
                     logger.log(Level.FINE, "Error getting page text.", e);
@@ -1087,17 +1078,13 @@ public class Page extends Dictionary implements MemoryManageable {
                     }
                 }
             }
-        } catch (InterruptedException e) {
+        }catch(InterruptedException e){
             // keeps shapes vector so we can paint what we have but make init state as false
             // so we can try to reparse it later.
             isInited = false;
             logger.log(Level.SEVERE, "Page text extraction thread interrupted.", e);
         }
-        if (textBlockShapes != null && textBlockShapes.getPageText() != null) {
-            return textBlockShapes.getPageText();
-        } else {
-            return null;
-        }
+        return extractedText;
     }
 
     /**

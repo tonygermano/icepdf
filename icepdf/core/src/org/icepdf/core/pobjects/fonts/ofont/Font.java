@@ -83,7 +83,7 @@ public class Font extends org.icepdf.core.pobjects.fonts.Font {
     // Base 14 AFM fonts
     protected AFM afm;
 
-    // awt font style reference, ITALIC or BOLD|ITALIC
+    // awt font style reference, ITALIC or BOLD|ITALIC 
     protected int style;
 
     // get list of all available fonts.
