@@ -33,14 +33,16 @@
 package org.icepdf.core.pobjects.graphics;
 
 import org.icepdf.core.pobjects.Page;
-import org.icepdf.core.pobjects.graphics.text.PageText;
 import org.icepdf.core.util.Defs;
 import org.icepdf.core.views.swing.PageViewComponentImpl;
 
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Area;
-import java.util.*;
+import java.util.Enumeration;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.Vector;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
@@ -83,8 +85,6 @@ public class Shapes {
     // the collection of objects listening for page paint events
     private Page parentPage;
 
-    // text extraction data structure
-    private PageText pageText = new PageText();
 
     private static int paintDelay = 250;
 
@@ -117,10 +117,6 @@ public class Shapes {
 
     public Shapes() {
 
-    }
-
-    public PageText getPageText(){
-        return pageText;
     }
 
     /**
@@ -160,29 +156,25 @@ public class Shapes {
         images.clear();
 
         //System.out.println("   Shapes Shapes vector  size " + images.size());
-        if (shapes != null){
-            Enumeration shapeContent = shapes.elements();
-            while (shapeContent.hasMoreElements()) {
-                tmp = shapeContent.nextElement();
-                if (tmp instanceof Image) {
-                    //System.out.println("  -------------> Found images");
-                    image = (Image) tmp;
-                    image.flush();
-                } else if (tmp instanceof TextSprite) {
-                    ((TextSprite) tmp).dispose();
-                } else {
-                    //System.out.println("  -------------> Found other " + shapes.size());
-                    //tmp = null;
-                }
+        Enumeration shapeContent = shapes.elements();
+        while (shapeContent.hasMoreElements()) {
+            tmp = shapeContent.nextElement();
+            if (tmp instanceof Image) {
+                //System.out.println("  -------------> Found images");
+                image = (Image) tmp;
+                image.flush();
+            } else if (tmp instanceof TextSprite) {
+                ((TextSprite) tmp).dispose();
+            } else if (tmp instanceof Shapes) {
+                ((Shapes) tmp).dispose();
+            } else {
+                //System.out.println("  -------------> Found other " + shapes.size());
+                //tmp = null;
             }
-            shapes.clear();
-            shapes = null;
         }
+        shapes.clear();
+        //shapes = null;
 
-        if (pageText != null){
-            pageText.dispose();
-            pageText = null;
-        }
     }
 
     /**
@@ -234,11 +226,7 @@ public class Shapes {
                 }
             }
         }
-        // copy any shapes fro xForms.
-        if (o instanceof Shapes){
-            Shapes tmp = (Shapes) o;
-            pageText.getPageLines().addAll(tmp.getPageText().getPageLines());
-        }
+
         shapes.add(o);
 
     }
@@ -288,7 +276,6 @@ public class Shapes {
      * Paint the graphics stack to the graphics context
      *
      * @param g graphics context to paint to.
-     * @param pagePainter parent page painter
      */
     public synchronized void paint(Graphics2D g, PageViewComponentImpl.PagePainter pagePainter) {
 

@@ -36,25 +36,25 @@ import org.icepdf.core.events.PaintPageEvent;
 import org.icepdf.core.events.PaintPageListener;
 import org.icepdf.core.pobjects.Page;
 import org.icepdf.core.pobjects.PageTree;
-import org.icepdf.core.pobjects.graphics.text.PageText;
-import org.icepdf.core.search.DocumentSearchController;
-import org.icepdf.core.util.*;
+import org.icepdf.core.pobjects.annotations.Annotation;
+import org.icepdf.core.pobjects.annotations.LinkAnnotation;
+import org.icepdf.core.util.Defs;
+import org.icepdf.core.util.GraphicsRenderingHints;
+import org.icepdf.core.util.MemoryManager;
+import org.icepdf.core.util.ColorUtil;
 import org.icepdf.core.views.DocumentView;
 import org.icepdf.core.views.DocumentViewController;
 import org.icepdf.core.views.DocumentViewModel;
-import org.icepdf.core.views.common.AnnotationHandler;
-import org.icepdf.core.views.common.TextSelectionPageHandler;
 
 import javax.swing.*;
+import javax.swing.event.MouseInputListener;
 import java.awt.*;
 import java.awt.event.*;
-import java.awt.geom.AffineTransform;
-import java.awt.geom.Area;
-import java.awt.geom.Point2D;
-import java.awt.geom.Rectangle2D;
+import java.awt.geom.*;
 import java.lang.ref.SoftReference;
-import java.util.logging.Level;
+import java.util.Vector;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * <p>This class represents a single page view of a PDF document as a JComponent.
@@ -88,28 +88,65 @@ import java.util.logging.Logger;
  */
 public class PageViewComponentImpl extends
         AbstractPageViewComponent
-        implements PaintPageListener,
+        implements PaintPageListener, MouseInputListener,
         FocusListener, ComponentListener {
 
     private static final Logger logger =
             Logger.getLogger(PageViewComponentImpl.class.toString());
 
-    private static Color pageColor;
+    // disable/enable file caching, overrides fileCachingSize.
+    private static boolean isInteractiveAnnotationsEnabled;
 
-    static {
+    private static Color pageColor;
+    private static Color annotationHighlightColor;
+    private static float annotationHighlightAlpha;
+
+    static{
+        // enables interactive annotation support.
+        isInteractiveAnnotationsEnabled =
+                Defs.sysPropertyBoolean(
+                        "org.icepdf.core.annotations.interactive.enabled", true);
 
         try {
             String color = Defs.sysProperty(
                     "org.icepdf.core.views.page.paper.color", "#FFFFFF");
             int colorValue = ColorUtil.convertNamedColor(color);
             pageColor =
-                    new Color(colorValue > 0 ? colorValue :
-                            Integer.parseInt("FFFFFF", 16));
+                    new Color( colorValue > 0? colorValue :
+                            Integer.parseInt("FFFFFF", 16 ));
 
         } catch (NumberFormatException e) {
             logger.warning("Error reading page paper color.");
         }
 
+        // sets annotation selected highlight colour
+        try {
+            String color = Defs.sysProperty(
+                    "org.icepdf.core.views.page.annotation.highlight.color", "#000000");
+            int colorValue = ColorUtil.convertColor(color);
+            annotationHighlightColor =
+                    new Color( colorValue > 0? colorValue :
+                            Integer.parseInt("000000", 16 ));
+
+        } catch (NumberFormatException e) {
+            if (logger.isLoggable(Level.WARNING)) {
+                logger.warning("Error reading page annotation highlight colour");
+            }
+        }
+
+        // set the annotation alpha value.
+        // sets annotation selected highlight colour
+        try {
+            String alpha = Defs.sysProperty(
+                    "org.icepdf.core.views.page.annotation.highlight.alpha", "0.4");
+            annotationHighlightAlpha = Float.parseFloat(alpha);
+
+        } catch (NumberFormatException e) {
+            if (logger.isLoggable(Level.WARNING)) {
+                logger.warning("Error reading page annotation highlight alpha");
+            }
+            annotationHighlightAlpha = 0.4f;
+        }
     }
 
     private PageTree pageTree;
@@ -124,14 +161,11 @@ public class PageViewComponentImpl extends
     private float currentZoom;
     private float currentRotation;
 
+    private int mediaBox = Page.BOUNDARY_CROPBOX;
+
     protected DocumentView parentDocumentView;
     protected DocumentViewModel documentViewModel;
     protected DocumentViewController documentViewController;
-
-    // annotation mouse, key and paint handler.
-    protected AnnotationHandler annotationHandler;
-    // text selection mouse/key and paint handler
-    protected TextSelectionPageHandler textSelectionHandler;
 
     // the buffered image which will be painted to
     private SoftReference<Image> bufferedPageImageReference;
@@ -155,6 +189,11 @@ public class PageViewComponentImpl extends
     private static double verticalScaleFactor;
     // horizontal  scale factor to extend buffer
     private static double horizontalScaleFactor;
+
+    // annotation support
+    private Annotation currentAnnotation;
+    private boolean isMousePressed = false;
+
 
     static {
         // default value have been assigned.  Keep in mind that larger ratios will
@@ -183,20 +222,9 @@ public class PageViewComponentImpl extends
                                  PageTree pageTree, int pageNumber,
                                  JScrollPane parentScrollPane,
                                  int width, int height) {
-
-        setFocusable(true);
-        // add focus listener
-        addFocusListener(this);
-
         // needed to propagate mouse events.
         this.documentViewModel = documentViewModel;
         this.parentScrollPane = parentScrollPane;
-
-        // annotation hookup
-        annotationHandler = new AnnotationHandler(this, documentViewModel);
-
-        textSelectionHandler = new TextSelectionPageHandler(this,
-                documentViewModel);
 
         currentRotation = documentViewModel.getViewRotation();
         currentZoom = documentViewModel.getViewRotation();
@@ -219,31 +247,15 @@ public class PageViewComponentImpl extends
         }
     }
 
-    /**
-     * If no DocumentView is used then the various mouse and keyboard
-     * listeners must be added tothis component.  If there is a document
-     * view then we let it delegate events to make life easier.
-     */
-    public void addPageViewComponentListeners() {
-        // add listeners
-        addMouseListener(this);
-        addMouseMotionListener(this);
-        addComponentListener(this);
-        // annotation pickups
-//        addMouseListener(annotationHandler);
-//        addMouseMotionListener(annotationHandler);
-
-        // text selection mouse handler
-//        addMouseMotionListener(textSelectionHandler);
-//        addMouseListener(textSelectionHandler);
-    }
-
     public void init() {
         if (inited) {
             return;
         }
         inited = true;
-
+        // add listeners
+        addMouseListener(this);
+        addMouseMotionListener(this);
+        addComponentListener(this);
         // add repaint listener
         addPageRepaintListener();
 
@@ -257,8 +269,8 @@ public class PageViewComponentImpl extends
         pagePainter = new PagePainter();
     }
 
-    public void invalidatePage() {
-        if (inited) {
+    public void invalidatePage(){
+        if (inited){
             Page page = pageTree.getPage(pageIndex, this);
             page.getLibrary().disposeFontResources();
             page.reduceMemory();
@@ -277,17 +289,6 @@ public class PageViewComponentImpl extends
         removeMouseMotionListener(this);
         removeComponentListener(this);
 
-        // remove annotation listeners.
-        removeMouseMotionListener(annotationHandler);
-        removeMouseListener(annotationHandler);
-
-        // text selection
-        removeMouseMotionListener(textSelectionHandler);
-        removeMouseListener(textSelectionHandler);
-
-        // remove focus listener
-        removeFocusListener(this);
-
         // remove repaint listener
         removePageRepaintListener();
 
@@ -301,26 +302,17 @@ public class PageViewComponentImpl extends
         inited = false;
     }
 
-    public Page getPageLock(Object lock) {
-        return pageTree.getPage(pageIndex, lock);
-    }
-
-    public void releasePageLock(Page currentPage, Object lock) {
-        pageTree.releasePage(currentPage, lock);
-    }
-
     public void setDocumentViewCallback(DocumentView parentDocumentView) {
         this.parentDocumentView = parentDocumentView;
         documentViewController = this.parentDocumentView.getParentViewController();
-
-        // set annotation callback
-        annotationHandler.setDocumentViewController(documentViewController);
-        // set text selection callback
-        textSelectionHandler.setDocumentViewController(documentViewController);
     }
 
     public int getPageIndex() {
         return pageIndex;
+    }
+
+    public void setMediaType(final int pageBoundary) {
+        mediaBox = pageBoundary;
     }
 
     public Dimension getPreferredSize() {
@@ -398,66 +390,95 @@ public class PageViewComponentImpl extends
                 // mark as dirty
                 currentZoom = -1;
             }
-            // paint annotations
-            annotationHandler.paintAnnotations(g);
-
-            // Lazy paint of highlight and select all text states.
-            Page currentPage = this.getPageLock(this);
+            Page currentPage = pageTree.getPage(pageIndex, this);
             if (currentPage != null && currentPage.isInitiated()) {
-                PageText pageText = currentPage.getViewText();
+                Vector annotations = currentPage.getAnnotations();
+                if (annotations != null) {
 
-                // paint any highlighted words
-                DocumentSearchController searchController =
-                    documentViewController.getParentController().getDocumentSearchController();
-                if (searchController.isSearchHighlightRefreshNeeded(pageIndex, pageText)) {
-                    searchController.searchHighlightPage(pageIndex);
-                }
-                // if select all we'll want to paint the selected text.
-                if (documentViewModel.isSelectAll()) {
-                    documentViewModel.addSelectedPageText(this);
-                    pageText.selectAll();
-                }
+                    Graphics2D gg2 = (Graphics2D) gg;
+                    AffineTransform at = currentPage.getPageTransform(
+                            mediaBox,
+                            documentViewModel.getViewRotation(),
+                            documentViewModel.getViewZoom());
+                    gg2.transform(at);
 
-                // paint selected test sprites.
-                textSelectionHandler.paintSelectedText(g);
+                    // paint all annotations on top of the content buffer
+                    Object tmp;
+                    Annotation annotation;
+                    for (Object annotation1 : annotations) {
+                        tmp = annotation1;
+                        if (tmp instanceof Annotation) {
+                            annotation = (Annotation) tmp;
+                            annotation.render(gg2, GraphicsRenderingHints.SCREEN,
+                                    documentViewModel.getViewRotation(), documentViewModel.getViewZoom(), false);
+                        }
+                    }
+
+                    // annotation appearance dictionary, rollover, down appearance.
+                    if (currentAnnotation != null &&
+                            currentAnnotation.allowScreenRolloverMode() &&
+                            isMousePressed) {
+                        if (currentAnnotation instanceof LinkAnnotation) {
+                            LinkAnnotation linkAnnotation = (LinkAnnotation) currentAnnotation;
+                            int highlightMode = linkAnnotation.getHighlightMode();
+                            if (highlightMode == LinkAnnotation.HIGHLIGHT_INVERT) {
+                                Rectangle2D rect = currentAnnotation.getUserSpaceRectangle();
+                                gg2.setColor(annotationHighlightColor);
+                                gg2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,
+                                        annotationHighlightAlpha));
+                                gg2.fillRect((int) rect.getX(),
+                                        (int) rect.getY(),
+                                        (int) rect.getWidth(),
+                                        (int) rect.getHeight());
+                            } else if (highlightMode == LinkAnnotation.HIGHLIGHT_OUTLINE) {
+                                Rectangle2D rect = currentAnnotation.getUserSpaceRectangle();
+                                gg2.setColor(annotationHighlightColor);
+                                gg2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,
+                                        annotationHighlightAlpha));
+                                gg2.drawRect((int) rect.getX(),
+                                        (int) rect.getY(),
+                                        (int) rect.getWidth(),
+                                        (int) rect.getHeight());
+                            } else if (highlightMode == LinkAnnotation.HIGHLIGHT_PUSH) {
+                                Rectangle2D rect = currentAnnotation.getUserSpaceRectangle();
+                                gg2.setColor(annotationHighlightColor);
+                                gg2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,
+                                        annotationHighlightAlpha));
+                                gg2.drawRect((int) rect.getX(),
+                                        (int) rect.getY(),
+                                        (int) rect.getWidth(),
+                                        (int) rect.getHeight());
+                            }
+                        }
+                    }
+                }
             }
-            this.releasePageLock(currentPage, this);
+            pageTree.releasePage(currentPage, this);
         }
     }
 
-    /**
-     * Mouse clicked event priority is given to annotation clicks.  Otherwise
-     * the selected tool state is respected.
-     * @param e awt mouse event.
-     */
     public void mouseClicked(MouseEvent e) {
-
-        // if we have an annotation then we process it over other clicks.
-        if (annotationHandler.isCurrentAnnotation()) {
-            annotationHandler.mouseClicked(e);
+        // depending on tool state propagate mouse state
+        if (documentViewModel.getViewToolMode() ==
+                DocumentViewModel.DISPLAY_TOOL_ZOOM_IN) {
+            // correct click for coordinate of this component
+            Point p = e.getPoint();
+            Point offset = documentViewModel.getPageBounds(pageIndex).getLocation();
+            p.setLocation(p.x + offset.x, p.y + offset.y);
+            // request a zoom center on the new point
+            documentViewController.setZoomIn(p);
+        } else if (documentViewModel.getViewToolMode() ==
+                DocumentViewModel.DISPLAY_TOOL_ZOOM_OUT) {
+            // correct click for coordinate of this component
+            Point p = e.getPoint();
+            // request a zoom center on the new point
+            documentViewController.setZoomOut(p);
         }
-        // otherwise handle the click. 
-        else {
-            // depending on tool state propagate mouse state
-            if (documentViewModel.getViewToolMode() ==
-                    DocumentViewModel.DISPLAY_TOOL_TEXT_SELECTION) {
-                textSelectionHandler.mouseClicked(e);
-            } else if (documentViewModel.getViewToolMode() ==
-                    DocumentViewModel.DISPLAY_TOOL_ZOOM_IN) {
-                // correct click for coordinate of this component
-                Point p = e.getPoint();
-                Point offset = documentViewModel.getPageBounds(pageIndex).getLocation();
-                p.setLocation(p.x + offset.x, p.y + offset.y);
-                // request a zoom center on the new point
-                documentViewController.setZoomIn(p);
-            } else if (documentViewModel.getViewToolMode() ==
-                    DocumentViewModel.DISPLAY_TOOL_ZOOM_OUT) {
-                // correct click for coordinate of this component
-                Point p = e.getPoint();
-                // request a zoom center on the new point
-                documentViewController.setZoomOut(p);
-            }
-            // todo handle annotation selection.
+        // if cuurrentAnnotation exists, we want to process the click.
+        if (currentAnnotation != null &&
+                documentViewController.getAnnotationCallback() != null) {
+            documentViewController.getAnnotationCallback()
+                    .proccessAnnotationAction(currentAnnotation);
         }
     }
 
@@ -470,73 +491,108 @@ public class PageViewComponentImpl extends
     }
 
     public void mousePressed(MouseEvent e) {
+        Point p = e.getPoint();
+        Point offset = this.getLocation();
+        p.setLocation(p.x + offset.x, p.y + offset.y);
+        MouseEvent newEvent =
+                new MouseEvent((Component) e.getSource(), e.getID(), e.getWhen(),
+                        e.getModifiers(), p.x, p.y, e.getClickCount(),
+                        e.isPopupTrigger());
 
-        // request page focus
-        requestFocusInWindow();
-
-        if (annotationHandler.isCurrentAnnotation()) {
-            annotationHandler.mousePressed(e);
-        } else {
-            textSelectionHandler.mousePressed(e);
+        // mouse pressed is picked up for panning and annotations
+        // if currentAnnotation is not null then we can pan,
+        if (currentAnnotation == null &&
+                parentDocumentView != null) {
+            parentDocumentView.mousePressed(newEvent);
+        }
+        // setup visual effect when the mouse button is pressed or held down
+        // inside the active area of the annotation.
+        isMousePressed = true;
+        if (currentAnnotation != null) {
+            repaint();
         }
 
-    }
-
-    public void clearSelectedText() {
-        if (textSelectionHandler != null) {
-            textSelectionHandler.clearSelection();
-        }
-    }
-
-    public boolean isCursorOverAnnotation() {
-        return annotationHandler != null &&
-                annotationHandler.isCurrentAnnotation();
     }
 
     public void mouseReleased(MouseEvent e) {
-
-        if (annotationHandler.isCurrentAnnotation()) {
-            annotationHandler.mouseReleased(e);
-        } else {
-            textSelectionHandler.mouseReleased(e);
+        if (currentAnnotation == null &&
+                parentDocumentView != null) {
+            parentDocumentView.mouseReleased(e);
+        }
+        isMousePressed = false;
+        if (currentAnnotation != null) {
+            repaint();
         }
     }
 
     public void mouseDragged(MouseEvent e) {
-
-        textSelectionHandler.mouseDragged(e);
-    }
-
-    public void setTextSelectionRectangle(Point cursorLocation, Rectangle selection) {
-        textSelectionHandler.setSelectionRectangle(cursorLocation, selection);
-    }
-
-    public void mouseMoved(MouseEvent e) {
-
-        // annotation get priority
-        annotationHandler.mouseMoved(e);
-
-        // if we're not over an onotation than process text selection. 
-        if (!annotationHandler.isCurrentAnnotation()) {
-            if (documentViewModel.getViewToolMode() ==
-                    DocumentViewModel.DISPLAY_TOOL_TEXT_SELECTION) {
-                textSelectionHandler.mouseMoved(e);
-            }
+        if (parentDocumentView != null) {
+            parentDocumentView.mouseDragged(e);
         }
     }
 
-    public void focusGained(FocusEvent e) {
-        int oldCurrentPage = documentViewModel.getViewCurrentPageIndex();
-        documentViewModel.setViewCurrentPageIndex(pageIndex);
-        documentViewController.firePropertyChange(PropertyConstants.DOCUMENT_CURRENT_PAGE,
-                oldCurrentPage,
-                pageIndex);
+    public void mouseMoved(MouseEvent e) {
+        if (parentDocumentView != null) {
+            parentDocumentView.mouseMoved(e);
+        }
+        Page currentPage = pageTree.getPage(pageIndex, this);
+        if (currentPage != null &&
+                currentPage.isInitiated() &&
+                isInteractiveAnnotationsEnabled) {
+            Vector annotations = currentPage.getAnnotations();
+            if (annotations != null) {
+                Annotation annotation;
+                Object tmp;
+                Point mouseLocation;
+                AffineTransform at = currentPage.getPageTransform(
+                        mediaBox,
+                        documentViewModel.getViewRotation(),
+                        documentViewModel.getViewZoom());
+                mouseLocation = e.getPoint();
 
-        // todo also add focus group into the page for annotation tabbing...
+                try {
+                    at.inverseTransform(mouseLocation, mouseLocation);
+                } catch (NoninvertibleTransformException e1) {
+                    e1.printStackTrace();
+                }
+
+                for (Object annotation1 : annotations) {
+                    tmp = annotation1;
+                    if (tmp instanceof Annotation) {
+                        annotation = (Annotation) tmp;
+                        // repaint an annotation. 
+                        if (annotation.getUserSpaceRectangle().contains(
+                                mouseLocation.getX(), mouseLocation.getY())) {
+                            currentAnnotation = annotation;
+                            documentViewController.setViewCursor(DocumentViewController.CURSOR_HAND_ANNOTATION);
+//                            repaint(annotation.getUserSpaceRectangle().getBounds());
+                            repaint();
+                            break;
+                        } else {
+                            currentAnnotation = null;
+                        }
+                    }
+                }
+                if (currentAnnotation == null) {
+                    int toolMode = documentViewModel.getViewToolMode();
+                    if (toolMode == DocumentViewModel.DISPLAY_TOOL_PAN) {
+                        documentViewController.setViewCursor(DocumentViewController.CURSOR_HAND_OPEN);
+                    } else if (toolMode == DocumentViewModel.DISPLAY_TOOL_ZOOM_IN) {
+                        documentViewController.setViewCursor(DocumentViewController.CURSOR_ZOOM_IN);
+                    } else if (toolMode == DocumentViewModel.DISPLAY_TOOL_ZOOM_OUT) {
+                        documentViewController.setViewCursor(DocumentViewController.CURSOR_ZOOM_OUT);
+                    }
+                    repaint();
+                }
+            }
+        }
+        pageTree.releasePage(currentPage, this);
+    }
+
+    public void focusGained(FocusEvent e) {
     }
 
     public void focusLost(FocusEvent e) {
-
     }
 
     public void componentHidden(ComponentEvent e) {
@@ -600,12 +656,12 @@ public class PageViewComponentImpl extends
             Page currentPage = pageTree.getPage(pageIndex, this);
             if (currentPage != null) {
                 pageSize.setSize(currentPage.getSize(
-                        documentViewModel.getPageBoundary(),
+                        mediaBox,
                         documentViewModel.getViewRotation(),
                         documentViewModel.getViewZoom()).toDimension());
 
                 defaultPageSize.setSize(currentPage.getSize(
-                        documentViewModel.getPageBoundary(),
+                        mediaBox,
                         0,
                         1).toDimension());
             }
@@ -646,7 +702,6 @@ public class PageViewComponentImpl extends
     /**
      * Utility method for setting up the buffered image painting. Take care
      * of all the needed transformation.
-     *
      * @param pagePainter painter doing the painting work.
      */
     private void createBufferedPageImage(PagePainter pagePainter) {
@@ -916,7 +971,7 @@ public class PageViewComponentImpl extends
                 Page page = pageTree.getPage(pageIndex, this);
                 page.paint(imageGraphics,
                         GraphicsRenderingHints.SCREEN,
-                        documentViewModel.getPageBoundary(),
+                        mediaBox,
                         documentViewModel.getViewRotation(),
                         documentViewModel.getViewZoom(),
                         pagePainter, false);
@@ -973,7 +1028,7 @@ public class PageViewComponentImpl extends
 
     private boolean isPageIntersectViewport() {
         Rectangle pageBounds = documentViewModel.getPageBounds(pageIndex);
-        return pageBounds != null &&
+        return pageBounds != null && this.isShowing() &&
                 pageBounds.intersects(parentScrollPane.getViewport().getViewRect());
     }
 
@@ -1089,7 +1144,7 @@ public class PageViewComponentImpl extends
                 Page page = pageTree.getPage(pageIndex, this);
                 page.init();
                 // fire page annotation initialized callback
-                if (documentViewController.getAnnotationCallback() != null) {
+                if (documentViewController.getAnnotationCallback() != null){
                     documentViewController.getAnnotationCallback()
                             .pageAnnotationsInitialized(page);
                 }

@@ -32,7 +32,6 @@
  */
 package org.icepdf.core.views;
 
-import java.awt.*;
 
 /**
  * <p>The <code>PageViewComponent</code> interaces should be used by any page view
@@ -87,27 +86,4 @@ public interface PageViewComponent {
      * @return true if the page is showing, otherwise; false. 
      */
     public boolean isShowing();
-
-    /**
-     * Clear any internal data stractures that represent selected text and
-     * repaint the component. 
-     */
-    public void clearSelectedText();
-
-    /**
-     * Determines if cursor is over a page annotation.
-     * @return true if mouse pointer or cursor is over annotation.
-     */
-    public boolean isCursorOverAnnotation();
-
-    /**
-     * Sets the text that is contained in the specified recttangle and the
-     * given mouse pointer.  The cursor and selection rectangel must be in
-     * in page space.
-     *
-     * @param cursorLocation location of cursor or mouse.
-     * @param selection rectangle of text to include in selection.
-     */
-    public void setTextSelectionRectangle(Point cursorLocation, Rectangle selection);
-
 }

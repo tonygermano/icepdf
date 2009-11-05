@@ -34,19 +34,12 @@ package org.icepdf.ri.util;
 
 import org.icepdf.core.pobjects.Document;
 import org.icepdf.ri.common.SearchPanel;
-import org.icepdf.ri.common.SwingController;
 import org.icepdf.ri.common.SwingWorker;
-import org.icepdf.core.search.DocumentSearchController;
-import org.icepdf.core.pobjects.graphics.text.LineText;
 
-import java.util.List;
-import java.util.ArrayList;
-
-import javax.swing.*;
-import java.awt.*;
 import java.text.ChoiceFormat;
 import java.text.Format;
 import java.text.MessageFormat;
+import java.util.Enumeration;
 import java.util.ResourceBundle;
 
 /**
@@ -67,10 +60,6 @@ public class SearchTextTask {
     // message displayed on progress bar
     private String dialogMessage;
 
-    // canned internationalized messages.
-    private MessageFormat searchingMessageForm;
-    private MessageFormat searchDialogMessageForm;
-
     // flags for threading
     private boolean done = false;
     private boolean canceled = false;
@@ -78,14 +67,11 @@ public class SearchTextTask {
     // keep track of total hits
     private int totalHitCount = 0;
 
-    // String to search for and parameters from gui
-    private String pattern = "";
-    private boolean wholeWord;
-    private boolean caseSensitive;
-    private boolean r2L;
+    // PDF document pointer
+    private Document document = null;
 
-    // parent swing controller
-    SwingController controller;
+    // String to search for
+    private String pattern = "";
 
     // append nodes for found text.
     private SearchPanel searchPanel;
@@ -95,39 +81,22 @@ public class SearchTextTask {
 
     private boolean currentlySearching;
 
-    private Container viewContainer;
-
     /**
      * Creates a new instance of the SearchTextTask.
      *
-     * @param searchPanel   parent search panel that start this task via an action
-     * @param controller    root controller object
-     * @param pattern       pattern to search for
-     * @param wholeWord     ture inticates whole word search
-     * @param caseSensitive case sensitive indicates cases sensitive search
-     * @param r2L           right left earch, not currently implemented.
-     * @param messageBundle message bundle used for dialog text.
+     * @param document    document that will be searched
+     * @param searchPanel GUI that shows search tools and results
+     * @param pattern     string to search for in the document
      */
-    public SearchTextTask(SearchPanel searchPanel,
-                          SwingController controller,
+    public SearchTextTask(Document document,
+                          SearchPanel searchPanel,
                           String pattern,
-                          boolean wholeWord,
-                          boolean caseSensitive,
-                          boolean r2L,
                           ResourceBundle messageBundle) {
-        this.controller = controller;
+        this.document = document;
         this.pattern = pattern;
         this.searchPanel = searchPanel;
-        lengthOfTask = controller.getDocument().getNumberOfPages();
+        lengthOfTask = document.getNumberOfPages();
         this.messageBundle = messageBundle;
-        this.viewContainer = controller.getDocumentViewController().getViewContainer();
-        this.wholeWord = wholeWord;
-        this.caseSensitive = caseSensitive;
-        this.r2L = r2L;
-
-        // setup searching format format.
-        searchingMessageForm = setupSearchingMessageForm();
-        searchDialogMessageForm = setupSearchDialogMessageForm();
     }
 
     /**
@@ -143,23 +112,19 @@ public class SearchTextTask {
                 return new ActualTask();
             }
         };
-        worker.setThreadPriority(Thread.NORM_PRIORITY);
+        worker.setThreadPriority(Thread.MIN_PRIORITY);
         worker.start();
     }
 
     /**
-     * Number pages that search task has to iterate over.
-     *
-     * @return returns max number of pages in document being search.
+     * Find out how much work needs to be done.
      */
     public int getLengthOfTask() {
         return lengthOfTask;
     }
 
     /**
-     * Gets the page that is currently being searched by this task.
-     *
-     * @return current page being processed.
+     * Find out how much has been done.
      */
     public int getCurrent() {
         return current;
@@ -175,8 +140,6 @@ public class SearchTextTask {
 
     /**
      * Find out if the task has completed.
-     *
-     * @return true if task is done, false otherwise.
      */
     public boolean isDone() {
         return done;
@@ -189,8 +152,6 @@ public class SearchTextTask {
     /**
      * Returns the most recent dialog message, or null
      * if there is no current dialog message.
-     *
-     * @return current message dialog text.
      */
     public String getMessage() {
         return dialogMessage;
@@ -201,64 +162,109 @@ public class SearchTextTask {
      */
     class ActualTask {
         ActualTask() {
-
-            // break on bad input
-            if ("".equals(pattern) || " ".equals(pattern)) {
-                return;
-            }
-
             try {
                 currentlySearching = true;
                 // Extraction of text from pdf procedure
                 totalHitCount = 0;
                 current = 0;
-
-                // get instance of the search controller
-                DocumentSearchController searchController =
-                        controller.getDocumentSearchController();
-                searchController.clearAllSearchHighlight();
-                searchController.addSearchTerm(pattern,
-                        caseSensitive, wholeWord);
-
-                Document document = controller.getDocument();
-                // iterate over each page in the document
                 for (int i = 0; i < document.getNumberOfPages(); i++) {
                     // break if needed
                     if (canceled || done) {
                         setDialogMessage();
                         break;
                     }
+
                     // Update task information
                     current = i;
 
-                    // update search message in search pane.
+                    // Build Internationalized plural phrase.
+                    MessageFormat messageForm =
+                            new MessageFormat(messageBundle.getString(
+                                    "viewer.utilityPane.search.searching1.msg"));
+                    double[] fileLimits = {0, 1, 2};
+                    String[] fileStrings = {
+                            messageBundle.getString(
+                                    "viewer.utilityPane.search.searching1.moreFile.msg"),
+                            messageBundle.getString(
+                                    "viewer.utilityPane.search.searching1.oneFile.msg"),
+                            messageBundle.getString(
+                                    "viewer.utilityPane.search.searching1.moreFile.msg"),
+                    };
+                    ChoiceFormat choiceForm = new ChoiceFormat(fileLimits,
+                            fileStrings);
+                    Format[] formats = {null, choiceForm, null};
+                    messageForm.setFormats(formats);
                     Object[] messageArguments = {String.valueOf((current + 1)),
-                            lengthOfTask, lengthOfTask};
-                    dialogMessage = searchingMessageForm.format(messageArguments);
+                            new Integer(lengthOfTask), new Integer(lengthOfTask)};
 
+                    dialogMessage = messageForm.format(messageArguments);
+
+                    Enumeration pageText = document.getPageText(i).elements();
                     // hits per page count
-                    int hitCount = searchController.searchHighlightPage(i);
-                    List<LineText> lineItems = searchController.searchHighlightPage(current, 2);
+                    int hitCount = 0;
 
-                    // repaint the view container, probably a little too frequent.
-                    SwingUtilities.invokeLater(new Runnable() {
-                        public void run() {
-                            viewContainer.repaint();
+                    while (pageText.hasMoreElements()) {
+                        if (canceled || done) {
+                            setDialogMessage();
+                            break;
                         }
-                    });
+                        // do text string comparison
+                        String text =
+                                pageText.nextElement().toString().toLowerCase();
+                        if (!"".equals(text) && !"".equals(pattern)) {
+                            int offset = 0;
+                            // iterate through PDF text looking for pattern
+                            while (offset >= 0 && offset <= pattern.length()) {
 
+                                // break for cancelation of task
+                                if (canceled || done) {
+                                    setDialogMessage();
+                                    break;
+                                }
+                                // stop if there is no search pattern
+                                if (text.length() < pattern.length()) {
+                                    setDialogMessage();
+                                    break;
+                                }
+
+                                offset = text.indexOf(pattern.toLowerCase());
+                                if (offset < 0) {
+                                    setDialogMessage();
+                                    break;
+                                } else {
+                                    text = text.substring(offset + pattern.length());
+                                    hitCount++;
+                                }
+                            }
+                        }
+                    }
                     // update total hit count
                     totalHitCount += hitCount;
                     if (hitCount > 0) {
-                        // update search dialog
-                        messageArguments = new Object[]{
-                                String.valueOf((current + 1)),
-                                hitCount, hitCount};
+
+                        // Build Internationalized plural phrase.
+                        messageForm =
+                                new MessageFormat(messageBundle.getString(
+                                        "viewer.utilityPane.search.result.msg"));
+                        fileLimits = new double[]{0, 1, 2};
+                        fileStrings = new String[]{
+                                messageBundle.getString(
+                                        "viewer.utilityPane.search.result.moreFile.msg"),
+                                messageBundle.getString(
+                                        "viewer.utilityPane.search.result.oneFile.msg"),
+                                messageBundle.getString(
+                                        "viewer.utilityPane.search.result.moreFile.msg"),
+                        };
+                        choiceForm = new ChoiceFormat(fileLimits,
+                                fileStrings);
+                        formats = new Format[]{null, choiceForm};
+                        messageForm.setFormats(formats);
+                        messageArguments = new Object[]{String.valueOf((current + 1)),
+                                new Integer(hitCount), new Integer(hitCount)};
 
                         searchPanel.addFoundEntry(
-                                searchDialogMessageForm.format(messageArguments),
-                                current,
-                                lineItems);
+                                messageForm.format(messageArguments),
+                                current);
                     }
                     Thread.yield();
                 }
@@ -270,20 +276,11 @@ public class SearchTextTask {
             finally {
                 currentlySearching = false;
             }
-
-            // repaint the view container
-            SwingUtilities.invokeLater(new Runnable() {
-                public void run() {
-                    viewContainer.repaint();
-                }
-            });
         }
     }
 
     /**
      * Gets the message that should be displayed when the task has completed.
-     *
-     * @return search completed or stoped final message.
      */
     public String getFinalMessage() {
         setDialogMessage();
@@ -296,19 +293,6 @@ public class SearchTextTask {
     private void setDialogMessage() {
 
         // Build Internationalized plural phrase.
-
-        Object[] messageArguments = {String.valueOf((current + 1)),
-                (current + 1), totalHitCount};
-
-        dialogMessage = searchDialogMessageForm.format(messageArguments);
-    }
-
-    /**
-     * Uitility for createing the searchable dialog message format.
-     * 
-     * @return  reuseable message format.
-     */
-    private MessageFormat setupSearchDialogMessageForm() {
         MessageFormat messageForm =
                 new MessageFormat(messageBundle.getString(
                         "viewer.utilityPane.search.progress.msg"));
@@ -336,33 +320,9 @@ public class SearchTextTask {
 
         Format[] formats = {null, pageChoiceForm, resultsChoiceForm};
         messageForm.setFormats(formats);
-        return messageForm;
-    }
+        Object[] messageArguments = {String.valueOf((current + 1)),
+                new Integer((current + 1)), new Integer(totalHitCount)};
 
-    /**
-     * Uitility for createing the searching message format.
-     *
-     * @return  reuseable message format.
-     */
-    private MessageFormat setupSearchingMessageForm() {
-        // Build Internationalized plural phrase.
-        MessageFormat messageForm =
-                new MessageFormat(messageBundle.getString(
-                        "viewer.utilityPane.search.searching1.msg"));
-        double[] fileLimits = {0, 1, 2};
-        String[] fileStrings = {
-                messageBundle.getString(
-                        "viewer.utilityPane.search.searching1.moreFile.msg"),
-                messageBundle.getString(
-                        "viewer.utilityPane.search.searching1.oneFile.msg"),
-                messageBundle.getString(
-                        "viewer.utilityPane.search.searching1.moreFile.msg"),
-        };
-        ChoiceFormat choiceForm = new ChoiceFormat(fileLimits,
-                fileStrings);
-        Format[] formats = {null, choiceForm, null};
-        messageForm.setFormats(formats);
-
-        return messageForm;
+        dialogMessage = messageForm.format(messageArguments);
     }
 }
