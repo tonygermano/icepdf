@@ -49,12 +49,13 @@ import java.util.logging.Level;
  * @since 1.0
  */
 public class Resources extends Dictionary {
-
-    // shared resource counter. 
     private static int uniqueCounter = 0;
-
     private static synchronized int getUniqueId() {
         return uniqueCounter++;
+    }
+    private static String getClassName(Object ob) {
+        ob.getClass().getCanonicalName();
+        return null;
     }
 
     private static final Logger logger =
@@ -67,7 +68,8 @@ public class Resources extends Dictionary {
     Hashtable shading;
     Hashtable extGStates;
     private Hashtable<String, Image> images = new Hashtable<String, Image>();
-
+    // id used for debug purposes only
+    private int uniqueId;
     // reference count to keep track of how many objects reference this resource.
     private int referenceCount;
 
@@ -83,16 +85,11 @@ public class Resources extends Dictionary {
         patterns = library.getDictionary(entries, "Pattern");
         shading = library.getDictionary(entries, "Shading");
         extGStates = library.getDictionary(entries, "ExtGState");
+        uniqueId = getUniqueId();
         referenceCount = 0;
     }
 
-    /**
-     * Increments the refernce count, meaning that at least one object is
-     * depending on this reference. 
-     *
-     * @param referer object doing the reference, used for debug purposes.
-     */
-    public void addReference(Object referer) {
+    public void addReference(Dictionary referer) {
         synchronized(this) {
             referenceCount++;
             ////System.out.println("Resources.addReference()  " + getPObjectReference() + "  " + uniqueId + "  count: " + referenceCount);
@@ -103,7 +100,7 @@ public class Resources extends Dictionary {
         }
     }
 
-    public void removeReference(Object referer) {
+    public void removeReference(Dictionary referer) {
         synchronized(this) {
             referenceCount--;
             ////System.out.println("Resources.removeReference()  " + getPObjectReference() + "  " + uniqueId + "  count: " + referenceCount);
@@ -119,15 +116,28 @@ public class Resources extends Dictionary {
      * @param cache true to cache image streams, false otherwise.
      * @param referer only used for debuggin, can be null otherwise.
      */
-    public boolean  dispose(boolean cache, Dictionary referer) {
+    public void dispose(boolean cache, Dictionary referer) {
+/*
+System.out.println("Resources.dispose()  cache: " + cache);
+try { throw new RuntimeException("MARK"); } catch(Exception e) {
+    StackTraceElement[] ste = e.getStackTrace();
+    for(int i = 1; i < Math.min(20,ste.length); i++)
+        System.out.println("  " + ste[i].getClassName() + "." + ste[i].getMethodName() + " : " + ste[i].getLineNumber());
+}
+*/
         synchronized(this) {
             referenceCount--;
             ////System.out.println("Resources.dispose()  " + getPObjectReference() + "  " + uniqueId + "  count: " + referenceCount + "  cache: " + cache);
             ////System.out.println("Resources.dispose()    referer: " + referer.getPObjectReference() + "  " + referer.getClass().getSimpleName());
-            // we have a reference so we can't dispose.
             if (referenceCount > 0) {
                 ////System.out.println("Resources.dispose()      REDUNDANT");
-                return false;
+                return;
+            }
+            else if(referenceCount == 0) {
+                ////System.out.println("Resources.dispose()      ACTIVE");
+            }
+            else if(referenceCount < 0) {
+                ////System.out.println("Resources.dispose()      INVALID");
             }
         }
 
@@ -170,7 +180,6 @@ public class Resources extends Dictionary {
                 }
             }
         }
-        return true;
     }
 
     /**

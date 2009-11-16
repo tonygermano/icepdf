@@ -343,8 +343,6 @@ public class Annotation extends Dictionary {
     protected BorderStyle borderStyle;
     // border color of annotation.
     protected Color borderColor;
-    // annotation bounding rectangle in user space.
-    protected Rectangle2D.Float userSpaceRectangle;
 
     public static Annotation buildAnnotation(Library library, Hashtable hashTable) {
         Annotation annot = null;
@@ -393,10 +391,7 @@ public class Annotation extends Dictionary {
      * @return rectangle of annotation
      */
     public Rectangle2D.Float getUserSpaceRectangle() {
-        if (userSpaceRectangle == null) {
-            userSpaceRectangle = library.getRectangle(entries, "Rect");
-        }
-        return userSpaceRectangle;
+        return library.getRectangle(entries, "Rect");
     }
 
     /**
@@ -490,23 +485,6 @@ public class Annotation extends Dictionary {
                 page = annot.getPage();
         }
         return page;
-    }
-
-    /**
-     * Checks to see if the annotation has defined a drawable border width.
-     *
-     * @return true if a border will be drawn; otherwise, false.
-     */
-    public boolean isBorder() {
-        boolean borderWidth = false;
-        Object border = getObject("Border");
-        if (border != null && border instanceof Vector) {
-            Vector borderProps = (Vector) border;
-            if (borderProps.size() == 3) {
-                borderWidth = ((Number) borderProps.get(2)).floatValue() > 0;
-            }
-        }
-        return getBorderStyle() != null || borderWidth;
     }
 
     public void render(Graphics2D origG, int renderHintType,
@@ -854,9 +832,7 @@ public class Annotation extends Dictionary {
     }
 
     private Rectangle2D.Float deriveDrawingRectangle() {
-        Rectangle2D.Float origRect = getUserSpaceRectangle();
-        Rectangle2D.Float jrect = new Rectangle2D.Float(origRect.x, origRect.y,
-                origRect.width, origRect.height);
+        Rectangle2D.Float jrect = getUserSpaceRectangle();
         jrect.x = 0.0f;
         jrect.y = 0.0f;
         return jrect;
@@ -901,39 +877,39 @@ public class Annotation extends Dictionary {
         return true;
     }
 
-    public boolean getFlagInvisible() {
+    private boolean getFlagInvisible() {
         return ((getInt("F") & 0x0001) != 0);
     }
 
-    public boolean getFlagHidden() {
+    private boolean getFlagHidden() {
         return ((getInt("F") & 0x0002) != 0);
     }
 
-    public boolean getFlagPrint() {
+    private boolean getFlagPrint() {
         return ((getInt("F") & 0x0004) != 0);
     }
 
-    public boolean getFlagNoZoom() {
+    private boolean getFlagNoZoom() {
         return ((getInt("F") & 0x0008) != 0);
     }
 
-    public boolean getFlagNoRotate() {
+    private boolean getFlagNoRotate() {
         return ((getInt("F") & 0x0010) != 0);
     }
 
-    public boolean getFlagNoView() {
+    private boolean getFlagNoView() {
         return ((getInt("F") & 0x0020) != 0);
     }
 
-    public boolean getFlagReadOnly() {
+    private boolean getFlagReadOnly() {
         return ((getInt("F") & 0x0040) != 0);
     }
 
-    public boolean getFlagLocked() {
+    private boolean getFlagLocked() {
         return ((getInt("F") & 0x0080) != 0);
     }
 
-    public boolean getFlagToggleNoView() {
+    private boolean getFlagToggleNoView() {
         return ((getInt("F") & 0x0100) != 0);
     }
 

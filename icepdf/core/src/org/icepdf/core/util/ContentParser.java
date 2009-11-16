@@ -38,8 +38,6 @@ import org.icepdf.core.io.SeekableInputConstrainedWrapper;
 import org.icepdf.core.pobjects.*;
 import org.icepdf.core.pobjects.fonts.FontFile;
 import org.icepdf.core.pobjects.graphics.*;
-import org.icepdf.core.pobjects.graphics.text.GlyphText;
-import org.icepdf.core.pobjects.graphics.text.PageText;
 
 import java.awt.*;
 import java.awt.geom.AffineTransform;
@@ -53,8 +51,8 @@ import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Stack;
 import java.util.Vector;
-import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * The ContentParser is responsible for parsing a page's content streams.  The
@@ -76,6 +74,10 @@ public class ContentParser {
 
     // flag to handle none text based coordinate operand "cm" inside of a text block
     private boolean inTextBlock;
+
+    // textObjects vector insertion index, incremented when a new text block
+    // is encountered so that extract text is easier to manipulate.
+    private int textBlockIndex = 0;
 
     // TextBlock affine transform can be altered by the "cm" operand an thus
     // the text base affine transform must be accessible outside the parsTtext method
@@ -137,7 +139,7 @@ public class ContentParser {
      * parsing.  This method must be called before the parse method is called
      * otherwise it will have not effect on state of the draw operands.
      *
-     * @param graphicState graphics state of this content stream
+     * @param graphicState
      */
     public void setGraphicsState(GraphicsState graphicState) {
         this.graphicState = graphicState;
@@ -148,7 +150,6 @@ public class ContentParser {
      *
      * @param source byte stream containing page content
      * @return a Shapes Ojbect containing all the pages text and images shapes.
-     * @throws InterruptedException if current parse thread is interruped.
      */
     public Shapes parse(InputStream source) throws InterruptedException {
         Shapes shapes = new Shapes();
@@ -191,14 +192,11 @@ public class ContentParser {
         // stack to help with the parse
         Stack<Object> stack = new Stack<Object>();
 
-        // text block y offset.
-        float yBTstart = 0;
-
 //        long startTime = System.currentTimeMillis();
         try {
-            // represents a geometric path constructed from straight lines, and
-            // quadratic and cubic (Beauctezier) curves.  It can contain
-            // multiple sub paths.
+            //represents a geometric path constructed from straight lines, and
+            // quadratic and cubic (B&eacute;zier) curves.  It can contain
+            // multiple subpaths.
             GeneralPath geometricPath = null;
 
             // loop through each token returned form the parser
@@ -279,7 +277,7 @@ public class ContentParser {
                         // set graphics state alpha back to 1.0f for text
                         setAlpha(shapes, 1.0f);
                         // start parseText, which parses until ET is reached
-                        yBTstart = parseText(parser, shapes, yBTstart);
+                        parseText(parser, shapes, false, null);
                     }
 
                     // Fill the path, using the nonzero winding number rule to
@@ -302,7 +300,7 @@ public class ContentParser {
                     else if (tok.equals(PdfOps.q_TOKEN)) {
                         graphicState = consume_q(graphicState);
                     }
-                    // Restore Graphics State, should restore the entire graphics state
+                    // Restore Graphics State, should restore teh entire graphics state
                     // to its former value by popping it from the stack
                     else if (tok.equals(PdfOps.Q_TOKEN)) {
                         graphicState = consume_Q(graphicState, shapes);
@@ -429,12 +427,6 @@ public class ContentParser {
                                 if (formXObject.getShapes() != null) {
                                     shapes.add(formXObject.getShapes().getImages());
                                 }
-                                // update text sprites with geometric path state
-                                if (formXObject.getShapes().getPageText() != null) {
-                                    // normalize each sprite.
-                                    formXObject.getShapes().getPageText()
-                                            .applyXObjectTransform(graphicState.getCTM());
-                                }
                                 shapes.addNoClipCommand();
                                 formXObject.completed();
                             }
@@ -529,12 +521,12 @@ public class ContentParser {
 
                     // Same as K, but for non-stroking operations.
                     else if (tok.equals(PdfOps.k_TOKEN)) { // Fill Color CMYK
-                        consume_k(graphicState, stack, library);
+                        consume_k(graphicState, stack, library, resources);
                     }
 
                     // Same as g but for none stroking operations
                     else if (tok.equals(PdfOps.g_TOKEN)) {
-                        consume_g(graphicState, stack, library);
+                        consume_g(graphicState, stack, library, resources);
                     }
 
                     // Sets the flatness tolerance in the graphics state, NOT SUPPORTED
@@ -557,7 +549,7 @@ public class ContentParser {
 
                     // Same as RG, but for non-stroking operations.
                     else if (tok.equals(PdfOps.rg_TOKEN)) { // Fill Color RGB
-                        consume_rg(graphicState, stack, library);
+                        consume_rg(graphicState, stack, library, resources);
                     }
 
                     // Sets the line dash pattern in the graphics state. A normal line
@@ -633,7 +625,7 @@ public class ContentParser {
                     // number rule to determine the region to fill. This produces
                     // the same result as constructing two identical path objects,
                     // painting the first with f and the second with S. Note,
-                    // however, that the filling and stroking portions of the
+                    // however, that the fillingand stroking portions of the
                     // operation consult different values of several graphics state
                     // parameters, such as the current color.
                     else if (tok.equals(PdfOps.B_TOKEN)) {
@@ -653,7 +645,7 @@ public class ContentParser {
                     // behavior of this operator is affected by the overprint mode
                     // (see Section 4.5.6, "Overprint Control").
                     else if (tok.equals(PdfOps.K_TOKEN)) { // Stroke Color CMYK
-                        consume_K(graphicState, stack, library);
+                        consume_K(graphicState, stack, library, resources);
                     }
 
                     /**
@@ -686,7 +678,7 @@ public class ContentParser {
                     // stroking operations. gray is a number between 0.0 (black)
                     // and 1.0 (white).
                     else if (tok.equals(PdfOps.G_TOKEN)) {
-                        consume_G(graphicState, stack, library);
+                        consume_G(graphicState, stack, library, resources);
                     }
 
                     // Close, fill, and then stroke the path, using the even-odd
@@ -709,7 +701,7 @@ public class ContentParser {
                     // use for stroking operations. Each operand must be a number between
                     // 0.0 (minimum intensity) and 1.0 (maximum intensity).
                     else if (tok.equals(PdfOps.RG_TOKEN)) { // Stroke Color RGB
-                        consume_RG(graphicState, stack, library);
+                        consume_RG(graphicState, stack, library, resources);
                     }
 
                     // Set the current color space to use for stroking operations. The
@@ -818,9 +810,9 @@ public class ContentParser {
                      */
                     // Designate a marked-content point with an associated property
                     // list. tag is a name object indicating the role or significance
-                    // of the point; properties is either an in line dictionary
+                    // of the point; properties is either an inline dictionary
                     // containing the property list or a name object associated with
-                    // it in the Properties sub dictionary of the current resource
+                    // it in the Properties subdictionary of the current resource
                     // dictionary.
                     else if (tok.equals(PdfOps.DP_TOKEN)) {
 //                        collectTokenFrequency(PdfOps.DP_TOKEN);
@@ -844,7 +836,7 @@ public class ContentParser {
                             Pattern pattern = resources.getShading(patternName.toString());
                             if (pattern != null) {
                                 pattern.init();
-                                // we paint the shape and color shading as defined
+                                // we paint the shape and color shadig as defined
                                 // by the pattern dictionary and respect the current clip
                                 setAlpha(shapes, graphicState.getFillAlpha());
                                 shapes.add(pattern.getPaint());
@@ -887,7 +879,7 @@ public class ContentParser {
             }
         }
         catch (IOException e) {
-            // eat the result as it a normal occurrence
+            // eat the result as it a normal occurance
             logger.finer("End of Content Stream");
         }
         finally {
@@ -916,8 +908,8 @@ public class ContentParser {
      * @param source content stream source.
      * @return vector where each entry is the text extracted from a text block.
      */
-    public Shapes parseTextBlocks(InputStream source) {
-
+    public Vector<StringBuffer> parseTextBlocks(InputStream source) {
+        Vector<StringBuffer> extractedText = new Vector<StringBuffer>(15);
         // great a parser to get tokens for stream
         Parser parser = new Parser(source);
         Shapes shapes = new Shapes();
@@ -932,7 +924,6 @@ public class ContentParser {
             // loop through each token returned form the parser
             Object tok = parser.getStreamObject();
             Stack<Object> stack = new Stack<Object>();
-            double yBTstart = 0;
             while (tok != null) {
 
                 // add any names and numbers and every thing else on the
@@ -941,7 +932,9 @@ public class ContentParser {
 
                     if (tok.equals(PdfOps.BT_TOKEN)) {
                         // start parseText, which parses until ET is reached
-                        yBTstart = parseText(parser, shapes, yBTstart);
+                        parseText(parser, shapes, true, extractedText);
+                        // This is the end of a text block, for text extraction purposes it is marked
+                        textBlockIndex++;
                         // free up some memory along the way. we don't need
                         // a full stack consume Tf tokens.
                         stack.clear();
@@ -957,7 +950,7 @@ public class ContentParser {
                 }
                 tok = parser.getStreamObject();
             }
-            // clear our temporary stack.
+            // clear our temporary stack. 
             stack.clear();
         } catch (IOException e) {
             // eat the result as it a normal occurrence
@@ -965,22 +958,51 @@ public class ContentParser {
         }
 //        long endTime = System.currentTimeMillis();
 //        System.out.println("Extraction Duration " + (endTime - startTime));
-        return shapes;
+        shapes.dispose();
+        return extractedText;
+    }
+
+    /**
+     * Adds extracted text to the this object for central storage.
+     *
+     * @param s text extract in one TJ or Tj operation from the content parser
+     */
+    public final void addExtractedText(Vector<StringBuffer> textObjects,
+                                       StringBuffer s) {
+
+        // check if the the vector is empty
+        if (textObjects.isEmpty()) {
+            // removed, as an empty vector that has insertElement called on
+            // it will produce an index out of found exception.
+            //textObjects.insertElementAt(s, textBlockIndex);
+            textObjects.add(s);
+        } else {
+            if (textBlockIndex < textObjects.size()) {
+                StringBuffer tmp = textObjects.elementAt(textBlockIndex);
+                tmp.append(s.toString());
+                textObjects.setElementAt(tmp, textBlockIndex);
+            } else {
+                textObjects.add(s);
+            }
+
+        }
     }
 
     /**
      * Parses Text found with in a BT block.
      *
-     * @param parser          parser containging BT tokens
-     * @param shapes          container of all shapes for the page content being parsed
-     * @param previousBTStart y offset of previous BT definition.
-     * @return y offset of the this BT definition.
+     * @param parser        parser containging BT tokens
+     * @param shapes        container of all shapes for the page content being parsed
+     * @param extractText   indicates if text extraction algorithms should be used.
+     * @param extractedText if text extraction is used this vector collects the
+     *                      textdata
      * @throws java.io.IOException end of content stream is found
      */
-    float parseText(Parser parser, Shapes shapes, double previousBTStart)
+    void parseText(Parser parser, Shapes shapes,
+                   boolean extractText, Vector<StringBuffer> extractedText)
             throws IOException {
         Object nextToken;
-        Stack<Object> stack = new Stack<Object>();
+        Stack stack = new Stack();
         inTextBlock = true;
         float shift = 0;
         // keeps track of previous text placement so that Compatibility and
@@ -994,12 +1016,6 @@ public class ContentParser {
         graphicState.getTextState().tmatrix = new AffineTransform();
         graphicState.getTextState().tlmatrix = new AffineTransform();
         graphicState.scale(1, -1);
-
-        // get reference to PageText.
-        PageText pageText = shapes.getPageText();
-        // previous Td, TD or Tm y coordinate value for text extraction
-        boolean isYstart = true;
-        float yBTStart = 0;
 
         // start parsing of the BT block
         nextToken = parser.getStreamObject();
@@ -1018,21 +1034,25 @@ public class ContentParser {
                     if (tjValue instanceof StringObject) {
                         stringObject = (StringObject) tjValue;
                         textState = graphicState.getTextState();
+
                         // apply text scaling
                         applyTextScaling(graphicState);
-                        // draw string will take care of text pageText construction
+
                         Point2D.Float d = (Point2D.Float) drawString(
                                 stringObject.getLiteralStringBuffer(
                                         textState.font.getSubTypeFormat(),
                                         textState.font.getFont()),
                                 advance,
-                                previousAdvance,
+                                previousAdvance, 0,
                                 graphicState.getTextState(),
-                                shapes);
+                                shapes, extractText, extractedText);
                         graphicState.translate(d.x, 0);
                         shift += d.x;
                         previousAdvance = 0;
                         advance.setLocation(0, 0);
+                    }
+                    if (extractText) {
+                        addExtractedText(extractedText, new StringBuffer(" "));
                     }
                 }
 
@@ -1054,26 +1074,14 @@ public class ContentParser {
 //                    collectTokenFrequency(PdfOps.Td_TOKEN);
                     float y = ((Number) stack.pop()).floatValue();
                     float x = ((Number) stack.pop()).floatValue();
-                    double oldY = graphicState.getCTM().getTranslateY();
                     graphicState.translate(-shift, 0);
                     shift = 0;
                     previousAdvance = 0;
                     advance.setLocation(0, 0);
                     graphicState.translate(x, -y);
-                    float newY = (float) graphicState.getCTM().getTranslateY();
-                    // capture x coord of BT y offset, tm, Td, TD.
-                    if (isYstart) {
-                        yBTStart = newY;
-                        isYstart = false;
-                        if (previousBTStart != yBTStart) {
-                            pageText.newLine();
-                        }
-                    }
-
-                    // ty will dictate the vertical shift, many pdf will use
-                    // ty=0 do just do a horizontal shift for layout.
-                    if (y != 0 && newY != oldY) {
-                        pageText.newLine();
+                    // add a new line for text extraction
+                    if (extractText) {
+                        addExtractedText(extractedText, new StringBuffer("\n"));
                     }
                 }
 
@@ -1095,38 +1103,15 @@ public class ContentParser {
                     float f2 = ((Number) stack.pop()).floatValue();
                     float f1 = ((Number) stack.pop()).floatValue();
                     AffineTransform af = new AffineTransform(textBlockBase);
-
-                    // grab old values.
-                    double oldTransY = graphicState.getCTM().getTranslateY();
-                    double oldScaleY = graphicState.getCTM().getScaleY();
-
-                    // apply the transform
                     graphicState.getTextState().tmatrix = new AffineTransform(f1, f2, f3, f4, f5, f6);
                     af.concatenate(graphicState.getTextState().tmatrix);
                     graphicState.set(af);
                     graphicState.scale(1, -1);
-
-                    // text extraction logic
-
-                    // capture x coord of BT y offset, tm, Td, TD.
-                    if (isYstart) {
-                        yBTStart = f6;
-                        isYstart = false;
-                        if (previousBTStart != yBTStart) {
-                            pageText.newLine();
-                        }
-                    }
-                    double newTransY = graphicState.getCTM().getTranslateY();
-                    double newScaleY = graphicState.getCTM().getScaleY();
-                    // f5 and f6 will dictate a horizontal or vertical shift
-                    // this information could be used to detect new lines
-
-                    if (oldTransY != newTransY) {
-                        pageText.newLine();
-                    } else if (Math.abs(oldScaleY) != Math.abs(newScaleY)) {
-                        pageText.newLine();
-                    }
-
+                    // add a new line for text extraction
+//                    if (extractText){
+//                        if (graphicState.getTextState().tmatrix.getTranslateY() != textBlockBase.getTranslateY() )
+//                        addExtractedText(extractedText, new StringBuffer("\n"));
+//                    }
                 }
 
                 // Font selection
@@ -1152,13 +1137,13 @@ public class ContentParser {
                         if (currentObject instanceof StringObject) {
                             stringObject = (StringObject) currentObject;
                             textState = graphicState.getTextState();
-                            // draw string takes care of PageText extraction
                             advance = (Point2D.Float) drawString(
                                     stringObject.getLiteralStringBuffer(
                                             textState.font.getSubTypeFormat(),
                                             textState.font.getFont()),
-                                    advance, previousAdvance,
-                                    graphicState.getTextState(), shapes);
+                                    advance, previousAdvance, lastTextAdvance,
+                                    graphicState.getTextState(), shapes,
+                                    extractText, extractedText);
                             // update the text advance
                             lastTextAdvance = advance.x;
                         } else if (currentObject instanceof Number) {
@@ -1166,8 +1151,20 @@ public class ContentParser {
                             advance.x -=
                                     f.floatValue() * graphicState.getTextState().currentfont.getSize()
                                             / 1000.0;
+                            // try and sense when a TJ offect will result in a space
+                            // pretty fuzzy logic, will refine over time.
+                            if (extractText) {
+                                float distance = advance.x - lastTextAdvance;
+                                if (distance > 0.01) {
+                                    addExtractedText(extractedText, new StringBuffer(" "));
+                                }
+                            }
                         }
                         previousAdvance = advance.x;
+                    }
+                    // add a space for text extraction
+                    if (extractText) {
+                        addExtractedText(extractedText, new StringBuffer(" "));
                     }
                 }
 
@@ -1183,22 +1180,9 @@ public class ContentParser {
                     advance.setLocation(0, 0);
                     graphicState.translate(x, -y);
                     graphicState.getTextState().leading = -y;
-
-                    // capture x coord of BT y offset, tm, Td, TD.
-                    if (isYstart) {
-                        yBTStart = y;
-                        isYstart = false;
+                    if (extractText) {
+                        addExtractedText(extractedText, new StringBuffer("\n"));
                     }
-                    // ty will dictate the vertical shift, many pdf will use
-                    // ty=0 do just do a horizontal shift for layout.
-                    if (y != 0f) {
-                        pageText.newLine();
-//                        pageText.newWord();
-                    }
-//                    if (y != 0f  && previousBTStart != yBTStart){
-//                        pageText.newLine();
-//                        pageText.newWord();
-//                    }
                 }
 
                 // Text leading
@@ -1212,7 +1196,7 @@ public class ContentParser {
                 else if (nextToken.equals(PdfOps.q_TOKEN)) {
                     graphicState = consume_q(graphicState);
                 }
-                // Restore Graphics State, should restore the entire graphics state
+                // Restore Graphics State, should restore teh entire graphics state
                 // to its former value by popping it from the stack
                 else if (nextToken.equals(PdfOps.Q_TOKEN)) {
                     graphicState = consume_Q(graphicState, shapes);
@@ -1232,8 +1216,9 @@ public class ContentParser {
                     previousAdvance = 0;
                     advance.setLocation(0, 0);
                     graphicState.translate(0, graphicState.getTextState().leading);
-                    // always indicates a new line
-                    pageText.newLine();
+                    if (extractText) {
+                        addExtractedText(extractedText, new StringBuffer("\n"));
+                    }
                 } else if (nextToken.equals(PdfOps.BDC_TOKEN)) {
 //                    collectTokenFrequency(PdfOps.BDC_TOKEN);
                     stack.pop();
@@ -1242,9 +1227,9 @@ public class ContentParser {
 //                    collectTokenFrequency(PdfOps.EMC_TOKEN);
                 }
 
-                // Sets the specified parameters in the graphics state.  The gs operand
+                // Sets the specifed parameters in the graphics state.  The gs operand
                 // points to a name resource which should be a an ExtGState object.
-                // The graphics state parameters in the ExtGState must be concatenated
+                // The graphics state paramaters in the ExtGState must be concatenated
                 // with the the current graphics state.
                 else if (nextToken.equals(PdfOps.gs_TOKEN)) {
                     consume_gs(graphicState, stack, resources);
@@ -1264,12 +1249,12 @@ public class ContentParser {
 
                 // Same as K, but for nonstroking operations.
                 else if (nextToken.equals(PdfOps.k_TOKEN)) { // Fill Color CMYK
-                    consume_k(graphicState, stack, library);
+                    consume_k(graphicState, stack, library, resources);
                 }
 
                 // Same as g but for none stroking operations
                 else if (nextToken.equals(PdfOps.g_TOKEN)) {
-                    consume_g(graphicState, stack, library);
+                    consume_g(graphicState, stack, library, resources);
                 }
 
                 // Sets the flatness tolerance in the graphics state, NOT SUPPORTED
@@ -1292,7 +1277,7 @@ public class ContentParser {
 
                 // Same as RG, but for nonstroking operations.
                 else if (nextToken.equals(PdfOps.rg_TOKEN)) { // Fill Color RGB
-                    consume_rg(graphicState, stack, library);
+                    consume_rg(graphicState, stack, library, resources);
                 }
 
                 // Sets the line dash pattern in the graphics state. A normal line
@@ -1316,7 +1301,7 @@ public class ContentParser {
                     consume_j(graphicState, stack, shapes);
                 }
 
-                // Same as CS, but for non-stroking operations.
+                // Same as CS, but for nonstroking operations.
                 else if (nextToken.equals(PdfOps.cs_TOKEN)) {
                     consume_cs(graphicState, stack, resources);
                 }
@@ -1347,7 +1332,7 @@ public class ContentParser {
                 // behavior of this operator is affected by the overprint mode
                 // (see Section 4.5.6, "Overprint Control").
                 else if (nextToken.equals(PdfOps.K_TOKEN)) { // Stroke Color CMYK
-                    consume_K(graphicState, stack, library);
+                    consume_K(graphicState, stack, library, resources);
                 }
 
                 // Set the stroking color space to DeviceGray (or the DefaultGray color
@@ -1355,7 +1340,7 @@ public class ContentParser {
                 // stroking operations. gray is a number between 0.0 (black)
                 // and 1.0 (white).
                 else if (nextToken.equals(PdfOps.G_TOKEN)) {
-                    consume_G(graphicState, stack, library);
+                    consume_G(graphicState, stack, library, resources);
                 }
 
                 // Set the stroking color space to DeviceRGB (or the DefaultRGB color
@@ -1363,7 +1348,7 @@ public class ContentParser {
                 // use for stroking operations. Each operand must be a number between
                 // 0.0 (minimum intensity) and 1.0 (maximum intensity).
                 else if (nextToken.equals(PdfOps.RG_TOKEN)) { // Stroke Color RGB
-                    consume_RG(graphicState, stack, library);
+                    consume_RG(graphicState, stack, library, resources);
                 } else if (nextToken.equals(PdfOps.CS_TOKEN)) {
                     consume_CS(graphicState, stack, resources);
                 }
@@ -1374,7 +1359,7 @@ public class ContentParser {
                     graphicState.getTextState().rmode = (int) ((Number) stack.pop()).floatValue();
                 }
 
-                // Horizontal scaling
+                // Horizontal scalling
                 else if (nextToken.equals(PdfOps.Tz_TOKEN)) {
 //                    collectTokenFrequency(PdfOps.Tz_TOKEN);
                     consume_Tz(graphicState, stack);
@@ -1417,12 +1402,13 @@ public class ContentParser {
                             stringObject.getLiteralStringBuffer(
                                     textState.font.getSubTypeFormat(),
                                     textState.font.getFont()),
-                            new Point2D.Float(0, 0), 0, graphicState.getTextState(),
-                            shapes);
+                            new Point2D.Float(0, 0), 0, 0, graphicState.getTextState(),
+                            shapes, extractText, extractedText);
                     graphicState.translate(d.x, 0);
                     shift += d.x;
-//                    pageText.newLine();
-//                    pageText.newWord();
+                    if (extractText) {
+                        addExtractedText(extractedText, new StringBuffer("\n"));
+                    }
                 }
                 /**
                  * Move to the next line and show a text string, using aw as the
@@ -1449,11 +1435,13 @@ public class ContentParser {
                             stringObject.getLiteralStringBuffer(
                                     textState.font.getSubTypeFormat(),
                                     textState.font.getFont()),
-                            new Point2D.Float(0, 0), 0, graphicState.getTextState(),
-                            shapes);
+                            new Point2D.Float(0, 0), 0, 0, graphicState.getTextState(),
+                            shapes, extractText, extractedText);
                     graphicState.translate(d.x, 0);
                     shift += d.x;
-//                    pageText.newLine();
+                    if (extractText) {
+                        addExtractedText(extractedText, new StringBuffer("\n"));
+                    }
                 }
 
 
@@ -1465,6 +1453,10 @@ public class ContentParser {
 
             nextToken = parser.getStreamObject();
         }
+        // add a cr when we get to the end of a text block
+        if (extractText) {
+            addExtractedText(extractedText, new StringBuffer("\n\n"));
+        }
 
         // get rid of the rest
         while (!stack.isEmpty()) {
@@ -1475,8 +1467,6 @@ public class ContentParser {
         }
         graphicState.set(textBlockBase);
         inTextBlock = false;
-
-        return yBTStart;
     }
 
     void parseInlineImage(Parser p, Shapes shapes) throws IOException {
@@ -1486,7 +1476,7 @@ public class ContentParser {
             // PColorSpace cs = null; // from old pdfgo never used
 
             Object tok;
-            Hashtable<Object, Object> iih = new Hashtable<Object, Object>();
+            Hashtable iih = new Hashtable();
             tok = p.getStreamObject();
             while (!tok.equals("ID")) {
                 if (tok.equals("BPC")) {
@@ -1519,7 +1509,7 @@ public class ContentParser {
             //   only a small part of a content stream, which is also
             //   filtered, and potentially concatenated with other
             //   content streams.
-            // Long story short: it's too hard to re-get from PDF file
+            // Long story short: it's too hard to reget from PDF file
             // Now, since non-inline-image streams can go back to the
             //   file, we have to fake it as coming from the file ...
             ByteArrayOutputStream buf = new ByteArrayOutputStream(4096);
@@ -1559,7 +1549,7 @@ public class ContentParser {
     }
 
     private static void consume_G(GraphicsState graphicState, Stack stack,
-                                  Library library) {
+                                  Library library, Resources resources) {
 //        collectTokenFrequency(PdfOps.G_TOKEN);
         float gray = ((Number) stack.pop()).floatValue();
         // Stroke Color Gray
@@ -1569,7 +1559,7 @@ public class ContentParser {
     }
 
     private static void consume_g(GraphicsState graphicState, Stack stack,
-                                  Library library) {
+                                  Library library, Resources resources) {
 //        collectTokenFrequency(PdfOps.g_TOKEN);
         float gray = ((Number) stack.pop()).floatValue();
         // Fill Color Gray
@@ -1579,7 +1569,7 @@ public class ContentParser {
     }
 
     private static void consume_RG(GraphicsState graphicState, Stack stack,
-                                   Library library) {
+                                   Library library, Resources resources) {
 //        collectTokenFrequency(PdfOps.RG_TOKEN);
         float b = ((Number) stack.pop()).floatValue();
         float gg = ((Number) stack.pop()).floatValue();
@@ -1594,7 +1584,7 @@ public class ContentParser {
     }
 
     private static void consume_rg(GraphicsState graphicState, Stack stack,
-                                   Library library) {
+                                   Library library, Resources resources) {
 //        collectTokenFrequency(PdfOps.rg_TOKEN);
         float b = ((Number) stack.pop()).floatValue();
         float gg = ((Number) stack.pop()).floatValue();
@@ -1609,7 +1599,7 @@ public class ContentParser {
     }
 
     private static void consume_K(GraphicsState graphicState, Stack stack,
-                                  Library library) {
+                                  Library library, Resources resources) {
 //        collectTokenFrequency(PdfOps.K_TOKEN);
         float k = ((Number) stack.pop()).floatValue();
         float y = ((Number) stack.pop()).floatValue();
@@ -1632,7 +1622,7 @@ public class ContentParser {
     }
 
     private static void consume_k(GraphicsState graphicState, Stack stack,
-                                  Library library) {
+                                  Library library, Resources resources) {
 //        collectTokenFrequency(PdfOps.k_TOKEN);
         float k = ((Number) stack.pop()).floatValue();
         float y = ((Number) stack.pop()).floatValue();
@@ -1800,7 +1790,7 @@ public class ContentParser {
                 }
             }
         } else if (o instanceof Number) {
-            // some PDFs encoding do not explicitly change the default colour
+            // some pdfs encoding do not explicitly change the default colour
             // space from the default DeviceGrey.  The following code checks
             // how many n values are available and if different then current
             // graphicState.fillColorSpace it is changed as needed
@@ -2052,11 +2042,12 @@ public class ContentParser {
      * <code>displayText</code> glyphs and respective, text state is added to
      * the shapes collection.
      *
-     * @param displayText     text that will be drawn to the screen
-     * @param advance         current advanceX of last drawn string
-     * @param previousAdvance last advance of where the string should be drawn
-     * @param textState       formating properties associated with displayText
-     * @param shapes          collection of all shapes for page content being parsed.
+     * @param displayText         text that will be drawn to the screen
+     * @param advance             current advanceX of last drawn string
+     * @param previousAdvance     last advance of where the string should be drawn
+     * @param previousTextAdvance last advance of the last drawn string
+     * @param textState           formating properties associated with displayText
+     * @param shapes              collection of all shapes for page content being parsed.
      * @return the modified advanceX value which can be used for the the next
      *         string that needs to be drawn
      */
@@ -2064,8 +2055,11 @@ public class ContentParser {
             StringBuffer displayText,
             Point2D advance,
             float previousAdvance,
+            float previousTextAdvance,
             TextState textState,
-            Shapes shapes) {
+            Shapes shapes,
+            boolean isExtractText,
+            Vector extractedTextVector) {
 
         // check to see if we are in font substitution mode, if we are
         // then we need to apply toUnicode mappings, to get the correct layout
@@ -2105,9 +2099,7 @@ public class ContentParser {
 
         // create a new sprite to hold the text objects
         TextSprite textSprites =
-                new TextSprite(currentFont,
-                        textLength,
-                        new AffineTransform(graphicState.getCTM()));
+                new TextSprite(currentFont, textLength);
 
         // glyph placement params
         float currentX, currentY;
@@ -2142,18 +2134,29 @@ public class ContentParser {
                 currentX = advanceX - (newAdvanceX / 2.0f);
                 currentY = advanceY + lasty;
             }
-            // check in Unicode cMap exists
-            boolean isToUnicode = textState.currentfont.getToUnicode() != null;
-            int charValue = isToUnicode ? textState.currentfont.getToUnicode()
-                    .toSelector(unmodifiedDisplayText.charAt(i)) : currentChar;
+            textSprites.addText(currentChar, currentX, currentY, newAdvanceX);
 
-            // get normalized from from text sprite
-            GlyphText glyphText = textSprites.addText(currentChar, (char) charValue,
-                    currentX, currentY, newAdvanceX);
-            shapes.getPageText().addGlyph(glyphText);
+            // add extract text.
+            if (isExtractText) {
+                // check in unicode cMap exists
+                boolean isToUnicode = textState.currentfont.getToUnicode() != null;
+                // check char value from the unicode mpa and if not we just use the character code. 
+                int charValue = isToUnicode ? textState.currentfont.getToUnicode()
+                        .toSelector(unmodifiedDisplayText.charAt(i)) : currentChar;
+                // add regular ascii
+                if (charValue <= 255) {
+                    addExtractedText(extractedTextVector,
+                            new StringBuffer(String.valueOf((char) charValue)));
+                }
+                // add Unicode
+                else {
+                    addExtractedText(extractedTextVector,
+                            new StringBuffer("\\U" + Integer.toHexString(charValue)));
+                }
+            }
 
         }
-        // append the finally offset of the with of the character
+        // append the finaly offest of the with of the character
         advanceX += lastx;
         advanceY += lasty;
 
@@ -2193,7 +2196,7 @@ public class ContentParser {
             case TextState.MODE_INVISIBLE:
                 // do nothing
                 break;
-            // Fill text and add to path for clipping: 4
+            // Fill text anda dd to path for clipping: 4
             case TextState.MODE_FILL_ADD:
                 drawModeFill(textSprites, shapes, rmode);
                 break;
@@ -2234,7 +2237,6 @@ public class ContentParser {
      *
      * @param textSprites text to add to shapes stack
      * @param shapes      shapes stack
-     * @param textState   text state used to build new stroke
      * @param rmode       write mode
      */
     private void drawModeStroke(TextSprite textSprites, TextState textState,
@@ -2264,7 +2266,6 @@ public class ContentParser {
      * specifed rmode.
      *
      * @param textSprites text to add to shapes stack
-     * @param textState   text state used to build new stroke
      * @param shapes      shapes stack
      * @param rmode       write mode
      */
@@ -2280,7 +2281,7 @@ public class ContentParser {
         float lineWidth = graphicState.getLineWidth();
         lineWidth /= textState.tmatrix.getScaleX();
         graphicState.setLineWidth(lineWidth);
-        // update the stroke and add the text to shapes
+        // update the stroke and add the text to chapes
         setStroke(shapes, graphicState);
         shapes.add(graphicState.getFillColor());
         shapes.add(textSprites);
@@ -2313,7 +2314,7 @@ public class ContentParser {
             // Start processing tiling pattern
             if (pattern != null &&
                     pattern.getPatternType() == Pattern.PATTERN_TYPE_TILING) {
-                // todo finish tiling work:
+                // todo:
                 // currently no support for tiling, but we can still try
                 // and fill using the specified uncoloured value.
                 TilingPattern tilingPattern = (TilingPattern) pattern;
@@ -2359,7 +2360,7 @@ public class ContentParser {
      */
     private float commonOverPrintAlpha(float alpha) {
         // if alpha is already present we reduce it and we minimize
-        // it if it is already lower then our over paint.  This an approximation
+        // it if it is already lower then our overpaint.  This an approximation
         // only for improved screen representation.
         if (alpha != 1.0f && alpha > OVERPAINT_ALPHA) {
             alpha -= OVERPAINT_ALPHA;
@@ -2438,8 +2439,7 @@ public class ContentParser {
      * graphicState.lineJoin - line join type
      * graphicState.miterLimit -  miter limit
      *
-     * @param shapes       current Shapes object for the page being parsed
-     * @param graphicState graphic state used to build this stroke instance.
+     * @param shapes current Shapes object for the page being parsed
      */
     static void setStroke(Shapes shapes, GraphicsState graphicState) {
         shapes.add(new BasicStroke(graphicState.getLineWidth(),

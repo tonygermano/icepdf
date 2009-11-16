@@ -239,4 +239,3 @@ class ToolbarLayout implements LayoutManager {
     public void addLayoutComponent(String name, Component comp) { }
     public void removeLayoutComponent(Component comp) { }
 }
-

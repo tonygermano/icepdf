@@ -36,8 +36,6 @@ import org.icepdf.core.pobjects.Document;
 import org.icepdf.core.views.swing.AbstractPageViewComponent;
 
 import java.awt.*;
-import java.lang.ref.WeakReference;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -61,14 +59,6 @@ public interface DocumentViewModel {
      */
     public int DISPLAY_TOOL_ZOOM_OUT = 3;
     /**
-     * Display tool constant for adding a text selection tool.
-     */
-    public int DISPLAY_TOOL_TEXT_SELECTION = 4;
-    /**
-     * Display tool constant for adding a text selection tool.
-     */
-    public int DISPLAY_TOOL_SELECTION = 5;
-    /**
      * Display tool constant for setting no tools
      */
     public int DISPLAY_TOOL_NONE = 8;
@@ -84,41 +74,6 @@ public interface DocumentViewModel {
      */
     public Document getDocument();
 
-    /**
-     * Gets a list of doucment pages that have selected text elements. The
-     * pages are referenced so that they will be removed automatically if
-     * the memory manage needs to dispose of a page.
-     *
-     * @return list Weakly referenced pages
-     */
-    public ArrayList<WeakReference<AbstractPageViewComponent>> getSelectedPageText();
-
-    /**
-     * Adds the specified page to the list of selected pages.
-     *
-     * @param pageViewComponent pageview component to add to list.
-     */
-    public void addSelectedPageText(AbstractPageViewComponent pageViewComponent);
-
-
-    /**
-     * Returns true if all text in the document should be in a selected state.
-     *
-     * @return true if document is in select all text text state, false otherwise.
-     */
-    public boolean isSelectAll();
-
-    /**
-     * Sets the selected all text state.
-     *
-     * @param selectAll true to select all text, false otherwise.
-     */
-    public void setSelectAll(boolean selectAll);
-
-    /**
-     * Clears all pages in a selected state.
-     */
-    public void clearSelectedPageText();
 
     public void executePageInitialization(Runnable runnable) throws InterruptedException;
 
@@ -216,18 +171,4 @@ public interface DocumentViewModel {
      * Free resources associated with this model.
      */
     public void dispose();
-
-    /**
-     * Sets the page boundtry used to paint a page.
-     *
-     * @param pageBoundary page bounds
-     */
-    public void setPageBoundary(final int pageBoundary);
-
-    /**
-     * Gets the page boundry used to paint document pages.
-     *
-     * @return page boundary type as defined in the class Page.
-     */
-    public int getPageBoundary();
 }

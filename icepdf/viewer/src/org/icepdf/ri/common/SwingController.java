@@ -36,21 +36,21 @@ import org.icepdf.core.Controller;
 import org.icepdf.core.exceptions.PDFException;
 import org.icepdf.core.exceptions.PDFSecurityException;
 import org.icepdf.core.pobjects.*;
+import org.icepdf.core.pobjects.Destination;
+import org.icepdf.core.pobjects.fonts.FontFactory;
 import org.icepdf.core.pobjects.actions.Action;
 import org.icepdf.core.pobjects.actions.GoToAction;
 import org.icepdf.core.pobjects.actions.URIAction;
-import org.icepdf.core.pobjects.fonts.FontFactory;
 import org.icepdf.core.pobjects.security.Permissions;
-import org.icepdf.core.search.DocumentSearchController;
-import org.icepdf.core.util.Library;
-import org.icepdf.core.util.PropertyConstants;
-import org.icepdf.core.views.DocumentView;
-import org.icepdf.ri.common.search.DocumentSearchControllerImpl;
 import org.icepdf.ri.common.views.DocumentViewControllerImpl;
 import org.icepdf.ri.common.views.DocumentViewModelImpl;
 import org.icepdf.ri.util.*;
+import org.icepdf.core.util.Library;
+import org.icepdf.core.util.PropertyConstants;
+import org.icepdf.core.views.DocumentView;
 
 import javax.swing.*;
+import javax.swing.Timer;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultTreeModel;
@@ -60,7 +60,6 @@ import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
-import java.awt.datatransfer.StringSelection;
 import java.awt.dnd.*;
 import java.awt.event.*;
 import java.beans.PropertyChangeEvent;
@@ -70,12 +69,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.MessageFormat;
 import java.text.NumberFormat;
-import java.util.Hashtable;
+import java.util.*;
 import java.util.List;
-import java.util.Properties;
-import java.util.ResourceBundle;
-import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * SwingController is the meat of a PDF viewing application. It is the Controller
@@ -113,7 +110,6 @@ public class SwingController
 
     public static final int CURSOR_DEFAULT = 8;
 
-    private static final int MAX_SELECT_ALL_PAGE_COUNT = 250;
 
     private JMenuItem openFileMenuItem;
     private JMenuItem openURLMenuItem;
@@ -126,10 +122,6 @@ public class SwingController
     private JMenuItem printSetupMenuItem;
     private JMenuItem printMenuItem;
     private JMenuItem exitMenuItem;
-
-    private JMenuItem copyMenuItem;
-    private JMenuItem selectAllMenuItem;
-    private JMenuItem deselectAllMenuItem;
 
     private JMenuItem fitActualSizeMenuItem;
     private JMenuItem fitPageMenuItem;
@@ -186,8 +178,6 @@ public class SwingController
     private JButton rotateRightButton;
 
     private JToggleButton panToolButton;
-    private JToggleButton textSelectToolButton;
-    private JToggleButton selectToolButton;
     private JToggleButton zoomInToolButton;
     private JToggleButton zoomOutToolButton;
 
@@ -211,17 +201,9 @@ public class SwingController
 
 
     private WindowManagementCallback windowManagementCallback;
-    // simple model for swing controller, mainly printer and  file loading state.
     private ViewModel viewModel;
 
-    // subcontroller for document view or document page views.
-    private DocumentViewControllerImpl documentViewController;
-
-    // subcontroller for document text searching.
-    private DocumentSearchController documentSearchController;
-
-    // todo subcontroller for document annotations creation.
-
+    private DocumentViewControllerImpl documentDocumentViewController;
 
     private Document document;
 
@@ -241,13 +223,10 @@ public class SwingController
 
     public SwingController(ResourceBundle messageBundle) {
         viewModel = new ViewModel();
-        // page view controller
-        documentViewController = new DocumentViewControllerImpl(this);
-        // document search controller.
-        documentSearchController = new DocumentSearchControllerImpl(this);
+        documentDocumentViewController = new DocumentViewControllerImpl(this);
 
         // register Property change listeners, for zoom, rotation, current page changes
-        documentViewController.addPropertyChangeListener(this);
+        documentDocumentViewController.addPropertyChangeListener(this);
 
         // load the resource bundle using the default local
         if (messageBundle != null) {
@@ -264,16 +243,7 @@ public class SwingController
      * @return page view controller.
      */
     public org.icepdf.core.views.DocumentViewController getDocumentViewController() {
-        return documentViewController;
-    }
-
-    /**
-     * Gets controller responsible for the document text searches.
-     *
-     * @return page view controller.
-     */
-    public DocumentSearchController getDocumentSearchController() {
-        return documentSearchController;
+        return documentDocumentViewController;
     }
 
     /**
@@ -393,30 +363,6 @@ public class SwingController
      */
     public void setExitMenuItem(JMenuItem mi) {
         exitMenuItem = mi;
-        mi.addActionListener(this);
-    }
-
-    /**
-     * Called by SwingViewerBuilder, so that SwingController can setup event handling
-     */
-    public void setCopyMenuItem(JMenuItem mi) {
-        copyMenuItem = mi;
-        mi.addActionListener(this);
-    }
-
-    /**
-     * Called by SwingViewerBuilder, so that SwingController can setup event handling
-     */
-    public void setSelectAllMenuItem(JMenuItem mi) {
-        selectAllMenuItem = mi;
-        mi.addActionListener(this);
-    }
-
-    /**
-     * Called by SwingViewerBuilder, so that SwingController can setup event handling
-     */
-    public void setDselectAllMenuItem(JMenuItem mi) {
-        deselectAllMenuItem = mi;
         mi.addActionListener(this);
     }
 
@@ -679,7 +625,7 @@ public class SwingController
      */
     public void setZoomComboBox(JComboBox zcb, float[] zl) {
         zoomComboBox = zcb;
-        documentViewController.setZoomLevels(zl);
+        documentDocumentViewController.setZoomLevels(zl);
         zoomComboBox.setSelectedItem(NumberFormat.getPercentInstance().format(1.0));
         zoomComboBox.addItemListener(this);
     }
@@ -759,22 +705,6 @@ public class SwingController
     /**
      * Called by SwingViewerBuilder, so that SwingController can setup event handling
      */
-    public void setTextSelectToolButton(JToggleButton btn) {
-        textSelectToolButton = btn;
-        btn.addItemListener(this);
-    }
-
-    /**
-     * Called by SwingViewerBuilder, so that SwingController can setup event handling
-     */
-    public void setSelectToolButton(JToggleButton btn) {
-        selectToolButton = btn;
-        btn.addItemListener(this);
-    }
-
-    /**
-     * Called by SwingViewerBuilder, so that SwingController can setup event handling
-     */
     public void setZoomOutToolButton(JToggleButton btn) {
         zoomOutToolButton = btn;
         btn.addItemListener(this);
@@ -816,8 +746,8 @@ public class SwingController
      */
     public void setIsEmbeddedComponent(boolean embeddableComponent) {
         if (embeddableComponent) {
-            documentViewController.setViewKeyListener(this);
-            documentViewController.getViewContainer().addKeyListener(this);
+            documentDocumentViewController.setViewKeyListener(this);
+            documentDocumentViewController.getViewContainer().addKeyListener(this);
         }
     }
 
@@ -885,10 +815,6 @@ public class SwingController
         setEnabled(printSetupMenuItem, opened && canPrint);
         setEnabled(printMenuItem, opened && canPrint);
 
-        setEnabled(copyMenuItem, opened && canExtract);
-        setEnabled(selectAllMenuItem, opened && canExtract);
-        setEnabled(deselectAllMenuItem, opened && canExtract);
-
         setEnabled(fitActualSizeMenuItem, opened);
         setEnabled(fitPageMenuItem, opened);
         setEnabled(fitWidthMenuItem, opened);
@@ -951,8 +877,6 @@ public class SwingController
         setEnabled(panToolButton, opened);
         setEnabled(zoomInToolButton, opened);
         setEnabled(zoomOutToolButton, opened);
-        setEnabled(textSelectToolButton, opened);
-        setEnabled(selectToolButton, opened);
         setEnabled(fontEngineButton, opened);
         setEnabled(facingPageViewContinuousButton, opened);
         setEnabled(singlePageViewContinuousButton, opened);
@@ -971,7 +895,7 @@ public class SwingController
         boolean opened = document != null;
         int nPages = (getPageTree() != null) ? getPageTree().getNumberOfPages() : 0;
         int currentPage = isCurrentPage() ?
-                documentViewController.getCurrentPageDisplayValue() : 0;
+                documentDocumentViewController.getCurrentPageDisplayValue() : 0;
 
         setEnabled(firstPageMenuItem, opened && currentPage != 1);
         setEnabled(previousPageMenuItem, opened && currentPage != 1);
@@ -1022,7 +946,7 @@ public class SwingController
         if (reflectingZoomInZoomComboBox)
             return;
         final int selIndex = zoomComboBox.getSelectedIndex();
-        float[] zoomLevels = documentViewController.getZoomLevels();
+        float[] zoomLevels = documentDocumentViewController.getZoomLevels();
         if (selIndex >= 0 && selIndex < zoomLevels.length) {
             float zoom = 1.0f;
             try {
@@ -1030,7 +954,7 @@ public class SwingController
             } catch (IndexOutOfBoundsException ex) {
                 logger.log(Level.FINE, "Error apply zoom levels");
             } finally {
-                if (zoom != documentViewController.getZoom()) {
+                if (zoom != documentDocumentViewController.getZoom()) {
                     setZoom(zoom);
                 }
             }
@@ -1044,7 +968,7 @@ public class SwingController
                     str = str.trim();
                     float zoom = Float.parseFloat(str);
                     zoom /= 100.0f;
-                    if (zoom != documentViewController.getZoom()) {
+                    if (zoom != documentDocumentViewController.getZoom()) {
                         setZoom(zoom);
                     }
                     success = true;
@@ -1066,10 +990,10 @@ public class SwingController
         if (document == null)
             return;
         int index = -1;
-        final float zoom = documentViewController.getZoom();
+        final float zoom = documentDocumentViewController.getZoom();
         final float belowZoom = zoom * 0.99f;
         final float aboveZoom = zoom * 1.01f;
-        float[] zoomLevels = documentViewController.getZoomLevels();
+        float[] zoomLevels = documentDocumentViewController.getZoomLevels();
         if (zoomLevels != null) {
             for (int i = 0; i < zoomLevels.length; i++) {
                 final float curr = zoomLevels[i];
@@ -1122,7 +1046,7 @@ public class SwingController
      * @see #setDisplayTool
      */
     public int getDocumentViewToolMode() {
-        return documentViewController.getToolMode();
+        return documentDocumentViewController.getToolMode();
     }
 
     /**
@@ -1151,50 +1075,37 @@ public class SwingController
         boolean actualToolMayHaveChanged = false;
         if (argToolName == DocumentViewModelImpl.DISPLAY_TOOL_PAN) {
             actualToolMayHaveChanged =
-                    documentViewController.setToolMode(DocumentViewModelImpl.DISPLAY_TOOL_PAN);
-            documentViewController.setViewCursor(org.icepdf.core.views.DocumentViewController.CURSOR_HAND_OPEN);
-            setCursorOnComponents(org.icepdf.core.views.DocumentViewController.CURSOR_DEFAULT);
-        } else if (argToolName == DocumentViewModelImpl.DISPLAY_TOOL_TEXT_SELECTION) {
-            actualToolMayHaveChanged =
-                    documentViewController.setToolMode(DocumentViewModelImpl.DISPLAY_TOOL_TEXT_SELECTION);
-            documentViewController.setViewCursor(org.icepdf.core.views.DocumentViewController.CURSOR_SELECT);
-            setCursorOnComponents(org.icepdf.core.views.DocumentViewController.CURSOR_DEFAULT);
-        }  else if (argToolName == DocumentViewModelImpl.DISPLAY_TOOL_SELECTION) {
-            actualToolMayHaveChanged =
-                    documentViewController.setToolMode(DocumentViewModelImpl.DISPLAY_TOOL_SELECTION);
-            documentViewController.setViewCursor(org.icepdf.core.views.DocumentViewController.CURSOR_SELECT);
+                    documentDocumentViewController.setToolMode(DocumentViewModelImpl.DISPLAY_TOOL_PAN);
+            documentDocumentViewController.setViewCursor(org.icepdf.core.views.DocumentViewController.CURSOR_HAND_OPEN);
             setCursorOnComponents(org.icepdf.core.views.DocumentViewController.CURSOR_DEFAULT);
         } else if (argToolName == DocumentViewModelImpl.DISPLAY_TOOL_ZOOM_IN) {
             actualToolMayHaveChanged =
-                    documentViewController.setToolMode(
+                    documentDocumentViewController.setToolMode(
                             DocumentViewModelImpl.DISPLAY_TOOL_ZOOM_IN);
-            documentViewController.setViewCursor(org.icepdf.core.views.DocumentViewController.CURSOR_ZOOM_IN);
+            documentDocumentViewController.setViewCursor(org.icepdf.core.views.DocumentViewController.CURSOR_ZOOM_IN);
             setCursorOnComponents(org.icepdf.core.views.DocumentViewController.CURSOR_DEFAULT);
         } else if (argToolName == DocumentViewModelImpl.DISPLAY_TOOL_ZOOM_OUT) {
             actualToolMayHaveChanged =
-                    documentViewController.setToolMode(
+                    documentDocumentViewController.setToolMode(
                             DocumentViewModelImpl.DISPLAY_TOOL_ZOOM_OUT);
-            documentViewController.setViewCursor(org.icepdf.core.views.DocumentViewController.CURSOR_ZOOM_OUT);
+            documentDocumentViewController.setViewCursor(org.icepdf.core.views.DocumentViewController.CURSOR_ZOOM_OUT);
             setCursorOnComponents(org.icepdf.core.views.DocumentViewController.CURSOR_DEFAULT);
         } else if (argToolName == DocumentViewModelImpl.DISPLAY_TOOL_WAIT) {
             setCursorOnComponents(org.icepdf.core.views.DocumentViewController.CURSOR_WAIT);
         } else if (argToolName == DocumentViewModelImpl.DISPLAY_TOOL_NONE) {
             setCursorOnComponents(org.icepdf.core.views.DocumentViewController.CURSOR_DEFAULT);
         }
-        if (actualToolMayHaveChanged){
+        if (actualToolMayHaveChanged)
             reflectToolInToolButtons();
-        }
-        // repaint the page views. 
-        documentViewController.getViewContainer().repaint();
     }
 
 
     private void setCursorOnComponents(final int cursorType) {
-        Cursor cursor = documentViewController.getViewCursor(cursorType);
+        Cursor cursor = documentDocumentViewController.getViewCursor(cursorType);
         if (utilityTabbedPane != null)
             utilityTabbedPane.setCursor(cursor);
-//        if( documentViewController != null ) {
-//            documentViewController.setViewCursor( cursorType );
+//        if( documentDocumentViewController != null ) {
+//            documentDocumentViewController.setViewCursor( cursorType );
 //        }
         if (viewer != null)
             viewer.setCursor(cursor);
@@ -1206,23 +1117,15 @@ public class SwingController
      */
     private void reflectToolInToolButtons() {
         reflectSelectionInButton(panToolButton,
-                documentViewController.isToolModeSelected(
+                documentDocumentViewController.isToolModeSelected(
                         DocumentViewModelImpl.DISPLAY_TOOL_PAN
                 ));
-        reflectSelectionInButton(textSelectToolButton,
-                documentViewController.isToolModeSelected(
-                        DocumentViewModelImpl.DISPLAY_TOOL_TEXT_SELECTION
-                ));
-        reflectSelectionInButton(selectToolButton,
-                documentViewController.isToolModeSelected(
-                        DocumentViewModelImpl.DISPLAY_TOOL_SELECTION
-                ));
         reflectSelectionInButton(zoomInToolButton,
-                documentViewController.isToolModeSelected(
+                documentDocumentViewController.isToolModeSelected(
                         DocumentViewModelImpl.DISPLAY_TOOL_ZOOM_IN
                 ));
         reflectSelectionInButton(zoomOutToolButton,
-                documentViewController.isToolModeSelected(
+                documentDocumentViewController.isToolModeSelected(
                         DocumentViewModelImpl.DISPLAY_TOOL_ZOOM_OUT
                 ));
     }
@@ -1344,16 +1247,6 @@ public class SwingController
         }
     }
 
-    public void openFileInSomeViewer(String filename) {
-        try {
-            File pdfFile = new File( filename);
-            openFileInSomeViewer(pdfFile);
-        } catch (Exception e) {
-
-        }
-    }
-
-
     /**
      * Open a file specified by the given path name.
      *
@@ -1414,7 +1307,7 @@ public class SwingController
                 setDisplayTool(DocumentViewModelImpl.DISPLAY_TOOL_PAN);
             }
         }
-        documentViewController.requestViewFocusInWindow();
+        documentDocumentViewController.requestViewFocusInWindow();
     }
 
     /**
@@ -1536,7 +1429,7 @@ public class SwingController
                 setDisplayTool(DocumentViewModelImpl.DISPLAY_TOOL_PAN);
             }
         }
-        documentViewController.requestViewFocusInWindow();
+        documentDocumentViewController.requestViewFocusInWindow();
     }
 
     /**
@@ -1609,7 +1502,7 @@ public class SwingController
                 setDisplayTool(DocumentViewModelImpl.DISPLAY_TOOL_PAN);
             }
         }
-        documentViewController.requestViewFocusInWindow();
+        documentDocumentViewController.requestViewFocusInWindow();
     }
 
     /**
@@ -1679,7 +1572,7 @@ public class SwingController
                 setDisplayTool(DocumentViewModelImpl.DISPLAY_TOOL_PAN);
             }
         }
-        documentViewController.requestViewFocusInWindow();
+        documentDocumentViewController.requestViewFocusInWindow();
     }
 
     private void commonNewDocumentHandling(String fileDescription) {
@@ -1713,7 +1606,7 @@ public class SwingController
             } else if (pageLayout.equalsIgnoreCase("TwoPageRight")) {
                 viewType = DocumentViewControllerImpl.TWO_PAGE_RIGHT_VIEW;
             }
-            documentViewController.setViewType(viewType);
+            documentDocumentViewController.setViewType(viewType);
         }
 
         // Page mode by default is UseNone, where other options are, UseOutlines,
@@ -1725,7 +1618,7 @@ public class SwingController
         }
 
         // initiates the view layout model, page coordinates and preferred size
-        documentViewController.setDocument(document);
+        documentDocumentViewController.setDocument(document);
 
         // Only show utility panel if there is an outline
         OutlineItem item = null;
@@ -1787,10 +1680,7 @@ public class SwingController
             searchPanel.setDocument(null);
 
         // set the default cursor.  
-        documentViewController.closeDocument();
-
-        // clear search controller caches.
-        documentSearchController.dispose();
+        documentDocumentViewController.closeDocument();
 
         // free the document
         if (document != null) {
@@ -1921,8 +1811,6 @@ public class SwingController
         panToolButton = null;
         zoomInToolButton = null;
         zoomOutToolButton = null;
-        textSelectToolButton = null;
-        selectToolButton = null;
 
         fontEngineButton = null;
 
@@ -1943,23 +1831,21 @@ public class SwingController
         }
 
         // Clean up the document view controller
-        if (documentViewController != null) {
-            documentViewController.dispose();
-        }
-
-        // clean up search controller
-        if (documentSearchController != null) {
-            documentSearchController.dispose();
+        if (documentDocumentViewController != null) {
+            documentDocumentViewController.dispose();
+            documentDocumentViewController = null;
         }
 
         if (utilityAndDocumentSplitPane != null) {
             utilityAndDocumentSplitPane.removeAll();
+            utilityAndDocumentSplitPane = null;
         }
 
         statusLabel = null;
         if (viewer != null) {
             viewer.removeWindowListener(this);
             viewer.removeAll();
+            viewer = null;
         }
         viewModel = null;
 
@@ -2164,7 +2050,7 @@ public class SwingController
             if (extension != null) {
                 if (extension.equals(FileExtensionUtils.svg)) {
                     final Document doc = document;
-                    final int pageIndex = documentViewController.getCurrentPageIndex();
+                    final int pageIndex = documentDocumentViewController.getCurrentPageIndex();
 
                     if (statusLabel != null) {
                         Object[] messageArguments = new Object[]{
@@ -2291,19 +2177,11 @@ public class SwingController
      * alternate About dialog
      */
     public void showAboutDialog() {
-        // Added to swing thread to ensure it shows up on top of main
-        // browser window
-        Runnable doSwingWork = new Runnable() {
-            public void run() {
-                AboutDialog ad = new AboutDialog(viewer, messageBundle, true,
-                    AboutDialog.OK, AboutDialog.NO_TIMER);
-                ad.setVisible(true);
-            }
-        };
-        SwingUtilities.invokeLater(doSwingWork);
+        AboutDialog ad = new AboutDialog(viewer, messageBundle, true,
+                AboutDialog.OK, AboutDialog.NO_TIMER);
+        ad.setVisible(true);
     }
 
-    
     /**
      * Show the permissions set in the PDF file's Document, as relates to encryption,
      * altering, or extracting information from, the Document
@@ -2332,8 +2210,8 @@ public class SwingController
      */
     public void showPrintSetupDialog() {
         PrintHelper printHelper = viewModel.getPrintHelper();
-        if (printHelper == null) {
-            printHelper = new PrintHelper(documentViewController, getPageTree());
+        if (printHelper == null){
+            printHelper = new PrintHelper(documentDocumentViewController, getPageTree());
             viewModel.setPrintHelper(printHelper);
         }
         viewModel.getPrintHelper().showPrintSetupDialog();
@@ -2378,8 +2256,8 @@ public class SwingController
         }
         // create a new print helper
         PrintHelper printHelper = viewModel.getPrintHelper();
-        if (printHelper == null) {
-            printHelper = new PrintHelper(documentViewController, getPageTree());
+        if (printHelper == null){
+            printHelper = new PrintHelper(documentDocumentViewController, getPageTree());
             viewModel.setPrintHelper(printHelper);
         }
 
@@ -2390,7 +2268,7 @@ public class SwingController
                 1,           // default number of copies.
                 true,        // shrink to printable area
                 withDialog  // show print dialogl
-        );
+                );
         // if user cancelled the print job from the dialog, don't start printing
         // in the background.
         if (!canPrint) {
@@ -2530,7 +2408,7 @@ public class SwingController
             // set hour glass
             setDisplayTool(DocumentViewModelImpl.DISPLAY_TOOL_WAIT);
             // let the document view controller resolve the destination
-            documentViewController.setDestinationTarget(dest);
+            documentDocumentViewController.setDestinationTarget(dest);
         }
         finally {
             // set the icon back to the pointer
@@ -2556,7 +2434,7 @@ public class SwingController
     public void zoomIn() {
 
         // zoom in the view
-        documentViewController.setZoomIn();
+        documentDocumentViewController.setZoomIn();
 
 //        doCommonZoomUIUpdates();
     }
@@ -2565,7 +2443,7 @@ public class SwingController
      * Decreases the current page visualization zoom factor by 20%.
      */
     public void zoomOut() {
-        documentViewController.setZoomOut();
+        documentDocumentViewController.setZoomOut();
 //        doCommonZoomUIUpdates();
     }
 
@@ -2575,7 +2453,7 @@ public class SwingController
      * @param zoom
      */
     public void setZoom(float zoom) {
-        documentViewController.setZoom(zoom);
+        documentDocumentViewController.setZoom(zoom);
 //        doCommonZoomUIUpdates();
     }
 
@@ -2585,7 +2463,7 @@ public class SwingController
         if (!becauseOfValidFitMode)
             setPageFitMode(org.icepdf.core.views.DocumentViewController.PAGE_FIT_NONE, false);
         // assign focus to document view
-        documentViewController.requestViewFocusInWindow();
+        documentDocumentViewController.requestViewFocusInWindow();
     }
 
     /**
@@ -2597,7 +2475,7 @@ public class SwingController
         PageTree pageTree = getPageTree();
         if (pageTree == null)
             return false;
-        Page page = pageTree.getPage(documentViewController.getCurrentPageIndex(), this);
+        Page page = pageTree.getPage(documentDocumentViewController.getCurrentPageIndex(), this);
         boolean isCurrentPage = page != null;
         pageTree.releasePage(page, this);
         return isCurrentPage;
@@ -2624,7 +2502,7 @@ public class SwingController
     public void showPage(int nPage) {
         if (nPage >= 0 && nPage < getPageTree().getNumberOfPages()) {
             releaseOldPage();
-            documentViewController.setCurrentPageIndex(nPage);
+            documentDocumentViewController.setCurrentPageIndex(nPage);
             updateDocumentView();
         }
     }
@@ -2639,7 +2517,7 @@ public class SwingController
      * @see org.icepdf.ri.common.views.DocumentViewControllerImpl#setCurrentPageIndex
      */
     public void goToDeltaPage(int delta) {
-        int currPage = documentViewController.getCurrentPageIndex();
+        int currPage = documentDocumentViewController.getCurrentPageIndex();
         int nPage = currPage + delta;
         int totalPages = getPageTree().getNumberOfPages();
         if (totalPages == 0)
@@ -2650,7 +2528,7 @@ public class SwingController
             nPage = 0;
         if (nPage != currPage) {
             releaseOldPage();
-            documentViewController.setCurrentPageIndex(nPage);
+            documentDocumentViewController.setCurrentPageIndex(nPage);
             updateDocumentView();
         }
     }
@@ -2658,7 +2536,7 @@ public class SwingController
     private void releaseOldPage() {
         PageTree pages = getPageTree();
         if (pages != null)
-            pages.releasePage(documentViewController.getCurrentPageIndex(), this);
+            pages.releasePage(documentDocumentViewController.getCurrentPageIndex(), this);
     }
 
     public void updateDocumentView() {
@@ -2675,7 +2553,7 @@ public class SwingController
             PageTree pageTree = getPageTree();
 
             if (currentPageNumberTextField != null)
-                currentPageNumberTextField.setText(Integer.toString(documentViewController.getCurrentPageDisplayValue()));
+                currentPageNumberTextField.setText(Integer.toString(documentDocumentViewController.getCurrentPageDisplayValue()));
             if (numberOfPagesLabel != null) {
 
                 if (pageTree != null) {
@@ -2690,13 +2568,13 @@ public class SwingController
             }
 
             // grab focus for keyboard events
-            documentViewController.requestViewFocusInWindow();
+            documentDocumentViewController.requestViewFocusInWindow();
 
             if (statusLabel != null) {
                 if (pageTree != null) {
                     // progress bar for printing
                     Object[] messageArguments = new Object[]{
-                            String.valueOf(documentViewController.getCurrentPageDisplayValue()),
+                            String.valueOf(documentDocumentViewController.getCurrentPageDisplayValue()),
                             String.valueOf(pageTree.getNumberOfPages())
                     };
                     MessageFormat formatter = new MessageFormat(
@@ -2718,11 +2596,11 @@ public class SwingController
      * direction.
      */
     public void rotateLeft() {
-        documentViewController.setRotateLeft();
+        documentDocumentViewController.setRotateLeft();
         // grab focus for keyboard events
-        documentViewController.requestViewFocusInWindow();
+        documentDocumentViewController.requestViewFocusInWindow();
         // rest fit page mode, if any
-        setPageFitMode(documentViewController.getFitMode(), true);
+        setPageFitMode(documentDocumentViewController.getFitMode(), true);
     }
 
     /**
@@ -2730,20 +2608,20 @@ public class SwingController
      * direction.
      */
     public void rotateRight() {
-        documentViewController.setRotateRight();
+        documentDocumentViewController.setRotateRight();
         // grab focus for keyboard events
-        documentViewController.requestViewFocusInWindow();
+        documentDocumentViewController.requestViewFocusInWindow();
         // rest fit page mode, if any
-        setPageFitMode(documentViewController.getFitMode(), true);
+        setPageFitMode(documentDocumentViewController.getFitMode(), true);
     }
 
 
     public boolean isDocumentFitMode(final int fitMode) {
-        return (documentViewController.getFitMode() == fitMode);
+        return (documentDocumentViewController.getFitMode() == fitMode);
     }
 
     public boolean isDocumentViewMode(final int viewMode) {
-        return (documentViewController.getViewMode() == viewMode);
+        return (documentDocumentViewController.getViewMode() == viewMode);
     }
 
     public void setPageViewSinglePageConButton(JToggleButton btn) {
@@ -2771,11 +2649,11 @@ public class SwingController
      */
     public void setPageFitMode(final int fitMode, boolean refresh) {
 
-        if (!refresh && documentViewController.getFitMode() == fitMode) {
+        if (!refresh && documentDocumentViewController.getFitMode() == fitMode) {
             return;
         }
 
-        documentViewController.setFitMode(fitMode);
+        documentDocumentViewController.setFitMode(fitMode);
 
         // update button state.
         reflectZoomInZoomComboBox();
@@ -2784,11 +2662,11 @@ public class SwingController
 
     public void setPageViewMode(final int viewMode, boolean refresh) {
 
-        if (!refresh && documentViewController.getViewMode() == viewMode) {
+        if (!refresh && documentDocumentViewController.getViewMode() == viewMode) {
             return;
         }
 
-        documentViewController.setViewType(viewMode);
+        documentDocumentViewController.setViewType(viewMode);
 
         // update button state.
         reflectDocumentViewModeInButtons();
@@ -2796,17 +2674,16 @@ public class SwingController
     }
 
     public void setDocumentToolMode(final int toolType) {
-        if (documentViewController.isToolModeSelected(toolType))
+        if (documentDocumentViewController.isToolModeSelected(toolType))
             return;
 
-        documentViewController.setToolMode(toolType);
+        documentDocumentViewController.setToolMode(toolType);
 
         reflectToolInToolButtons();
     }
 
     /**
      * If the utility pane is currently visible
-     * @return true if pane is visilbe false otherwise.
      */
     public boolean isUtilityPaneVisible() {
         return (utilityTabbedPane != null) && utilityTabbedPane.isVisible();
@@ -2819,9 +2696,8 @@ public class SwingController
      *                invisible.
      */
     public void setUtilityPaneVisible(boolean visible) {
-        if (utilityTabbedPane != null) {
+        if (utilityTabbedPane != null)
             utilityTabbedPane.setVisible(visible);
-        }
         if (utilityAndDocumentSplitPane != null) {
             if (visible) {
                 utilityAndDocumentSplitPane.setDividerLocation(
@@ -2859,8 +2735,6 @@ public class SwingController
             utilityTabbedPane.setSelectedComponent(searchPanel);
             // make sure the utility pane is visible
             setUtilityPaneVisible(true);
-            // request focus
-            searchPanel.requestFocus();
         }
     }
 
@@ -2876,7 +2750,7 @@ public class SwingController
         for (int i = 0; i < numPages; i++) {
             s[i] = Integer.toString(i + 1);
         }
-        Object initialSelection = s[documentViewController.getCurrentPageIndex()];
+        Object initialSelection = s[documentDocumentViewController.getCurrentPageIndex()];
         Object ob = JOptionPane.showInputDialog(
                 viewer,
                 messageBundle.getString("viewer.dialog.goToPage.description.label"),
@@ -2931,7 +2805,7 @@ public class SwingController
      * @return The zero-based index of the current Page being displayed
      */
     public int getCurrentPageNumber() {
-        return documentViewController.getCurrentPageIndex();
+        return documentDocumentViewController.getCurrentPageIndex();
     }
 
     /**
@@ -2941,7 +2815,7 @@ public class SwingController
      * @return The user's requested rotation
      */
     public float getUserRotation() {
-        return documentViewController.getRotation();
+        return documentDocumentViewController.getRotation();
     }
 
     /**
@@ -2951,7 +2825,7 @@ public class SwingController
      * @return The user's requested zoom
      */
     public float getUserZoom() {
-        return documentViewController.getZoom();
+        return documentDocumentViewController.getZoom();
     }
 
 
@@ -3039,7 +2913,14 @@ public class SwingController
                 };
                 SwingUtilities.invokeLater(doSwingWork);
             } else if (source == aboutMenuItem) {
-                showAboutDialog();
+                // Added to swing thread to ensure it shows up on top of main
+                // browser window
+                Runnable doSwingWork = new Runnable() {
+                    public void run() {
+                        showAboutDialog();
+                    }
+                };
+                SwingUtilities.invokeLater(doSwingWork);
             } else if (document != null) {
                 // get document previous icon
                 int documentIcon = getDocumentViewToolMode();
@@ -3072,35 +2953,6 @@ public class SwingController
                         print(true);
                     } else if (source == printButton) {
                         print(false);
-                    } else if (source == copyMenuItem) {
-                        if (document != null &&
-                                havePermissionToExtractContent() &&
-                                !(documentViewController.getDocumentViewModel().isSelectAll() &&
-                                document.getNumberOfPages() > MAX_SELECT_ALL_PAGE_COUNT)) {
-                            // get the text.
-                            StringSelection stringSelection = new StringSelection(
-                                documentViewController.getSelectedText());
-                            Toolkit.getDefaultToolkit().getSystemClipboard().
-                                    setContents(stringSelection, null);
-                        } else {
-                            Runnable doSwingWork = new Runnable() {
-                                public void run() {
-                                    org.icepdf.ri.util.Resources.showMessageDialog(
-                                            viewer,
-                                            JOptionPane.INFORMATION_MESSAGE,
-                                            messageBundle,
-                                            "viewer.dialog.information.copyAll.title",
-                                            "viewer.dialog.information.copyAll.msg",
-                                            MAX_SELECT_ALL_PAGE_COUNT);
-                                }
-                            };
-                            SwingUtilities.invokeLater(doSwingWork);
-                        }
-                    } else if (source == selectAllMenuItem) {
-                        // check to see how many page are in the document
-                        documentViewController.selectAllText();
-                    } else if (source == deselectAllMenuItem) {
-                        documentViewController.clearSelectedText();
                     } else if (source == fitActualSizeMenuItem) {
                         // Clicking only seems to invoke an itemStateChanged() event,
                         //  so this is probably redundant
@@ -3126,10 +2978,10 @@ public class SwingController
                     } else if (source == firstPageMenuItem || source == firstPageButton) {
                         showPage(0);
                     } else if (source == previousPageMenuItem || source == previousPageButton) {
-                        DocumentView documentView = documentViewController.getDocumentView();
+                        DocumentView documentView = documentDocumentViewController.getDocumentView();
                         goToDeltaPage(-documentView.getPreviousPageIncrement());
                     } else if (source == nextPageMenuItem || source == nextPageButton) {
-                        DocumentView documentView = documentViewController.getDocumentView();
+                        DocumentView documentView = documentDocumentViewController.getDocumentView();
                         goToDeltaPage(documentView.getNextPageIncrement());
                     } else if (source == lastPageMenuItem || source == lastPageButton) {
                         showPage(getPageTree().getNumberOfPages() - 1);
@@ -3166,7 +3018,7 @@ public class SwingController
             logger.log(Level.FINE, "Error processing action event.", e);
         }
         // setup focus to ensure page up and page down keys work
-        documentViewController.requestViewFocusInWindow();
+        documentDocumentViewController.requestViewFocusInWindow();
     }
 
     //
@@ -3190,7 +3042,7 @@ public class SwingController
             return;
         if (src == currentPageNumberTextField) {
             String fieldValue = currentPageNumberTextField.getText();
-            String modelValue = Integer.toString(documentViewController.getCurrentPageDisplayValue());
+            String modelValue = Integer.toString(documentDocumentViewController.getCurrentPageDisplayValue());
             if (!fieldValue.equals(modelValue))
                 currentPageNumberTextField.setText(modelValue);
         }
@@ -3228,29 +3080,19 @@ public class SwingController
                 if (e.getStateChange() == ItemEvent.SELECTED) {
                     setPageFitMode(org.icepdf.core.views.DocumentViewController.PAGE_FIT_WINDOW_WIDTH, false);
                 }
-            } else if (source == fontEngineButton) {
+            } else if (source == fontEngineButton){
                 if (e.getStateChange() == ItemEvent.SELECTED ||
-                        e.getStateChange() == ItemEvent.DESELECTED) {
+                        e.getStateChange() == ItemEvent.DESELECTED ) {
                     // get instance of the font factory
                     FontFactory.getInstance().toggleAwtFontSubstitution();
                     // refresh the document, refresh will happen by the component.
-                    documentViewController.getDocumentView().getViewModel().invalidate();
+                    documentDocumentViewController.getDocumentView().getViewModel().invalidate();
                 }
 
             } else if (source == panToolButton) {
                 if (e.getStateChange() == ItemEvent.SELECTED) {
                     tool = DocumentViewModelImpl.DISPLAY_TOOL_PAN;
                     setDocumentToolMode(DocumentViewModelImpl.DISPLAY_TOOL_PAN);
-                }
-            } else if (source == textSelectToolButton) {
-                if (e.getStateChange() == ItemEvent.SELECTED) {
-                    tool = DocumentViewModelImpl.DISPLAY_TOOL_TEXT_SELECTION;
-                    setDocumentToolMode(DocumentViewModelImpl.DISPLAY_TOOL_TEXT_SELECTION);
-                }
-            }  else if (source == selectToolButton) {
-                if (e.getStateChange() == ItemEvent.SELECTED) {
-                    tool = DocumentViewModelImpl.DISPLAY_TOOL_SELECTION;
-                    setDocumentToolMode(DocumentViewModelImpl.DISPLAY_TOOL_SELECTION);
                 }
             } else if (source == zoomInToolButton) {
                 if (e.getStateChange() == ItemEvent.SELECTED) {
@@ -3288,7 +3130,7 @@ public class SwingController
                 }
             }
             // setup focus to ensure page up and page down keys work
-            documentViewController.requestViewFocusInWindow();
+            documentDocumentViewController.requestViewFocusInWindow();
         }
         finally {
             setDisplayTool(tool);
@@ -3553,11 +3395,11 @@ public class SwingController
                     showPage(0);
                 } else if (c == KeyEventConstants.KEY_CODE_PREVIOUS_PAGE &&
                         m == KeyEventConstants.MODIFIER_PREVIOUS_PAGE) {
-                    DocumentView documentView = documentViewController.getDocumentView();
+                    DocumentView documentView = documentDocumentViewController.getDocumentView();
                     goToDeltaPage(-documentView.getPreviousPageIncrement());
                 } else if (c == KeyEventConstants.KEY_CODE_NEXT_PAGE &&
                         m == KeyEventConstants.MODIFIER_NEXT_PAGE) {
-                    DocumentView documentView = documentViewController.getDocumentView();
+                    DocumentView documentView = documentDocumentViewController.getDocumentView();
                     goToDeltaPage(documentView.getNextPageIncrement());
                 } else if (c == KeyEventConstants.KEY_CODE_LAST_PAGE &&
                         m == KeyEventConstants.MODIFIER_LAST_PAGE) {
@@ -3593,7 +3435,7 @@ public class SwingController
             char c = e.getKeyChar();
             if (c == KeyEvent.VK_ESCAPE) {
                 String fieldValue = currentPageNumberTextField.getText();
-                String modelValue = Integer.toString(documentViewController.getCurrentPageDisplayValue());
+                String modelValue = Integer.toString(documentDocumentViewController.getCurrentPageDisplayValue());
                 if (!fieldValue.equals(modelValue))
                     currentPageNumberTextField.setText(modelValue);
             }

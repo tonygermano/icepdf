@@ -32,18 +32,17 @@
  */
 package org.icepdf.ri.common;
 
-import apple.dts.samplecode.osxadapter.OSXAdapter;
 import org.icepdf.ri.common.views.DocumentViewControllerImpl;
 import org.icepdf.ri.images.Images;
 import org.icepdf.core.util.Defs;
 
 import javax.swing.*;
 import java.awt.*;
+import java.lang.reflect.Method;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -342,12 +341,9 @@ public class SwingViewBuilder {
 
     protected ResourceBundle messageBundle;
 
-    public static boolean isMacOs;
-
     private static boolean isDemo;
 
     static {
-        isMacOs = (Defs.sysProperty("mrj.version") != null);
         // check for demo system property
          isDemo = Defs.sysPropertyBoolean("org.icepdf.ri.viewer.demo", false);
     }
@@ -368,8 +364,6 @@ public class SwingViewBuilder {
      * Construct a SwingVewBuilder with all of the default settings
      *
      * @param c SwingController that will interact with the GUI
-     * @param documentViewType view type to build , single page, single column etc.
-     * @param documentPageFitMode fit mode to initially load document with.
      */
     public SwingViewBuilder(SwingController c, int documentViewType,
                             int documentPageFitMode) {
@@ -471,27 +465,12 @@ public class SwingViewBuilder {
 
 
     public JMenuBar buildCompleteMenuBar() {
-      
         JMenuBar menuBar = new JMenuBar();
         addToMenuBar(menuBar, buildFileMenu());
-        addToMenuBar(menuBar, buildEditMenu());
         addToMenuBar(menuBar, buildViewMenu());
         addToMenuBar(menuBar, buildDocumentMenu());
         addToMenuBar(menuBar, buildWindowMenu());
         addToMenuBar(menuBar, buildHelpMenu());
-
-        // If running on MacOS, setup the native app. menu item handlers
-        if (isMacOs) {
-            try {
-                // Generate and register the OSXAdapter, passing it a hash of all the methods we wish to
-                // use as delegates for various com.apple.eawt.ApplicationListener methods
-                OSXAdapter.setQuitHandler(viewerController, viewerController.getClass().getDeclaredMethod("exit", (Class[])null));
-                OSXAdapter.setAboutHandler(viewerController, viewerController.getClass().getDeclaredMethod("showAboutDialog", (Class[])null));
-            } catch (Exception e) {
-                logger.log(Level.FINE, "Error occurred while loading the OSXAdapter:", e);
-            }
-        }
-
         return menuBar;
     }
 
@@ -523,11 +502,8 @@ public class SwingViewBuilder {
         fileMenu.addSeparator();
         addToMenu(fileMenu, buildPrintSetupMenuItem());
         addToMenu(fileMenu, buildPrintMenuItem());
-        if (!isMacOs) {
-            // Not on a Mac, so create the Exit menu item.
-            fileMenu.addSeparator();
-            addToMenu(fileMenu, buildExitMenuItem());
-        }
+        fileMenu.addSeparator();
+        addToMenu(fileMenu, buildExitMenuItem());
         return fileMenu;
     }
 
@@ -631,46 +607,6 @@ public class SwingViewBuilder {
                 null, KeyStroke.getKeyStroke(KeyEventConstants.KEY_CODE_EXIT, KeyEventConstants.MODIFIER_EXIT));
         if (viewerController != null && mi != null)
             viewerController.setExitMenuItem(mi);
-        return mi;
-    }
-
-    public JMenu buildEditMenu() {
-        JMenu viewMenu = new JMenu(messageBundle.getString("viewer.menu.edit.label"));
-        viewMenu.setMnemonic(messageBundle.getString("viewer.menu.edit.mnemonic").charAt(0));
-        addToMenu(viewMenu, buildCopyMenuItem());
-        viewMenu.addSeparator();
-        addToMenu(viewMenu, buildSelectAllMenuItem());
-        addToMenu(viewMenu, buildDeselectAllMenuItem());
-        return viewMenu;
-    }
-
-    public JMenuItem buildCopyMenuItem() {
-        JMenuItem mi = makeMenuItem(
-                messageBundle.getString("viewer.menu.edit.copy.label"),
-                null, KeyStroke.getKeyStroke(KeyEventConstants.KEY_CODE_COPY,
-                        KeyEventConstants.MODIFIER_COPY));
-        if (viewerController != null && mi != null)
-            viewerController.setCopyMenuItem(mi);
-        return mi;
-    }
-
-    public JMenuItem buildSelectAllMenuItem() {
-        JMenuItem mi = makeMenuItem(
-                messageBundle.getString("viewer.menu.edit.selectAll.label"),
-                null, KeyStroke.getKeyStroke(KeyEventConstants.KEY_CODE_SELECT_ALL,
-                        KeyEventConstants.MODIFIER_SELECT_ALL));
-        if (viewerController != null && mi != null)
-            viewerController.setSelectAllMenuItem(mi);
-        return mi;
-    }
-
-    public JMenuItem buildDeselectAllMenuItem() {
-        JMenuItem mi = makeMenuItem(
-                messageBundle.getString("viewer.menu.edit.deselectAll.label"),
-                null, KeyStroke.getKeyStroke(KeyEventConstants.KEY_CODE_DESELECT_ALL,
-                        KeyEventConstants.MODIFIER_DESELECT_ALL));
-        if (viewerController != null && mi != null)
-            viewerController.setDselectAllMenuItem(mi);
         return mi;
     }
 
@@ -893,8 +829,7 @@ public class SwingViewBuilder {
 
             shortenDocumentOrigins(windowDocOriginList);
 
-            List<JMenuItem> windowListMenuItems =
-                    new ArrayList<JMenuItem>(Math.max(count, 1));
+            List windowListMenuItems = new ArrayList(Math.max(count, 1));
             for (int i = 0; i < count; i++) {
                 String number = Integer.toString(i + 1);
                 String label = null;
@@ -946,16 +881,11 @@ public class SwingViewBuilder {
     public JMenu buildHelpMenu() {
         JMenu helpMenu = new JMenu(messageBundle.getString("viewer.menu.help.label"));
         helpMenu.setMnemonic(messageBundle.getString("viewer.menu.help.mnemonic").charAt(0));
-
-        if (!isMacOs) {
-            // Not on a Mac, so create the About menu item.
-            addToMenu(helpMenu, buildAboutMenuItem());
-        }
+        addToMenu(helpMenu, buildAboutMenuItem());
         return helpMenu;
     }
 
     public JMenuItem buildAboutMenuItem() {
-
         JMenuItem mi = makeMenuItem(messageBundle.getString("viewer.menu.help.about.label"), null);
         if (viewerController != null && mi != null)
             viewerController.setAboutMenuItem(mi);
@@ -1245,9 +1175,7 @@ public class SwingViewBuilder {
     public JToolBar buildToolToolBar() {
         JToolBar toolbar = new JToolBar();
         commonToolBarSetup(toolbar, false);
-        addToToolBar(toolbar, buildSelectToolButton());
         addToToolBar(toolbar, buildPanToolButton());
-        addToToolBar(toolbar, buildTextSelectToolButton());
         addToToolBar(toolbar, buildZoomInToolButton());
         addToToolBar(toolbar, buildZoomOutToolButton());
         return toolbar;
@@ -1267,26 +1195,6 @@ public class SwingViewBuilder {
                 "pan", buttonFont);
         if (viewerController != null && btn != null)
             viewerController.setPanToolButton(btn);
-        return btn;
-    }
-
-    public JToggleButton buildTextSelectToolButton() {
-        JToggleButton btn = makeToolbarToggleButton(
-                messageBundle.getString("viewer.toolbar.tool.text.label"),
-                messageBundle.getString("viewer.toolbar.tool.text.tooltip"),
-                "text", buttonFont);
-        if (viewerController != null && btn != null)
-            viewerController.setTextSelectToolButton(btn);
-        return btn;
-    }
-
-    public JToggleButton buildSelectToolButton() {
-        JToggleButton btn = makeToolbarToggleButton(
-                messageBundle.getString("viewer.toolbar.tool.select.label"),
-                messageBundle.getString("viewer.toolbar.tool.select.tooltip"),
-                "select", buttonFont);
-        if (viewerController != null && btn != null)      
-            viewerController.setSelectToolButton(btn);
         return btn;
     }
 
@@ -1363,7 +1271,7 @@ public class SwingViewBuilder {
     }
 
     public SearchPanel buildSearchPanel() {
-        SearchPanel searchPanel = new SearchPanel(viewerController);
+        SearchPanel searchPanel = new SearchPanel(viewerController, null);
         if (viewerController != null)
             viewerController.setSearchPanel(searchPanel);
         return searchPanel;
@@ -1375,8 +1283,6 @@ public class SwingViewBuilder {
 
         JLabel lbl = new JLabel(" ");
         lbl.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 0)); // So text isn't at the very edge
-        JLabel lbl2 = new JLabel(" ");
-        lbl2.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 5)); // So text isn't at the very edge
         // layout the components
         Box horizontalBox = Box.createHorizontalBox();
         horizontalBox.add(lbl, BorderLayout.WEST);
@@ -1385,7 +1291,6 @@ public class SwingViewBuilder {
         horizontalBox.add(buildPageViewSinglePageConToggleButton());
         horizontalBox.add(buildPageViewFacingPageNonConToggleButton());
         horizontalBox.add(buildPageViewFacingPageConToggleButton());
-        horizontalBox.add(lbl2, BorderLayout.EAST);
 
         statusPanel.add(horizontalBox, BorderLayout.CENTER);
 
@@ -1555,10 +1460,58 @@ public class SwingViewBuilder {
         return jmi;
     }
 
+    /**
+     * void javax.swing.JToolBar.setRollover(boolean) does not exist in Java 1.3.
+     * Since it was introduced in Java 1.4, so we use reflection to call it,
+     * if it exists.
+     * We don't treat it as an error if this fails, since it's only an enhancement,
+     * and is not critical.
+     *
+     * @param jtoolbar javax.swing.JToolBar to call setRollover( val ) on
+     * @param val      Argument to jtoolbar.setRollover( val )
+     */
+    protected void reflectJToolBarSetRollover(JToolBar jtoolbar, boolean val) {
+        try {
+            Class toolBar = jtoolbar.getClass();
+            Method rolloverMethod =
+                    toolBar.getMethod("setRollover",
+                            Boolean.TYPE);
+            if (rolloverMethod != null) {
+                rolloverMethod.invoke(jtoolbar, (val ? Boolean.TRUE : Boolean.FALSE));
+            }
+        }
+        catch (Throwable t) {
+        }
+    }
+
+    /**
+     * void java.awt.Component.setFocusable(boolean) does not exist in Java 1.3.
+     * Since it was introduced in Java 1.4, so we use reflection to call it,
+     * if it exists.
+     * We don't treat it as an error if this fails, since it's only an enhancement,
+     * and is not critical.
+     *
+     * @param comp java.awt.Component to call setFocusable( val ) on
+     * @param val  Argument to comp.setFocusable( val )
+     */
+    protected void reflectComponentSetFocusable(Component comp, boolean val) {
+        try {
+            Class component = comp.getClass();
+            Method rolloverMethod =
+                    component.getMethod("setFocusable",
+                            Boolean.TYPE);
+            if (rolloverMethod != null) {
+                rolloverMethod.invoke(comp, (val ? Boolean.TRUE : Boolean.FALSE));
+            }
+        }
+        catch (Throwable t) {
+        }
+    }
+
     protected void commonToolBarSetup(JToolBar toolbar, boolean isMainToolBar) {
         if (!isMainToolBar) {
-            toolbar.requestFocus();
-            toolbar.setRollover(true);
+            reflectComponentSetFocusable(toolbar, true);
+            reflectJToolBarSetRollover(toolbar, true);
         }
         if (toolbarStyle == TOOL_BAR_STYLE_FIXED) {
             toolbar.setFloatable(false);

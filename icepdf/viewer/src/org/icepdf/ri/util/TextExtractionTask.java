@@ -36,11 +36,10 @@ import org.icepdf.core.pobjects.Document;
 import org.icepdf.ri.common.SwingWorker;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
-import java.io.BufferedWriter;
 import java.text.ChoiceFormat;
 import java.text.Format;
 import java.text.MessageFormat;
+import java.util.Enumeration;
 import java.util.ResourceBundle;
 import java.util.logging.Logger;
 import java.util.logging.Level;
@@ -96,7 +95,7 @@ public class TextExtractionTask {
      */
     public void go() {
         final SwingWorker worker = new SwingWorker() {
-            // reset all instance variables
+            // reset all insance variables
             public Object construct() {
                 current = 0;
                 done = false;
@@ -154,13 +153,13 @@ public class TextExtractionTask {
             // Extraction of text from pdf procedure
             try {
                 // create file output stream
-                BufferedWriter fileOutputStream = new BufferedWriter(
-                        new OutputStreamWriter(new FileOutputStream(file),"UTF8"));
+                FileOutputStream fileOutputStream = new FileOutputStream(file);
+
                 // Print document information
                 String pageNumber =
                         messageBundle.getString("viewer.exportText.fileStamp.msg");
 
-                fileOutputStream.write(pageNumber);
+                fileOutputStream.write(pageNumber.getBytes());
                 fileOutputStream.write(10); // line break
 
                 for (int i = 0; i < document.getNumberOfPages(); i++) {
@@ -190,7 +189,7 @@ public class TextExtractionTask {
                     Format[] formats = {null, choiceForm, null};
                     messageForm.setFormats(formats);
                     Object[] messageArguments = {String.valueOf((current + 1)),
-                            lengthOfTask, lengthOfTask};
+                            new Integer(lengthOfTask), new Integer(lengthOfTask)};
 
                     dialogMessage = messageForm.format(messageArguments);
 
@@ -201,21 +200,26 @@ public class TextExtractionTask {
 
                     pageNumber = messageForm.format(messageArguments);
 
-                    fileOutputStream.write(pageNumber);
+                    fileOutputStream.write(pageNumber.getBytes());
                     fileOutputStream.write(10); // line break
 
-                    String pageText = document.getPageText(i).toString();
-
-                    fileOutputStream.write(pageText);
-
+                    Enumeration pageText = document.getPageText(i).elements();
+                    while (pageText.hasMoreElements()) {
+                        if (canceled || done) {
+                            break;
+                        }
+                        StringBuffer text = (StringBuffer) pageText.nextElement();
+                        fileOutputStream.write(text.toString().getBytes());
+                        // Line breaks
+                        fileOutputStream.write(10); // line break
+                    }
                     Thread.yield();
-
                 }
 
                 done = true;
                 current = 0;
-                fileOutputStream.flush();
                 fileOutputStream.close();
+                fileOutputStream.flush();
             }
             catch (Throwable e) {
                 logger.log(Level.FINE, "Malformed URL Exception ", e);

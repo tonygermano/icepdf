@@ -69,8 +69,6 @@ public class PageTree extends Dictionary {
     private PRectangle cropBox;
     // inheritable Resources
     private Resources resources;
-    // loaded resource flag, we can't use null check as some trees don't have
-    // resources. 
     private boolean loadedResources;
 
     /**
@@ -114,20 +112,12 @@ public class PageTree extends Dictionary {
             }
         }
         /*
-         * If resources is non-null, then at least one page has got a reference
-         * to it. At which point we'll wait for the last page to reference it
-         * do make the call to dispose.
-         *
-         * It is also possible for type3 fonts to use a resource, so we better
-         * go through the motions to remove the resource, as we don't dispose
-         * of fonts.
-         */
+         * If resources is non-null, then a Page got it, in which case the Page
+         * will dispose it
         if (resources != null) {
-            boolean disposeSuccess = resources.dispose(cache, this);
-            if (disposeSuccess){
-                loadedResources = false;
-            }
+            resources.dispose(cache, this);
         }
+        */
     }
 
     /**

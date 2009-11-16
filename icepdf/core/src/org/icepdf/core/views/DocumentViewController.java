@@ -94,8 +94,6 @@ public interface DocumentViewController {
 
     public static final int CURSOR_HAND_ANNOTATION = 9;
 
-    public static final int CURSOR_TEXT_SELECTION = 10;
-
     public void setDocument(Document document);
 
     public Document getDocument();
@@ -175,16 +173,4 @@ public interface DocumentViewController {
     public void setAnnotationCallback(AnnotationCallback annotationCallback);
 
     public AnnotationCallback getAnnotationCallback();
-
-    public DocumentViewModel getDocumentViewModel();
-
-    public void clearSelectedText();
-
-    public void clearHighlightedText();
-
-    public void selectAllText();
-
-    public String getSelectedText();
-
-    public void firePropertyChange(String event, int oldValue, int newValue);
 }
