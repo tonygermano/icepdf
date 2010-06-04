@@ -38,7 +38,6 @@ import javax.swing.*;
 import java.io.*;
 import java.net.URL;
 import java.util.*;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
@@ -187,18 +186,11 @@ public class PropertiesManager {
                 in.close();
             }
         } catch (IOException ex) {
-            // check to make sure the storage relate dialogs can be shown
-            if (getBoolean("application.showLocalStorageDialogs", true)){
-                Resources.showMessageDialog(null,
-                        JOptionPane.ERROR_MESSAGE, messageBundle,
-                        "manager.properties.title",
-                        "manager.properties.session.readError",
-                        DEFAULT_PROP_FILE);
-            }
-            // log the error
-            if (logger.isLoggable(Level.WARNING)){
-                logger.log(Level.WARNING, "Error loading default properties cache", ex);
-            }
+            Resources.showMessageDialog(null,
+                    JOptionPane.ERROR_MESSAGE, messageBundle,
+                    "manager.properties.title",
+                    "manager.properties.session.readError",
+                    DEFAULT_PROP_FILE);
             return false;
         }
 
@@ -258,14 +250,11 @@ public class PropertiesManager {
             } else {
                 dataDir.mkdirs();
                 if (!dataDir.isDirectory()) {
-                    // check to make sure that dialog should be shown on the error.  
-                    if (getBoolean("application.showLocalStorageDialogs", true)){
-                        Resources.showMessageDialog(null,
-                                JOptionPane.ERROR_MESSAGE, messageBundle,
-                                "manager.properties.title",
-                                "manager.properties.failedCreation",
-                                dataDir.getAbsolutePath());
-                    }
+                    Resources.showMessageDialog(null,
+                            JOptionPane.ERROR_MESSAGE, messageBundle,
+                            "manager.properties.title",
+                            "manager.properties.failedCreation",
+                            dataDir.getAbsolutePath());
                     dataDir = null;
                 }
                 thisExecutionTriedCreatingLocalDataDir = true;
@@ -286,13 +275,10 @@ public class PropertiesManager {
                 dir.delete();
                 if (!dir.mkdir()) {
                     dir = null;
-                    // check to make sure that dialog should be shown on the error.
-                    if (getBoolean("application.showLocalStorageDialogs", true)){
-                        Resources.showMessageDialog(null,
-                                JOptionPane.ERROR_MESSAGE, messageBundle,
-                                "manager.properties.title",
-                                "manager.properties.session.nolock", LOCK_FILE);
-                    }
+                    Resources.showMessageDialog(null,
+                            JOptionPane.ERROR_MESSAGE, messageBundle,
+                            "manager.properties.title",
+                            "manager.properties.session.nolock", LOCK_FILE);
                 }
 
             }
@@ -324,17 +310,10 @@ public class PropertiesManager {
                     in.close();
                 }
             } catch (IOException ex) {
-                // check to make sure the storage relate dialogs can be shown
-                if (getBoolean("application.showLocalStorageDialogs", true)){
-                    Resources.showMessageDialog(null,
-                            JOptionPane.ERROR_MESSAGE, messageBundle,
-                            "manager.properties.title",
-                            "manager.properties.session.readError", propertyFile.getAbsolutePath());
-                }
-                // log the error
-                if (logger.isLoggable(Level.WARNING)){
-                    logger.log(Level.WARNING, "Error loading properties cache", ex);
-                }
+                Resources.showMessageDialog(null,
+                        JOptionPane.ERROR_MESSAGE, messageBundle,
+                        "manager.properties.title",
+                        "manager.properties.session.readError", propertyFile.getAbsolutePath());
             }
         }
     }
@@ -381,17 +360,10 @@ public class PropertiesManager {
                 }
                 recordMofifTime();
             } catch (IOException ex) {
-                // check to make sure the storage relate dialogs can be shown
-                if (getBoolean("application.showLocalStorageDialogs", true)){
-                    Resources.showMessageDialog(null,
-                            JOptionPane.ERROR_MESSAGE, messageBundle,
-                            "manager.properties.title",
-                            "manager.properties.saveError", ex);
-                }
-                // log the error
-                if (logger.isLoggable(Level.WARNING)){
-                    logger.log(Level.WARNING, "Error saving properties cache", ex);
-                }
+                Resources.showMessageDialog(null,
+                        JOptionPane.ERROR_MESSAGE, messageBundle,
+                        "manager.properties.title",
+                        "manager.properties.saveError", ex);
             }
         }
     }
@@ -417,17 +389,10 @@ public class PropertiesManager {
                     out.close();
                 }
             } catch (IOException ex) {
-                // check to make sure the storage relate dialogs can be shown
-                if (getBoolean("application.showLocalStorageDialogs", true)){
-                    Resources.showMessageDialog(null,
-                            JOptionPane.ERROR_MESSAGE, messageBundle,
-                            "manager.properties.title",
-                            "manager.properties.saveError", ex);
-                }
-                // log the error
-                if (logger.isLoggable(Level.WARNING)){
-                    logger.log(Level.WARNING, "Error saving properties cache", ex);
-                }
+                Resources.showMessageDialog(null,
+                        JOptionPane.ERROR_MESSAGE, messageBundle,
+                        "manager.properties.title",
+                        "manager.properties.saveError", ex);
             }
         }
         return result;
