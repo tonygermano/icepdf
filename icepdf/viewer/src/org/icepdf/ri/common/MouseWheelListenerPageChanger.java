@@ -32,6 +32,7 @@
  */
 package org.icepdf.ri.common;
 
+import org.icepdf.ri.common.SwingController;
 import org.icepdf.ri.common.views.AbstractDocumentView;
 
 import javax.swing.*;
