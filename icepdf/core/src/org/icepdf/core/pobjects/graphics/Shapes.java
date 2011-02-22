@@ -170,7 +170,6 @@ public class Shapes {
                 }
             }
             shapes.clear();
-            shapes.trimToSize();
             shapes = null;
         }
 
@@ -189,29 +188,8 @@ public class Shapes {
         // if we have an new image we'll check to see if scaling is enabled
         if (o instanceof Image) {
             Image image = (Image) o;
-            int width = image.getWidth(null);
-            Image scaledImage;
-            // do image scaling on larger images.  This improves the softness
-            // of some images that contains black and white text.
-            if (scaleImages) {
-                double scaleFactor = 1.0;
-                if (width > 1000 && width < 1500) {
-                    scaleFactor = 0.75;
-                } else if (width > 1500) {
-                    scaleFactor = 0.5;
-                }
-                if (scaleFactor < 1.0) {
-                    scaledImage = image.getScaledInstance(
-                            (int) (width * scaleFactor), -1, Image.SCALE_SMOOTH);
-                    image.flush();
-                } else {
-                    scaledImage = image;
-                }
-            } else {
-                scaledImage = image;
-            }
-            images.add(scaledImage);
-            shapes.add(scaledImage);
+            images.add(image);
+            shapes.add(image);
             return;
         }
 
@@ -333,9 +311,7 @@ public class Shapes {
                         if (currentTime - lastPaintTime > paintDelay) {
 //                            paintCount++;
                             lastPaintTime = currentTime;
-                            if (parentPage != null){
-                                parentPage.notifyPaintPageListeners();
-                            }
+                            parentPage.notifyPaintPageListeners();
                         }
                     }
                 } else if (nextShape instanceof Shape) {
