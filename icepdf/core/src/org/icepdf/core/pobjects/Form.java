@@ -97,27 +97,8 @@ public class Form extends Stream {
      * or reduce the memory footprint of, the refered objects
      */
     public void dispose(boolean cache) {
-
-        if (shapes != null){
+        if (shapes != null)
             shapes.dispose();
-        }
-        if (cache){
-            library.removeObject(this.getPObjectReference());
-        }
-        // get rid of the resources.
-        disposeResources(cache);
-    }
-
-    /**
-     * Disposes the resources associated with this Form object but leaves the
-     * shapes associated with a content stream.  This method should only be
-     * called when the Xobject will be orphaned and dispose cannot be called
-     * via normal object chaining.  XObject can be orphaned when called from
-     * a content stream of an Xobject.
-     *
-     * @param cache true indicates the cache should be used.
-     */
-    public void disposeResources(boolean cache){
         if (resources != null) {
             resources.dispose(cache, this);
         }
@@ -127,8 +108,6 @@ public class Form extends Stream {
         }
         inited = false;
         graphicsState = null;
-        // clean up the super stream
-        super.dispose(cache);
     }
 
     /**

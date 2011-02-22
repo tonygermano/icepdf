@@ -616,13 +616,15 @@ public class Library {
 
     /**
      * Utility/demo functionality to clear all font and font descriptor
-     * resources.  The library will re-fetch the font resources in question
+     * resources.  The library will refetch the font resources in question
      * when needed again.
      */
     public void disposeFontResources() {
-        Set<Reference> test = refs.keySet();
+        Enumeration<Reference> test = refs.keys();
+        Reference ref;
         Object tmp;
-        for  (Reference ref:test) {
+        while (test.hasMoreElements()) {
+            ref = test.nextElement();
             tmp = refs.get(ref);
             if (tmp instanceof Font ||
                     tmp instanceof FontDescriptor) {

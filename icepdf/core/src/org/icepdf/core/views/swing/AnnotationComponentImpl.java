@@ -371,8 +371,7 @@ public class AnnotationComponentImpl extends JComponent implements FocusListener
 
         int toolMode = documentViewModel.getViewToolMode();
 
-        if (toolMode == DocumentViewModel.DISPLAY_TOOL_SELECTION &&
-                !(annotation.getFlagLocked() || annotation.getFlagReadOnly())) {
+        if (toolMode == DocumentViewModel.DISPLAY_TOOL_SELECTION) {
             ResizableBorder border = (ResizableBorder) getBorder();
             setCursor(Cursor.getPredefinedCursor(border.getCursor(me)));
         }else if (toolMode == DocumentViewModel.DISPLAY_TOOL_LINK_ANNOTATION) {
@@ -423,8 +422,7 @@ public class AnnotationComponentImpl extends JComponent implements FocusListener
 
         if (documentViewModel.getViewToolMode() ==
                 DocumentViewModel.DISPLAY_TOOL_SELECTION &&
-                isInteractiveAnnotationsEnabled &&
-                !annotation.getFlagReadOnly()) {
+                isInteractiveAnnotationsEnabled) {
             ResizableBorder border = (ResizableBorder) getBorder();
             cursor = border.getCursor(me);
             startPos = me.getPoint();
@@ -437,8 +435,7 @@ public class AnnotationComponentImpl extends JComponent implements FocusListener
 
     public void mouseDragged(MouseEvent me) {
 
-        if (startPos != null &&
-                !(annotation.getFlagLocked() || annotation.getFlagReadOnly())) {
+        if (startPos != null) {
 
             int x = getX();
             int y = getY();

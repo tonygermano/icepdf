@@ -33,8 +33,8 @@
 package org.icepdf.core.util;
 
 import java.util.*;
-import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * The <code>MemoryManager</code> class is a utility to help manage the amount of memory
@@ -63,12 +63,12 @@ public class MemoryManager {
      */
     // Old default was 300000, but PageTree would set it to 3000000, to help
     //   ensure that parsing font glyphs will not result in a memory exception
-    protected long minMemory = 300000;
+    protected long minMemory = 5000000;
 
     /**
      * The maximum amount of memory allocated to the JVM.
      */
-    protected long maxMemory = runtime.maxMemory();
+    protected long maxMemory;
 
     /**
      * When we decide to reduce our memory footprint, this is how many items we
@@ -84,15 +84,25 @@ public class MemoryManager {
      */
     protected int maxSize;
 
-    protected WeakHashMap<Object, HashSet<MemoryManageable>> locked;
-    protected ArrayList<MemoryManageable> leastRecentlyUsed;
+    protected WeakHashMap locked; // WeakHashMap< Object user, HashSet<MemoryManageable> >
+    protected ArrayList leastRecentlyUsed; // ArrayList<MemoryManageable>
 
     protected long cumulativeDurationManagingMemory;
     protected long cumulativeDurationNotManagingMemory;
     protected long previousTimestampManagedMemory;
     protected int percentageDurationManagingMemory;
 
-    protected ArrayList<MemoryManagerDelegate> delegates;
+    protected ArrayList delegates; // ArrayList<MemoryManagerDelegates>
+
+    /**
+     * Sets an existing <code>MemoryManager</code> object to this
+     * <code>MemoryManager</code> object.
+     *
+     * @param memoryMangaer <code>MemoryManager</code> object to point to.
+     */
+    public static void setInstance(MemoryManager memoryMangaer) {
+        instance = memoryMangaer;
+    }
 
     /**
      * Get an instance of the <code>MemoryManager</code>.  If there is not a <code>MemoryManager</code>
@@ -111,33 +121,36 @@ public class MemoryManager {
      * Creates a new instance of a <code>MemoryManager</code>.
      */
     protected MemoryManager() {
-        // get min system memory
+        // get min system meory
         try {
             int t = parse("org.icepdf.core.minMemory");
             if (t > 0) {
                 minMemory = t;
             }
-        } catch (Throwable e) {
+        }catch(Throwable e){
             logger.log(Level.FINE, "Error setting org.icepdf.core.minMemory");
         }
+
+        // gen max memory of jdk
+        maxMemory = Runtime.getRuntime().maxMemory();
 
         purgeSize = Defs.sysPropertyInt("org.icepdf.core.purgeSize", 5);
 
         maxSize = Defs.sysPropertyInt("org.icepdf.core.maxSize", 0);
 
 
-        locked = new WeakHashMap<Object, HashSet<MemoryManageable>>();
-        leastRecentlyUsed = new ArrayList<MemoryManageable>(256);
-        delegates = new ArrayList<MemoryManagerDelegate>(64);
+        locked = new WeakHashMap();
+        leastRecentlyUsed = new ArrayList(256);
+        delegates = new ArrayList(64);
     }
 
     public synchronized void lock(Object user, MemoryManageable mm) {
         if (user == null || mm == null)
             return;
 //System.out.println("+-+ MM.lock()    user: " + user + ", mm: " + mm);
-        HashSet<MemoryManageable> inUse = locked.get(user);
+        HashSet inUse = (HashSet) locked.get(user);
         if (inUse == null) {
-            inUse = new HashSet<MemoryManageable>(256);
+            inUse = new HashSet(256);
             locked.put(user, inUse);
         }
         inUse.add(mm);
@@ -151,7 +164,7 @@ public class MemoryManager {
             if (numUsedMoreThanShould > 0) {
 //System.out.println("+-+ MM.lock()      numUsedMoreThanShould: " + numUsedMoreThanShould + ", maxSize: " + maxSize + ", numUsed: " + numUsed);
                 int numToDo = Math.max(purgeSize, numUsedMoreThanShould);
-                reduceMemory(numToDo);
+                int numDone = reduceMemory(numToDo);
             }
         }
     }
@@ -160,7 +173,7 @@ public class MemoryManager {
         if (user == null || mm == null)
             return;
 //System.out.println("+-+ MM.release() user: " + user + ", mm: " + mm);
-        HashSet inUse = locked.get(user);
+        HashSet inUse = (HashSet) locked.get(user);
         if (inUse != null) {
             boolean removed = inUse.remove(mm);
             // remove locked reference if it no longer holds any mm objects.
@@ -184,7 +197,7 @@ public class MemoryManager {
         // Remove every MemoryManageable whose Library is library
         // Go in reverse order, so removals won't affect indexing
         for (int i = leastRecentlyUsed.size() - 1; i >= 0; i--) {
-            MemoryManageable mm = leastRecentlyUsed.get(i);
+            MemoryManageable mm = (MemoryManageable) leastRecentlyUsed.get(i);
 //System.out.println("+-+ MM.releaseAllByLibrary() LRU " + i + " of " + leastRecentlyUsed.size() + "  mm: " + mm);
             Library lib = mm.getLibrary();
             if (lib == null) {
@@ -199,18 +212,20 @@ public class MemoryManager {
 
         // Go through every user, and looks at the MemoryManageable(s)
         //   that it's locking
-        ArrayList<Object> usersToRemove = new ArrayList<Object>();
+        ArrayList usersToRemove = new ArrayList(); // ArrayList<Object>
         Set entries = locked.entrySet();
-        for (Object entry1 : entries) {
-            Map.Entry entry = (Map.Entry) entry1;
+        Iterator entryIterator = entries.iterator();
+        while (entryIterator.hasNext()) {
+            Map.Entry entry = (Map.Entry) entryIterator.next();
             Object user = entry.getKey();
 //System.out.println("+-+ MM.releaseAllByLibrary() user: " + user);
             HashSet inUse = (HashSet) entry.getValue();
             if (inUse != null) {
                 // Remove every MemoryManageable whose Library is library
-                ArrayList<MemoryManageable> mmsToRemove = new ArrayList<MemoryManageable>();
-                for (Object anInUse : inUse) {
-                    MemoryManageable mm = (MemoryManageable) anInUse;
+                ArrayList mmsToRemove = new ArrayList(); // ArrayList<MemoryManageable>
+                Iterator mms = inUse.iterator();
+                while (mms.hasNext()) {
+                    MemoryManageable mm = (MemoryManageable) mms.next();
 //System.out.println("+-+ MM.releaseAllByLibrary()   mm: " + mm);
                     if (mm != null) {
                         Library lib = mm.getLibrary();
@@ -224,9 +239,8 @@ public class MemoryManager {
                         }
                     }
                 }
-                for (MemoryManageable aMmsToRemove : mmsToRemove) {
-                    inUse.remove(aMmsToRemove);
-                }
+                for (int i = 0; i < mmsToRemove.size(); i++)
+                    inUse.remove(mmsToRemove.get(i));
                 mmsToRemove.clear();
 
                 // If the user has no more MemoryManageable(s)
@@ -240,13 +254,12 @@ public class MemoryManager {
                 }
             }
         }
-        for (Object anUsersToRemove : usersToRemove) {
-            locked.remove(anUsersToRemove);
-        }
+        for (int i = 0; i < usersToRemove.size(); i++)
+            locked.remove(usersToRemove.get(i));
         usersToRemove.clear();
 
         for (int i = delegates.size() - 1; i >= 0; i--) {
-            MemoryManagerDelegate mmd = delegates.get(i);
+            MemoryManagerDelegate mmd = (MemoryManagerDelegate) delegates.get(i);
             boolean shouldRemove = false;
             if (mmd == null)
                 shouldRemove = true;
@@ -300,7 +313,8 @@ public class MemoryManager {
             int leastRecentlyUsedIndex = 0;
             while (numDone < numToDo && leastRecentlyUsedIndex < leastRecentlyUsed.size()) {
 //System.out.println("+-+ MM.reduceMemory()   index: " + leastRecentlyUsedIndex + ", size: " + leastRecentlyUsed.size());
-                MemoryManageable mm = leastRecentlyUsed.get(leastRecentlyUsedIndex);
+                MemoryManageable mm =
+                        (MemoryManageable) leastRecentlyUsed.get(leastRecentlyUsedIndex);
 //System.out.println("+-+ MM.reduceMemory()   isLocked: " + isLocked(mm) + ", mm: " + mm);
                 if (!isLocked(mm)) {
                     mm.reduceMemory();
@@ -309,8 +323,9 @@ public class MemoryManager {
                 } else
                     leastRecentlyUsedIndex++;
             }
-        } catch (Exception e) {
-            logger.log(Level.FINE, "Problem while reducing memory", e);
+        }
+        catch (Exception e) {
+            logger.log(Level.FINE, "Problem while reducing memory",e);
         }
 //System.out.println("+-+ MM.reduceMemory()   managing: " + cumulativeDurationManagingMemory + ", not: " + cumulativeDurationNotManagingMemory + "      managing: " + percentageDurationManagingMemory + "%");
         return numDone;
@@ -318,9 +333,10 @@ public class MemoryManager {
 
     protected synchronized boolean isLocked(MemoryManageable mm) {
         Set entries = locked.entrySet();
+        Iterator entryIterator = entries.iterator();
         // this can get pretty inefficient if locked is large
-        for (Object entry1 : entries) {
-            Map.Entry entry = (Map.Entry) entry1;
+        while (entryIterator.hasNext()) {
+            Map.Entry entry = (Map.Entry) entryIterator.next();
             HashSet inUse = (HashSet) entry.getValue();
             if (inUse != null && inUse.contains(mm))
                 return true;
@@ -332,7 +348,8 @@ public class MemoryManager {
         int reductionPolicy = aggressively ? MemoryManagerDelegate.REDUCE_AGGRESSIVELY
                 : MemoryManagerDelegate.REDUCE_SOMEWHAT;
         boolean anyReduced = false;
-        for (MemoryManagerDelegate mmd : delegates) {
+        for (int i = 0; i < delegates.size(); i++) {
+            MemoryManagerDelegate mmd = (MemoryManagerDelegate) delegates.get(i);
             if (mmd == null)
                 continue;
             boolean reduced = mmd.reduceMemory(reductionPolicy);
@@ -349,7 +366,7 @@ public class MemoryManager {
      * @param memoryValue memory value to parse
      * @return the number of bytes
      */
-    private static int parse(String memoryValue) {
+    private final static int parse(String memoryValue) {
         String s = Defs.sysProperty(memoryValue);
         if (s == null) {
             return -1;
@@ -370,10 +387,8 @@ public class MemoryManager {
 
     /**
      * Set the minimum amount of memory. Basically, if the amount
-     * of free heap is under this value, the core will go into
-     * the memory  recovery mode.
-     *
-     * @param m minimum amount of memory that should be kept free on the heap
+     * of free heap is under this value, the browser will go into
+     * the error recovery mode.
      */
     public void setMinMemory(long m) {
         minMemory = m;
@@ -381,11 +396,28 @@ public class MemoryManager {
 
     /**
      * Get the minimum amount of memory
-     *
-     * @return minimum amount of memory that should be kept free on the heap.
      */
     public long getMinMemory() {
         return minMemory;
+    }
+
+    /**
+     * Set the maximum amount of JVM heap. This should be the same
+     * value as you give to jvm (normally with -mx parameter). The
+     * <code>MemoryManager</code> will use this number to determine whether it
+     * is low on memory. The manager also uses Runtime.freeMemory()
+     * call but that call returns the free memory with only the
+     * current heap size, not the maximum heap size.
+     */
+    public void setMaxMemory(long m) {
+        maxMemory = m;
+    }
+
+    /**
+     * Get maximum amount of jvm heap.
+     */
+    public long getMaxMemory() {
+        return maxMemory;
     }
 
     /**
@@ -425,9 +457,6 @@ public class MemoryManager {
         if (!doGC)
             return false;
 
-        // lets purge some pages
-        reduceMemory();
-
         // Nope, try GC
         System.gc();
         mem = runtime.freeMemory();
@@ -436,6 +465,7 @@ public class MemoryManager {
         if ((mem - bytes) > minMemory) {
             return true;
         }
+
 
         // Nope, try heavy GC
         System.runFinalization();
@@ -453,26 +483,25 @@ public class MemoryManager {
     }
 
     /**
-     * Check whether the runtime is low on memory. Page initialization and other
-     * large memory allocation operations should call this
-     * method before (during) attempts to allocate resources.
-     *
-     * @return If this method returns true, such a component should stop its
-     *         operation and free up the memory it has allocated.
+     * Check whether the runtime is low on memory. All well behaved
+     * browser components (pilots and scripters) should call this
+     * method before (during) attempts to allocate resources. If this
+     * method returns true, such a component should stop its operation
+     * and free up the memory it has allocated.
      */
     public boolean isLowMemory() {
         return !canAllocate(0, true);
     }
 
     /**
-     * @param memoryNeeded  memory looking to allocate
+     * @param memoryNeeded
      * @return true if it's sure we can allocate memoryNeeded number of bytes
      */
     public boolean checkMemory(int memoryNeeded) {
         long beginTime = System.currentTimeMillis();
         int count = 0;
         // try and allocate memory, but quit after ten tries.
-        while (!canAllocate(memoryNeeded, count > 0)) {
+        while (!canAllocate((int) memoryNeeded, count > 0)) {
             // cache files on memory check
             boolean reducedSomething = reduceMemory();
             if (!reducedSomething && count > 0) {
