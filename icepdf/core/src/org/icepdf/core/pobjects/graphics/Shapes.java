@@ -307,11 +307,7 @@ public class Shapes {
 //        g.setComposite(AlphaComposite.getInstance(rule, alpha));
 
         Object nextShape;
-        Area clipArea = new Area();
-        // empty content streams can have a null clip, very rare corner case.
-        if (clip != null){
-            clipArea = new Area(clip);
-        }
+        Area clipArea = new Area(g.getClip());
 //        System.out.println("Shapes vector  size " + shapes.size() + " " + currentClip);
 //        long startTime = System.currentTimeMillis();
         long currentTime;
