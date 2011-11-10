@@ -215,7 +215,6 @@ public class SwingController
     private JTree outlinesTree;
     private JScrollPane outlinesScrollPane;
     private SearchPanel searchPanel;
-    private ThumbnailsPanel thumbnailsPanel;
     private AnnotationPanel annotationPanel;
     private JTabbedPane utilityTabbedPane;
 
@@ -860,13 +859,6 @@ public class SwingController
      */
     public void setSearchPanel(SearchPanel sp) {
         searchPanel = sp;
-    }
-
-    /**
-     * Called by SwingViewerBuilder, so that SwingController can setup event handling
-     */
-    public void setThumbnailsPanel(ThumbnailsPanel tn) {
-        thumbnailsPanel = tn;
     }
 
     /**
@@ -1824,10 +1816,6 @@ public class SwingController
         if (searchPanel != null)
             searchPanel.setDocument(document);
 
-        if (thumbnailsPanel != null){
-            thumbnailsPanel.setDocument(document);
-        }
-
         // utility pane visibility
         boolean showUtilityPane = false;
 
@@ -1961,9 +1949,6 @@ public class SwingController
         // Clear the SearchPane, but also stop any search in progress
         if (searchPanel != null)
             searchPanel.setDocument(null);
-
-        if (thumbnailsPanel != null)
-            thumbnailsPanel.setDocument(null);
 
         // set the default cursor.  
         documentViewController.closeDocument();
@@ -2116,10 +2101,6 @@ public class SwingController
         if (searchPanel != null) {
             searchPanel.dispose();
             searchPanel = null;
-        }
-        if (thumbnailsPanel != null){
-            thumbnailsPanel.dispose();
-            thumbnailsPanel = null;
         }
         if (utilityTabbedPane != null) {
             utilityTabbedPane.removeAll();
