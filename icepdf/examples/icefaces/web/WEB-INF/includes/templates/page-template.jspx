@@ -78,6 +78,11 @@
             </div>
 
         </div>
+
+         <ui:insert name="footer">
+            <ui:include src="/WEB-INF/includes/content/footer.jspx"/>
+         </ui:insert>
+        
           </body>
       </html>
   </f:view>
