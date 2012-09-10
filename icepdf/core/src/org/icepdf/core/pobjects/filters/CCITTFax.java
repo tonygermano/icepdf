@@ -836,7 +836,7 @@ public class CCITTFax {
         catch (Throwable e) {
             img = null;
             logger.log(Level.FINE,
-                    "Could not derive image from data bytes via JAI.");
+                    "deriveBufferedImageFromTIFFBytes() : Could not derive image from data bytes: ", e);
         }
         finally {
             try {

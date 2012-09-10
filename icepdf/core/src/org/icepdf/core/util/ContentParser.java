@@ -1026,7 +1026,7 @@ public class ContentParser {
 
                     // ty will dictate the vertical shift, many pdf will use
                     // ty=0 do just do a horizontal shift for layout.
-                    if (y != 0 && Math.round(newY) !=  Math.round(oldY)) {
+                    if (y != 0 && newY != oldY) {
                         pageText.newLine();
                     }
                 }
@@ -1085,7 +1085,7 @@ public class ContentParser {
                     // f5 and f6 will dictate a horizontal or vertical shift
                     // this information could be used to detect new lines
 
-                    if (Math.round(oldTransY) != Math.round(newTransY)) {
+                    if (oldTransY != newTransY) {
                         pageText.newLine();
                     } else if (Math.abs(oldScaleY) != Math.abs(newScaleY)) {
                         pageText.newLine();
@@ -1840,27 +1840,27 @@ public class ContentParser {
         float c = ((Number) stack.pop()).floatValue();
         float b = ((Number) stack.pop()).floatValue();
         float a = ((Number) stack.pop()).floatValue();
-        // get the current CTM
-        AffineTransform af = new AffineTransform(graphicState.getCTM());
-        // do the matrix concatenation math
-        af.concatenate(new AffineTransform(a, b, c, d, e, f));
-        // add the transformation to the graphics state
-        graphicState.set(af);
-        // update the clip, translate by this CM
-        graphicState.updateClipCM(new AffineTransform(a, b, c, d, e, f));
+        if (!inTextBlock) {
+            // get the current CTM
+            AffineTransform af = new AffineTransform(graphicState.getCTM());
+            // do the matrix concatenation math
+            af.concatenate(new AffineTransform(a, b, c, d, e, f));
+            // add the transformation to the graphics state
+            graphicState.set(af);
+            // update the clip, translate by this CM
+            graphicState.updateClipCM(new AffineTransform(a, b, c, d, e, f));
+        }
         // apply the cm just as we would a tm
-        if (inTextBlock) {
+        else {
             // update the textBlockBase with the cm matrix
-            af = new AffineTransform(textBlockBase);
+            AffineTransform af = new AffineTransform(textBlockBase);
             // apply the transform
             graphicState.getTextState().tmatrix = new AffineTransform(a, b, c, d, e, f);
             af.concatenate(graphicState.getTextState().tmatrix);
             graphicState.set(af);
+            graphicState.scale(1, -1);
             // apply text size.
             applyTextScaling(graphicState);
-            // update the textBlockBase as the tm was specified in the BT block
-            // and we still need to keep the offset.
-            textBlockBase.setTransform(new AffineTransform(graphicState.getCTM()));
         }
     }
 
@@ -1969,9 +1969,7 @@ public class ContentParser {
                 // by paint the xObject to an image.
                 if (!disableTransparencyGroups &&
                         formXObject.isTransparencyGroup() &&
-                       graphicState.getFillAlpha() < 1.0f &&
-                        (formXObject.getBBox().getWidth() < Short.MAX_VALUE &&
-                         formXObject.getBBox().getHeight() < Short.MAX_VALUE)) {
+                       graphicState.getFillAlpha() < 1.0f ) {
                     // add the hold form for further processing.
                     shapes.add(formXObject);
                 }
@@ -2635,7 +2633,6 @@ public class ContentParser {
         // the mystery continues,  it appears that only the negative or positive
         // value of tz is actually used.  If the original non 1 number is used the
         // layout will be messed up.
-        float hScalling = graphicState.getTextState().hScalling;
         graphicState.getTextState().hScalling =
                 graphicState.getTextState().hScalling >= 0?1:-1;
         AffineTransform horizontalScalingTransform =
