@@ -86,6 +86,9 @@ public class Stream extends Dictionary {
     private static int redIndex = 0;
     private static int blueIndex = 2;
 
+    // flag the forces jai to be use over our fax decode class.
+    private static boolean forceJaiccittfax;
+
     static {
         // decide if large images will be scaled
         scaleImages =
@@ -101,6 +104,11 @@ public class Stream extends Dictionary {
         pageRatio =
                 Defs.sysPropertyDouble("org.icepdf.core.pageRatio",
                         8.26/11.68);
+
+        // force jai as the default ccittfax decode.
+        forceJaiccittfax =
+                Defs.sysPropertyBoolean("org.icepdf.core.ccittfax.jai",
+                        false);
     }
 
     private static final int[] GRAY_1_BIT_INDEX_TO_RGB_REVERSED = new int[]{
@@ -1073,7 +1081,11 @@ public class Stream extends Dictionary {
                 // lessen the amount of black, standard 255 fraction is too dark
                 // increasing the denominator has the same affect of lighting up
                 // the image.
-                inBlack = (values[3] / 768.0f);
+                inBlack = (values[3] / 255.0f);
+
+                if (inCyan != 0 && inMagenta != 0 && inYellow != 0 ){
+                    inBlack /= DeviceCMYK.cmykBlackRatio;
+                }
 
                 if (!(inCyan == lastCyan && inMagenta == lastMagenta &&
                         inYellow == lastYellow && inBlack == lastBlack)){
@@ -2446,6 +2458,11 @@ public class Stream extends Dictionary {
             if (Tagger.tagging)
                 Tagger.tagImage("CCITTFaxDecode");
             try{
+                // corner case where a user may want to use JAI because of
+                // speed or compatibility requirements.
+                if (forceJaiccittfax){
+                    throw new Throwable("Forcing CCITTFAX decode via JAI");
+                }
                 data = ccittFaxDecode(width, height);
                 dataLength = data.length;
             }catch(Throwable e){
