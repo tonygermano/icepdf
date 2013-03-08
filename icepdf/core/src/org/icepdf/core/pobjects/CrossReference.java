@@ -20,11 +20,10 @@ import org.icepdf.core.util.Utils;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.logging.Level;
+import java.util.Hashtable;
+import java.util.Vector;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * @author Mark Collette
@@ -36,132 +35,116 @@ public class CrossReference {
     private static final Logger logger =
             Logger.getLogger(CrossReference.class.toString());
 
-    public static final Name SIZE_KEY = new Name("Size");
-    public static final Name INDEX_KEY = new Name("Index");
-    public static final Name W_KEY = new Name("W");
-
-    /**
-     * Map of all the objects in reference by the CrossReference table.  Ojbects
-     * are retrieved by object number.
-     */
-    private HashMap<Number, Entry> hObjectNumber2Entry;
+//    private Vector<Entry> m_vXRefEntries;
+    private Hashtable<Number, Entry> m_hObjectNumber2Entry;
 
     /**
      * In a Linearized PDF, we don't want to load all Trailers and their XRefs
      * upfront, but would rather load the first upfront, and then lazily load
      * the rest.
-     * If xrefPrevious != null, Then just use it
-     * If xrefPrevious == null And pTrailer == null,
+     * If m_xrefPrevious != null, Then just use it
+     * If m_xrefPrevious == null And m_PTrailer == null,
      * Then we can't do anything
-     * If xrefPrevious == null And pTrailer != null,
-     * Then use pTrailer to setup xrefPrevious
+     * If m_xrefPrevious == null And m_PTrailer != null,
+     * Then use m_PTrailer to setup m_xrefPrevious
      */
-    private PTrailer pTrailer;
-    private CrossReference xrefPrevious;
-    private CrossReference xrefPeer;
-
-    //
-    private boolean bIsCrossReferenceTable;
-    private boolean bHaveTriedLoadingPrevious;
-    private boolean bHaveTriedLoadingPeer;
+    private PTrailer m_PTrailer;
+    private CrossReference m_xrefPrevious;
+    private CrossReference m_xrefPeer;
+    private boolean m_bIsCrossReferenceTable;
+    private boolean m_bHaveTriedLoadingPrevious;
+    private boolean m_bHaveTriedLoadingPeer;
 
     // offset error for simple file error issue.
     protected int offset;
 
     public CrossReference() {
-        hObjectNumber2Entry = new HashMap<Number, Entry>(4096);
+//        m_vXRefEntries = new Vector<Entry>(4096);
+        m_hObjectNumber2Entry = new Hashtable<Number, Entry>(4096);
     }
 
     public void setTrailer(PTrailer trailer) {
-        pTrailer = trailer;
+        m_PTrailer = trailer;
     }
 
-    /**
-     * Starts the parsing of an xRef table entries as found when using the
-     * Parser to Parse out an object via Parser.getObject().
-     * <p/>
-     * All entries are taken into consideration except for ones that are marked
-     * free.
-     *
-     * @param parser content parser
-     */
-
     public void addXRefTableEntries(Parser parser) {
-        bIsCrossReferenceTable = true;
+        m_bIsCrossReferenceTable = true;
         try {
+//System.out.println("Starting to read xref table     : " + (new java.util.Date()));
+//int countOfAllEntries = 0;
             while (true) {
                 Object startingObjectNumberOrTrailer = parser.getNumberOrStringWithMark(16);
                 if (!(startingObjectNumberOrTrailer instanceof Number)) {
                     parser.ungetNumberOrStringWithReset();
                     break;
                 }
-
                 int startingObjectNumber = ((Number) startingObjectNumberOrTrailer).intValue();
                 int numEntries = ((Number) parser.getToken()).intValue();
                 int currNumber = startingObjectNumber;
                 for (int i = 0; i < numEntries; i++) {
-                    long filePosition = parser.getIntSurroundedByWhitespace();  // ( (Number) getToken() ).longValue();
+                    long tenDigitNum = parser.getIntSurroundedByWhitespace();  // ( (Number) getToken() ).longValue();
                     int generationNum = parser.getIntSurroundedByWhitespace(); // ( (Number) getToken() ).intValue();
                     char usedOrFree = parser.getCharSurroundedByWhitespace();  // ( (String) getToken() ).charAt( 0 );
                     if (usedOrFree == 'n')         // Used
-                        addUsedEntry(currNumber, filePosition, generationNum);
-                    // ignore any free entries.
-//                    else if (usedOrFree == 'f')    // Free
-//                        addFreeEntry(currNumber, (int) tenDigitNum, generationNum);
+                        addUsedEntry(currNumber, tenDigitNum, generationNum);
+                    else if (usedOrFree == 'f')    // Free
+                        addFreeEntry(currNumber, (int) tenDigitNum, generationNum);
+                    //System.out.println("xref entry " + (i+1) + " of " + numEntries + "   tenDigitNum: " + tenDigitNum + ", generationNum: " + generationNum + ", usedOrFree: " + usedOrFree + ", objNum: " + currNumber);
+
                     currNumber++;
+//countOfAllEntries++;
                 }
             }
-        } catch (IOException e) {
-            logger.log(Level.SEVERE, "Error parsing xRef table entries.", e);
+//System.out.println("Done reading xref table entries : " + (new java.util.Date()) + "  count: " + countOfAllEntries);
+        }
+        catch (IOException e) {
+             logger.log(Level.SEVERE, "Error parsing xRef table entries.", e);
         }
     }
 
     /**
-     * Once a XRef stream is found, the decoded streamInput is itereated over
-     * to build out the Xref structure.
-     *
      * @param library        The Document's Library
      * @param xrefStreamHash Dictionary for XRef stream
      * @param streamInput    Decoded stream bytes for XRef stream
      */
-    public void addXRefStreamEntries(Library library, HashMap xrefStreamHash, InputStream streamInput) {
+    public void addXRefStreamEntries(Library library, Hashtable xrefStreamHash, InputStream streamInput) {
+//System.out.println("Starting to read xref stream     : " + (new java.util.Date()));
+//int countOfAllEntries = 0;
         try {
-            // number +1 represented the highest object number.
-            int size = library.getInt(xrefStreamHash, SIZE_KEY);
-            // pair of integers for each subsection in this section. The first
-            // int is the first object number in this section and the second
-            // is the number of entries.
-            List<Number> objNumAndEntriesCountPairs =
-                    (List) library.getObject(xrefStreamHash, INDEX_KEY);
+            int size = library.getInt(xrefStreamHash, "Size");
+            Vector<Number> objNumAndEntriesCountPairs =
+                    (Vector) library.getObject(xrefStreamHash, "Index");
             if (objNumAndEntriesCountPairs == null) {
-                objNumAndEntriesCountPairs = new ArrayList<Number>(2);
+                objNumAndEntriesCountPairs = new Vector<Number>(2);
                 objNumAndEntriesCountPairs.add(0);
                 objNumAndEntriesCountPairs.add(size);
             }
-            // three int's: field values, x,y and z bytes in length.
-            List fieldSizesVec = (List) library.getObject(xrefStreamHash, W_KEY);
+            Vector fieldSizesVec = (Vector) library.getObject(xrefStreamHash, "W");
             int[] fieldSizes = null;
             if (fieldSizesVec != null) {
                 fieldSizes = new int[fieldSizesVec.size()];
                 for (int i = 0; i < fieldSizesVec.size(); i++)
                     fieldSizes[i] = ((Number) fieldSizesVec.get(i)).intValue();
             }
-            // not doing anything with PREV.
 
             int fieldTypeSize = fieldSizes[0];
             int fieldTwoSize = fieldSizes[1];
             int fieldThreeSize = fieldSizes[2];
-            // parse out the object data.
             for (int xrefSubsection = 0; xrefSubsection < objNumAndEntriesCountPairs.size(); xrefSubsection += 2) {
-                int startingObjectNumber = objNumAndEntriesCountPairs.get(xrefSubsection).intValue();
-                int entriesCount = objNumAndEntriesCountPairs.get(xrefSubsection + 1).intValue();
+                int startingObjectNumber = ((Number) objNumAndEntriesCountPairs.get(xrefSubsection)).intValue();
+                int entriesCount = ((Number) objNumAndEntriesCountPairs.get(xrefSubsection + 1)).intValue();
                 int afterObjectNumber = startingObjectNumber + entriesCount;
                 for (int objectNumber = startingObjectNumber; objectNumber < afterObjectNumber; objectNumber++) {
                     int entryType = Entry.TYPE_USED;    // Default value is 1
                     if (fieldTypeSize > 0)
                         entryType = Utils.readIntWithVaryingBytesBE(streamInput, fieldTypeSize);
-                    // used object but not compressed
-                    if (entryType == Entry.TYPE_USED) {
+                    if (entryType == Entry.TYPE_FREE) {
+                        int nextFreeObjectNumber = Utils.readIntWithVaryingBytesBE(
+                                streamInput, fieldTwoSize);
+                        int generationNumberIfReused = Utils.readIntWithVaryingBytesBE(
+                                streamInput, fieldThreeSize);
+                        addFreeEntry(objectNumber, nextFreeObjectNumber, generationNumberIfReused);
+                    } else if (entryType == Entry.TYPE_USED) {
                         long filePositionOfObject = Utils.readLongWithVaryingBytesBE(
                                 streamInput, fieldTwoSize);
                         int generationNumber = 0;       // Default value is 0
@@ -170,58 +153,50 @@ public class CrossReference {
                                     streamInput, fieldThreeSize);
                         }
                         addUsedEntry(objectNumber, filePositionOfObject, generationNumber);
-                    }
-                    // entries define compress objects.
-                    else if (entryType == Entry.TYPE_COMPRESSED) {
+                    } else if (entryType == Entry.TYPE_COMPRESSED) {
                         int objectNumberOfContainingObjectStream = Utils.readIntWithVaryingBytesBE(
                                 streamInput, fieldTwoSize);
                         int indexWithinObjectStream = Utils.readIntWithVaryingBytesBE(
                                 streamInput, fieldThreeSize);
                         addCompressedEntry(
                                 objectNumber, objectNumberOfContainingObjectStream, indexWithinObjectStream);
-
                     }
-                    // free objects, no used.
-                    else if (entryType == Entry.TYPE_FREE) {
-                        // we do nothing but we still need to move the cursor.
-                        Utils.readIntWithVaryingBytesBE(
-                                streamInput, fieldTwoSize);
-                        Utils.readIntWithVaryingBytesBE(
-                                streamInput, fieldThreeSize);
-                    }
+//countOfAllEntries++;
                 }
             }
-        } catch (IOException e) {
-            logger.log(Level.SEVERE, "Error parsing xRef stream entries.", e);
         }
+        catch (IOException e) {
+             logger.log(Level.SEVERE, "Error parsing xRef stream entries.", e);
+        }
+//System.out.println("Done reading xref stream entries : " + (new java.util.Date()) + "  count: " + countOfAllEntries);
     }
 
     public Entry getEntryForObject(Integer objectNumber) {
-        Entry entry = hObjectNumber2Entry.get(objectNumber);
+        Entry entry =  m_hObjectNumber2Entry.get(objectNumber);
         if (entry != null)
             return entry;
-        /// fall back code to look for another xref table.
-        if (bIsCrossReferenceTable && !bHaveTriedLoadingPeer &&
-                xrefPeer == null && pTrailer != null) {
-            // Lazily load xrefPeer, using pTrailer
-            pTrailer.loadXRefStmIfApplicable();
-            xrefPeer = pTrailer.getCrossReferenceStream();
-            bHaveTriedLoadingPeer = true;
+
+        if (m_bIsCrossReferenceTable && !m_bHaveTriedLoadingPeer &&
+                m_xrefPeer == null && m_PTrailer != null) {
+            // Lazily load m_xrefPeer, using m_PTrailer
+            m_PTrailer.loadXRefStmIfApplicable();
+            m_xrefPeer = m_PTrailer.getCrossReferenceStream();
+            m_bHaveTriedLoadingPeer = true;
         }
-        if (xrefPeer != null) {
-            entry = xrefPeer.getEntryForObject(objectNumber);
+        if (m_xrefPeer != null) {
+            entry = m_xrefPeer.getEntryForObject(objectNumber);
             if (entry != null)
                 return entry;
         }
 
-        if (!bHaveTriedLoadingPrevious &&
-                xrefPrevious == null && pTrailer != null) {
-            // Lazily load xrefPrevious, using pTrailer
-            pTrailer.onDemandLoadAndSetupPreviousTrailer();
-            bHaveTriedLoadingPrevious = true;
+        if (!m_bHaveTriedLoadingPrevious &&
+                m_xrefPrevious == null && m_PTrailer != null) {
+            // Lazily load m_xrefPrevious, using m_PTrailer
+            m_PTrailer.onDemandLoadAndSetupPreviousTrailer();
+            m_bHaveTriedLoadingPrevious = true;
         }
-        if (xrefPrevious != null) {
-            entry = xrefPrevious.getEntryForObject(objectNumber);
+        if (m_xrefPrevious != null) {
+            entry = m_xrefPrevious.getEntryForObject(objectNumber);
             if (entry != null)
                 return entry;
         }
@@ -229,10 +204,10 @@ public class CrossReference {
     }
 
     public void addToEndOfChainOfPreviousXRefs(CrossReference prev) {
-        if (xrefPrevious == null)
-            xrefPrevious = prev;
+        if (m_xrefPrevious == null)
+            m_xrefPrevious = prev;
         else
-            xrefPrevious.addToEndOfChainOfPreviousXRefs(prev);
+            m_xrefPrevious.addToEndOfChainOfPreviousXRefs(prev);
     }
 
     protected void addFreeEntry(int objectNumber, int nextFreeObjectNumber, int generationNumberIfReused) {
@@ -242,12 +217,16 @@ public class CrossReference {
 
     protected void addUsedEntry(int objectNumber, long filePositionOfObject, int generationNumber) {
         UsedEntry entry = new UsedEntry(objectNumber, filePositionOfObject, generationNumber);
-        hObjectNumber2Entry.put(objectNumber, entry);
+//        m_vXRefEntries.add(entry);
+
+        m_hObjectNumber2Entry.put(objectNumber, entry);
     }
 
     protected void addCompressedEntry(int objectNumber, int objectNumberOfContainingObjectStream, int indexWithinObjectStream) {
         CompressedEntry entry = new CompressedEntry(objectNumber, objectNumberOfContainingObjectStream, indexWithinObjectStream);
-        hObjectNumber2Entry.put(objectNumber, entry);
+//        m_vXRefEntries.add(entry);
+
+        m_hObjectNumber2Entry.put(objectNumber, entry);
     }
 
 
@@ -256,81 +235,77 @@ public class CrossReference {
         public static final int TYPE_USED = 1;
         public static final int TYPE_COMPRESSED = 2;
 
-        private int Type;
-        private int objectNumber;
+        private int m_iType;
+        private int m_iObjectNumber;
 
         Entry(int type, int objectNumber) {
-            Type = type;
-            this.objectNumber = objectNumber;
+            m_iType = type;
+            m_iObjectNumber = objectNumber;
         }
 
         int getType() {
-            return Type;
+            return m_iType;
         }
 
         int getObjectNumber() {
-            return objectNumber;
+            return m_iObjectNumber;
         }
     }
 
     public static class FreeEntry extends Entry {
-        private int nextFreeObjectNumber;
-        private int generationNumberIfReused;
+        private int m_iNextFreeObjectNumber;
+        private int m_iGenerationNumberIfReused;
 
         FreeEntry(int objectNumber, int nextFreeObjectNumber, int generationNumberIfReused) {
             super(TYPE_FREE, objectNumber);
-            this.nextFreeObjectNumber = nextFreeObjectNumber;
-            this.generationNumberIfReused = generationNumberIfReused;
+            m_iNextFreeObjectNumber = nextFreeObjectNumber;
+            m_iGenerationNumberIfReused = generationNumberIfReused;
         }
 
         public int getNextFreeObjectNumber() {
-            return nextFreeObjectNumber;
+            return m_iNextFreeObjectNumber;
         }
 
         public int getGenerationNumberIfReused() {
-            return generationNumberIfReused;
+            return m_iGenerationNumberIfReused;
         }
     }
 
     public class UsedEntry extends Entry {
-        private long filePositionOfObject;
-        private int generationNumber;
+        private long m_lFilePositionOfObject;
+        private int m_iGenerationNumber;
 
         UsedEntry(int objectNumber, long filePositionOfObject, int generationNumber) {
             super(TYPE_USED, objectNumber);
-            this.filePositionOfObject = filePositionOfObject;
-            this.generationNumber = generationNumber;
+            m_lFilePositionOfObject = filePositionOfObject;
+            m_iGenerationNumber = generationNumber;
         }
 
         public long getFilePositionOfObject() {
-            return filePositionOfObject + offset;
+            return m_lFilePositionOfObject + offset;
         }
 
         public int getGenerationNumber() {
-            return generationNumber;
-        }
-
-        public void setFilePositionOfObject(long filePositionOfObject) {
-            this.filePositionOfObject = filePositionOfObject;
+            return m_iGenerationNumber;
         }
     }
 
     public static class CompressedEntry extends Entry {
-        private int objectNumberOfContainingObjectStream;
-        private int indexWithinObjectStream;
+        private int m_iObjectNumberOfContainingObjectStream;
+        private int m_iIndexWithinObjectStream;
 
         CompressedEntry(int objectNumber, int objectNumberOfContainingObjectStream, int indexWithinObjectStream) {
             super(TYPE_COMPRESSED, objectNumber);
-            this.objectNumberOfContainingObjectStream = objectNumberOfContainingObjectStream;
-            this.indexWithinObjectStream = indexWithinObjectStream;
+            m_iObjectNumberOfContainingObjectStream = objectNumberOfContainingObjectStream;
+            m_iIndexWithinObjectStream = indexWithinObjectStream;
         }
 
         public int getObjectNumberOfContainingObjectStream() {
-            return objectNumberOfContainingObjectStream;
+            return m_iObjectNumberOfContainingObjectStream;
         }
 
         public int getIndexWithinObjectStream() {
-            return indexWithinObjectStream;
+            return m_iIndexWithinObjectStream;
         }
     }
 

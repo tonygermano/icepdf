@@ -16,9 +16,9 @@ package org.icepdf.core.pobjects;
 
 import org.icepdf.core.util.Library;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Set;
+import java.util.Enumeration;
+import java.util.Hashtable;
+import java.util.Vector;
 
 /**
  * <P>The trailer of a PDF file enables an application reading the file to quickly
@@ -51,14 +51,6 @@ import java.util.Set;
  */
 public class PTrailer extends Dictionary {
 
-    public static final Name SIZE_KEY = new Name("Size");
-    public static final Name PREV_KEY = new Name("Prev");
-    public static final Name ROOT_KEY = new Name("Root");
-    public static final Name ENCRYPT_KEY = new Name("Encrypt");
-    public static final Name INFO_KEY = new Name("Info");
-    public static final Name ID_KEY = new Name("ID");
-    public static final Name XREFSTM_KEY = new Name("XRefStm");
-
     // Position in the file. The LazyObjectLoader typically keeps this info
     // for all PDF objects, but the bootstrapping PTrialer is an exception,
     // and we need its location for writing incremental updates, so for
@@ -66,25 +58,25 @@ public class PTrailer extends Dictionary {
     private long position;
 
     // documents cross reference table
-    private CrossReference crossReferenceTable;
+    private CrossReference m_CrossReferenceTable;
 
     // documents cross reference stream.
-    private CrossReference crossReferenceStream;
+    private CrossReference m_CrossReferenceStream;
 
     /**
      * Create a new PTrailer object
      *
      * @param dictionary dictionary associated with the trailer
      */
-    public PTrailer(Library library, HashMap dictionary, CrossReference xrefTable, CrossReference xrefStream) {
+    public PTrailer(Library library, Hashtable dictionary, CrossReference xrefTable, CrossReference xrefStream) {
         super(library, dictionary);
 
-        crossReferenceTable = xrefTable;
-        crossReferenceStream = xrefStream;
-        if (crossReferenceTable != null)
-            crossReferenceTable.setTrailer(this);
-        if (crossReferenceStream != null)
-            crossReferenceStream.setTrailer(this);
+        m_CrossReferenceTable = xrefTable;
+        m_CrossReferenceStream = xrefStream;
+        if (m_CrossReferenceTable != null)
+            m_CrossReferenceTable.setTrailer(this);
+        if (m_CrossReferenceStream != null)
+            m_CrossReferenceStream.setTrailer(this);
     }
 
     /**
@@ -102,7 +94,7 @@ public class PTrailer extends Dictionary {
      * @return total number of entries in the file's cross-reference table
      */
     public int getNumberOfObjects() {
-        return library.getInt(entries, SIZE_KEY);
+        return library.getInt(entries, "Size");
     }
 
     /**
@@ -116,7 +108,7 @@ public class PTrailer extends Dictionary {
      *         previous cross-reference section
      */
     public long getPrev() {
-        return library.getLong(entries, PREV_KEY);
+        return library.getLong(entries, "Prev");
     }
 
     /**
@@ -127,10 +119,10 @@ public class PTrailer extends Dictionary {
      * @return the cross reference object with the highest precedence, for this trailer
      */
     protected CrossReference getPrimaryCrossReference() {
-        if (crossReferenceTable != null)
-            return crossReferenceTable;
+        if (m_CrossReferenceTable != null)
+            return m_CrossReferenceTable;
         loadXRefStmIfApplicable();
-        return crossReferenceStream;
+        return m_CrossReferenceStream;
     }
 
     /**
@@ -139,7 +131,7 @@ public class PTrailer extends Dictionary {
      * @return cross reference table object; null, if one does not exist.
      */
     protected CrossReference getCrossReferenceTable() {
-        return crossReferenceTable;
+        return m_CrossReferenceTable;
     }
 
     /**
@@ -148,7 +140,7 @@ public class PTrailer extends Dictionary {
      * @return cross reference stream object; null, if one does not exist.
      */
     protected CrossReference getCrossReferenceStream() {
-        return crossReferenceStream;
+        return m_CrossReferenceStream;
     }
 
     /**
@@ -159,7 +151,7 @@ public class PTrailer extends Dictionary {
      * @return reference number of catalog reference.
      */
     public Reference getRootCatalogReference() {
-        return library.getObjectReference(entries, ROOT_KEY);
+        return library.getObjectReference(entries, "Root");
     }
 
     /**
@@ -168,15 +160,15 @@ public class PTrailer extends Dictionary {
      * @return Catalog entry.
      */
     public Catalog getRootCatalog() {
-        Object tmp = library.getObject(entries, ROOT_KEY);
+        Object tmp = library.getObject(entries, "Root");
         // specification states the the root entry must be a indirect
         if (tmp instanceof Catalog) {
-            return (Catalog) tmp;
+            return (Catalog) library.getObject(entries, "Root");
         }
         // there are however a few instances where the dictionary is specified
         // directly
-        else if (tmp instanceof HashMap) {
-            return new Catalog(library, (HashMap) tmp);
+        else if (tmp instanceof Hashtable) {
+            return new Catalog(library, (Hashtable) tmp);
         }
         // if no root was found we return so that the use will be notified
         // of the problem which is the PDF can not be loaded.
@@ -192,10 +184,10 @@ public class PTrailer extends Dictionary {
      *
      * @return encryption dictionary
      */
-    public HashMap getEncrypt() {
-        Object encryptParams = library.getObject(entries, ENCRYPT_KEY);
-        if (encryptParams instanceof HashMap) {
-            return (HashMap) encryptParams;
+    public Hashtable getEncrypt() {
+        Object encryptParams = library.getObject(entries, "Encrypt");
+        if (encryptParams instanceof Hashtable) {
+            return (Hashtable) encryptParams;
         } else {
             return null;
         }
@@ -209,9 +201,9 @@ public class PTrailer extends Dictionary {
      * @return information dictionary
      */
     public PInfo getInfo() {
-        Object info = library.getObject(entries, INFO_KEY);
-        if (info instanceof HashMap) {
-            return new PInfo(library, (HashMap) info);
+        Object info = library.getObject(entries, "Info");
+        if (info instanceof Hashtable) {
+            return new PInfo(library, (Hashtable) info);
         } else {
             return null;
         }
@@ -224,8 +216,8 @@ public class PTrailer extends Dictionary {
      *
      * @return vector containing constituting file identifier
      */
-    public List getID() {
-        return (List) library.getObject(entries, ID_KEY);
+    public Vector getID() {
+        return (Vector) library.getObject(entries, "ID");
     }
 
     /**
@@ -252,10 +244,11 @@ public class PTrailer extends Dictionary {
         nextTrailer.getPrimaryCrossReference().addToEndOfChainOfPreviousXRefs(getPrimaryCrossReference());
 
         // Later key,value pairs take precedence over previous entries
-        HashMap nextDictionary = nextTrailer.getDictionary();
-        HashMap currDictionary = getDictionary();
-        Set currKeys = currDictionary.keySet();
-        for (Object currKey : currKeys) {
+        Hashtable nextDictionary = nextTrailer.getDictionary();
+        Hashtable currDictionary = getDictionary();
+        Enumeration currKeys = currDictionary.keys();
+        while (currKeys.hasMoreElements()) {
+            Object currKey = currKeys.nextElement();
             if (!nextDictionary.containsKey(currKey)) {
                 Object currValue = currDictionary.get(currKey);
                 nextDictionary.put(currKey, currValue);
@@ -268,10 +261,11 @@ public class PTrailer extends Dictionary {
         getPrimaryCrossReference().addToEndOfChainOfPreviousXRefs(previousTrailer.getPrimaryCrossReference());
 
         // Later key,value pairs take precedence over previous entries
-        HashMap currDictionary = getDictionary();
-        HashMap prevDictionary = previousTrailer.getDictionary();
-        Set prevKeys = prevDictionary.keySet();
-        for (Object prevKey : prevKeys) {
+        Hashtable currDictionary = getDictionary();
+        Hashtable prevDictionary = previousTrailer.getDictionary();
+        Enumeration prevKeys = prevDictionary.keys();
+        while (prevKeys.hasMoreElements()) {
+            Object prevKey = prevKeys.nextElement();
             if (!currDictionary.containsKey(prevKey)) {
                 Object prevValue = prevDictionary.get(prevKey);
                 currDictionary.put(prevKey, prevValue);
@@ -291,8 +285,8 @@ public class PTrailer extends Dictionary {
     }
 
     protected void loadXRefStmIfApplicable() {
-        if (crossReferenceStream == null) {
-            long xrefStreamPosition = library.getLong(entries, XREFSTM_KEY);
+        if (m_CrossReferenceStream == null) {
+            long xrefStreamPosition = library.getLong(entries, "XRefStm");
             if (xrefStreamPosition > 0L) {
                 // OK, this is a little weird, but basically, any XRef stream
                 //  dictionary is also a Trailer dictionary, so our Parser
@@ -302,7 +296,7 @@ public class PTrailer extends Dictionary {
                 //  our own
                 PTrailer trailer = library.getTrailerByFilePosition(xrefStreamPosition);
                 if (trailer != null)
-                    crossReferenceStream = trailer.getCrossReferenceStream();
+                    m_CrossReferenceStream = trailer.getCrossReferenceStream();
             }
         }
     }
@@ -312,7 +306,7 @@ public class PTrailer extends Dictionary {
      *
      * @return dictionary
      */
-    public HashMap getDictionary() {
+    public Hashtable getDictionary() {
         return entries;
     }
 
@@ -322,6 +316,6 @@ public class PTrailer extends Dictionary {
      * @return dictionary values.
      */
     public String toString() {
-        return "PTRAILER= " + entries.toString() + " xref table=" + crossReferenceTable + "  xref stream=" + crossReferenceStream;
+        return "PTRAILER= " + entries.toString() + " xref table=" + m_CrossReferenceTable + "  xref stream=" + m_CrossReferenceStream;
     }
 }

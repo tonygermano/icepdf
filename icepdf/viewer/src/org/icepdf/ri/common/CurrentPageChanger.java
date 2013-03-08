@@ -14,8 +14,12 @@
  */
 package org.icepdf.ri.common;
 
+import org.icepdf.ri.common.views.AbstractDocumentView;
+import org.icepdf.ri.common.views.DocumentViewControllerImpl;
 import org.icepdf.core.util.PropertyConstants;
-import org.icepdf.ri.common.views.*;
+import org.icepdf.core.views.DocumentViewModel;
+import org.icepdf.core.views.PageViewComponent;
+import org.icepdf.core.views.swing.AbstractPageViewComponent;
 
 import javax.swing.*;
 import java.awt.*;
@@ -23,9 +27,11 @@ import java.awt.event.AdjustmentEvent;
 import java.awt.event.AdjustmentListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  *

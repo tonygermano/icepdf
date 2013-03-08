@@ -15,8 +15,8 @@
 package org.icepdf.core.util;
 
 import java.util.Properties;
-import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
 
 public class Defs {
@@ -39,7 +39,8 @@ public class Defs {
     public static String property(String name, String defaultValue) {
         try {
             return System.getProperty(name, defaultValue);
-        } catch (SecurityException ex) {
+        }
+        catch (SecurityException ex) {
             // recal method so that property change takes effect
             logger.log(Level.FINE, "Security exception, property could not be set.", ex);
         }
@@ -57,7 +58,8 @@ public class Defs {
         if (value != null) {
             try {
                 return Integer.parseInt(value);
-            } catch (NumberFormatException ex) {
+            }
+            catch (NumberFormatException ex) {
                 logger.log(Level.FINE, "Failed to parse property.", ex);
             }
         }
@@ -74,7 +76,8 @@ public class Defs {
         if (value != null) {
             try {
                 return Double.parseDouble(value);
-            } catch (NumberFormatException ex) {
+            }
+            catch (NumberFormatException ex) {
                 logger.log(Level.FINE, "Failed to parse property.", ex);
             }
         }
@@ -170,7 +173,8 @@ public class Defs {
             if (value != null) {
                 prop.put(property, value);
             }
-        } catch (SecurityException ex) {
+        }
+        catch (SecurityException ex) {
             // recall method so that property change takes effect
             logger.log(Level.FINE, "Security exception, property could not be set.", ex);
         }

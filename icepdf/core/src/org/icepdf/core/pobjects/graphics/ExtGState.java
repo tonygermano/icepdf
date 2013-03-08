@@ -15,14 +15,11 @@
 package org.icepdf.core.pobjects.graphics;
 
 import org.icepdf.core.pobjects.Dictionary;
-import org.icepdf.core.pobjects.Name;
 import org.icepdf.core.util.Library;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.logging.Level;
+import java.util.Hashtable;
+import java.util.Vector;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * <p>This class represents an External Graphics State (ExtGState) object.  An
@@ -225,18 +222,6 @@ public class ExtGState extends Dictionary {
     private static final Logger logger =
             Logger.getLogger(ExtGState.class.toString());
 
-    public static final Name SMASK_KEY = new Name("SMask");
-    public static final Name LW_KEY = new Name("LW");
-    public static final Name LC_KEY = new Name("LC");
-    public static final Name LJ_KEY = new Name("LJ");
-    public static final Name ML_KEY = new Name("ML");
-    public static final Name CA_KEY = new Name("CA");
-    public static final Name ca_KEY = new Name("ca");
-    public static final Name OP_KEY = new Name("OP");
-    public static final Name op_KEY = new Name("op");
-    public static final Name OPM_KEY = new Name("OPM");
-    public static final Name D_KEY = new Name("D");
-
     /**
      * Creates a a new Graphics State object.
      *
@@ -244,7 +229,7 @@ public class ExtGState extends Dictionary {
      * @param graphicsState dictionary containing entries from teh graphcis
      *                      state parameters dictionary.
      */
-    public ExtGState(Library library, HashMap graphicsState) {
+    public ExtGState(Library library, Hashtable graphicsState) {
         super(library, graphicsState);
     }
 
@@ -255,7 +240,7 @@ public class ExtGState extends Dictionary {
      *         specified in the dictionary null is returned.
      */
     Number getLineWidth() {
-        return getNumber(LW_KEY);
+        return getNumber("LW");
     }
 
     /**
@@ -265,7 +250,7 @@ public class ExtGState extends Dictionary {
      *         specified in the dictionary null is returned.
      */
     Number getLineCapStyle() {
-        return getNumber(LC_KEY);
+        return getNumber("LC");
     }
 
     /**
@@ -275,7 +260,7 @@ public class ExtGState extends Dictionary {
      *         specified in the dictionary null is returned.
      */
     Number getLineJoinStyle() {
-        return getNumber(LJ_KEY);
+        return getNumber("LJ");
     }
 
     /**
@@ -285,7 +270,7 @@ public class ExtGState extends Dictionary {
      *         specified in the dictionary null is returned.
      */
     Number getMiterLimit() {
-        return getNumber(ML_KEY);
+        return getNumber("ML");
     }
 
     /**
@@ -294,17 +279,17 @@ public class ExtGState extends Dictionary {
      * @return the line dash array [dashArray dashPhase].  If the dash pattern
      *         is not specified the dictionary null is returned.
      */
-    List getLineDashPattern() {
-        List<Object> dashPattern = null;
-        Number dashPhase;
+    Vector getLineDashPattern() {
+        Vector dashPattern = null;
+        Number dashPhase = new Float(0f);
         float[] dashArray = null;
-        if (entries.containsKey(D_KEY)) {
+        if (entries.containsKey("D")) {
             try {
-                List dashData = (List) entries.get(D_KEY);
+                Vector dashData = (Vector) entries.get("D");
                 // pop dashPhase off the stack
-                dashPhase = (Number) dashData.get(1);
+                dashPhase = (Number) dashData.elementAt(1);
                 // pop the dashVector of the stack
-                List dashVector = (List) dashData.get(0);
+                Vector dashVector = (Vector) dashData.elementAt(0);
                 // if the dash vector size is zero we have a default none dashed
                 // line and thus we skip out
                 if (dashVector.size() > 0) {
@@ -317,13 +302,14 @@ public class ExtGState extends Dictionary {
                 }
                 // default to standard black line
                 else {
-                    dashPhase = 0f;
+                    dashPhase = new Float(0f);
                     dashArray = null;
                 }
-                dashPattern = new ArrayList<Object>(2);
+                dashPattern = new Vector(2);
                 dashPattern.add(dashArray);
                 dashPattern.add(dashPhase);
-            } catch (ClassCastException e) {
+            }
+            catch (ClassCastException e) {
                 logger.log(Level.FINE, "Dash pattern syntax error: ", e);
             }
         }
@@ -337,7 +323,7 @@ public class ExtGState extends Dictionary {
      *         was not specified in the dictionary null is returned.
      */
     Number getStrokingAlphConstant() {
-        return getNumber(CA_KEY);
+        return getNumber("CA");
     }
 
     /**
@@ -347,7 +333,7 @@ public class ExtGState extends Dictionary {
      *         was not specified in the dictionary null is returned.
      */
     Number getNonStrokingAlphConstant() {
-        return getNumber(ca_KEY);
+        return getNumber("ca");
     }
 
     /**
@@ -363,7 +349,7 @@ public class ExtGState extends Dictionary {
      * @return true if OP is enabled.
      */
     Boolean getOverprint() {
-        Object o = getObject(OP_KEY);
+        Object o = getObject("OP");
         if (o instanceof String)
             return Boolean.valueOf((String) o);
         else if (o instanceof Boolean) {
@@ -380,7 +366,7 @@ public class ExtGState extends Dictionary {
      * @return true if enabled, false otherwise.
      */
     Boolean getOverprintFill() {
-        Object o = getObject(op_KEY);
+        Object o = getObject("op");
         if (o instanceof String)
             return Boolean.valueOf((String) o);
         else if (o instanceof Boolean) {
@@ -395,15 +381,15 @@ public class ExtGState extends Dictionary {
      * @return
      */
     Number getOverprintMode() {
-        return getNumber(OPM_KEY);
+        return getNumber("OPM");
     }
 
 
-    public SoftMask getSMask() {
-        Object tmp = library.getObject(entries, SMASK_KEY);
-        if (tmp != null && tmp instanceof HashMap) {
+    public SoftMask getSMask(){
+        Object tmp = library.getObject(entries, "SMask");
+        if (tmp != null && tmp instanceof Hashtable){
             // create a new SMask dictionary
-            SoftMask softMask = new SoftMask(library, (HashMap) tmp);
+            SoftMask softMask = new SoftMask(library, (Hashtable)tmp);
             return softMask;
         }
         return null;

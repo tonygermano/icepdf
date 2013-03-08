@@ -15,16 +15,11 @@
 package org.icepdf.ri.common;
 
 import apple.dts.samplecode.osxadapter.OSXAdapter;
-import org.icepdf.core.util.Defs;
-import org.icepdf.ri.common.utility.annotation.AnnotationPanel;
-import org.icepdf.ri.common.utility.layers.LayersPanel;
-import org.icepdf.ri.common.utility.outline.OutlinesTree;
-import org.icepdf.ri.common.utility.search.SearchPanel;
-import org.icepdf.ri.common.utility.thumbs.ThumbnailsPanel;
-import org.icepdf.ri.common.views.DocumentViewController;
 import org.icepdf.ri.common.views.DocumentViewControllerImpl;
+import org.icepdf.ri.common.annotation.AnnotationPanel;
 import org.icepdf.ri.images.Images;
 import org.icepdf.ri.util.PropertiesManager;
+import org.icepdf.core.util.Defs;
 
 import javax.swing.*;
 import java.awt.*;
@@ -340,7 +335,7 @@ public class SwingViewBuilder {
     static {
         isMacOs = (Defs.sysProperty("mrj.version") != null);
         // check for demo system property
-        isDemo = Defs.sysPropertyBoolean("org.icepdf.ri.viewer.demo", false);
+         isDemo = Defs.sysPropertyBoolean("org.icepdf.ri.viewer.demo", false);
     }
 
     /**
@@ -352,27 +347,27 @@ public class SwingViewBuilder {
         // Use all the defaults
         this(c, null, null, false, SwingViewBuilder.TOOL_BAR_STYLE_FIXED, null,
                 DocumentViewControllerImpl.ONE_PAGE_VIEW,
-                DocumentViewController.PAGE_FIT_WINDOW_HEIGHT);
+                org.icepdf.core.views.DocumentViewController.PAGE_FIT_WINDOW_HEIGHT);
     }
 
     /**
      * Constructor that accepts a different PropertiesManager and otherwise
-     * defaults the remaining settings
+     *  defaults the remaining settings
      *
-     * @param c          SwingController that will interact with the GUI
+     * @param c SwingController that will interact with the GUI
      * @param properties PropertiesManager that can customize the UI
      */
     public SwingViewBuilder(SwingController c, PropertiesManager properties) {
         this(c, properties, null, false, SwingViewBuilder.TOOL_BAR_STYLE_FIXED, null,
                 DocumentViewControllerImpl.ONE_PAGE_VIEW,
-                DocumentViewController.PAGE_FIT_WINDOW_HEIGHT);
+                org.icepdf.core.views.DocumentViewController.PAGE_FIT_WINDOW_HEIGHT);
     }
 
     /**
      * Construct a SwingVewBuilder with all of the default settings
      *
-     * @param c                   SwingController that will interact with the GUI
-     * @param documentViewType    view type to build , single page, single column etc.
+     * @param c SwingController that will interact with the GUI
+     * @param documentViewType view type to build , single page, single column etc.
      * @param documentPageFitMode fit mode to initially load document with.
      */
     public SwingViewBuilder(SwingController c, int documentViewType,
@@ -442,7 +437,7 @@ public class SwingViewBuilder {
      */
     public JFrame buildViewerFrame() {
         JFrame viewer = new JFrame();
-        viewer.setIconImage(new ImageIcon(Images.get("app_icon3_24.png")).getImage());
+        viewer.setIconImage(new ImageIcon(Images.get("snowflake.gif")).getImage());
         viewer.setTitle(messageBundle.getString("viewer.window.title.default"));
 
         JMenuBar menuBar = buildCompleteMenuBar();
@@ -508,8 +503,8 @@ public class SwingViewBuilder {
             try {
                 // Generate and register the OSXAdapter, passing it a hash of all the methods we wish to
                 // use as delegates for various com.apple.eawt.ApplicationListener methods
-                OSXAdapter.setQuitHandler(viewerController, viewerController.getClass().getDeclaredMethod("exit", (Class[]) null));
-                OSXAdapter.setAboutHandler(viewerController, viewerController.getClass().getDeclaredMethod("showAboutDialog", (Class[]) null));
+                OSXAdapter.setQuitHandler(viewerController, viewerController.getClass().getDeclaredMethod("exit", (Class[])null));
+                OSXAdapter.setAboutHandler(viewerController, viewerController.getClass().getDeclaredMethod("showAboutDialog", (Class[])null));
             } catch (Exception e) {
                 logger.log(Level.FINE, "Error occurred while loading the OSXAdapter:", e);
             }
@@ -525,9 +520,9 @@ public class SwingViewBuilder {
     /**
      * Create and return a KeyStroke with the specified code and modifier
      * Note this will automatically return null if the PROPERTY_SHOW_KEYBOARD_SHORTCUTS
-     * property is 'false'
+     *  property is 'false'
      *
-     * @param keyCode   to build
+     * @param keyCode to build
      * @param modifiers to build
      * @param onRelease to build
      * @return built KeyStroke
@@ -536,8 +531,8 @@ public class SwingViewBuilder {
         doubleCheckPropertiesManager();
 
         if (PropertiesManager.checkAndStoreBooleanProperty(propertiesManager,
-                PropertiesManager.PROPERTY_SHOW_KEYBOARD_SHORTCUTS,
-                true)) {
+                                                       PropertiesManager.PROPERTY_SHOW_KEYBOARD_SHORTCUTS,
+                                                       true)) {
             return KeyStroke.getKeyStroke(keyCode, modifiers, onRelease);
         }
 
@@ -546,8 +541,8 @@ public class SwingViewBuilder {
 
     /**
      * Return a valid mnemonic for the passed character, unless the
-     * PropertiesManager.PROPERTY_SHOW_KEYBOARD_SHORTCUTS property is 'false',
-     * in which case we'll return -1
+     *  PropertiesManager.PROPERTY_SHOW_KEYBOARD_SHORTCUTS property is 'false',
+     *  in which case we'll return -1
      *
      * @param mnemonic to build
      * @return built mnemonic
@@ -556,8 +551,8 @@ public class SwingViewBuilder {
         doubleCheckPropertiesManager();
 
         if (PropertiesManager.checkAndStoreBooleanProperty(propertiesManager,
-                PropertiesManager.PROPERTY_SHOW_KEYBOARD_SHORTCUTS,
-                true)) {
+                                                       PropertiesManager.PROPERTY_SHOW_KEYBOARD_SHORTCUTS,
+                                                       true)) {
             return mnemonic;
         }
 
@@ -571,9 +566,9 @@ public class SwingViewBuilder {
         JMenuItem openURLMenuItem = buildOpenURLMenuItem();
         if (openFileMenuItem != null && openURLMenuItem != null) {
             JMenu openSubMenu = new JMenu(messageBundle.getString("viewer.menu.open.label"));
-            openSubMenu.setIcon(new ImageIcon(Images.get("open_a_24.png")));
-            openSubMenu.setDisabledIcon(new ImageIcon(Images.get("open_i_24.png")));
-            openSubMenu.setRolloverIcon(new ImageIcon(Images.get("open_r_24.png")));
+            openSubMenu.setIcon(new ImageIcon(Images.get("open_folder_n.gif")));
+            openSubMenu.setDisabledIcon(new ImageIcon(Images.get("open_folder_d.gif")));
+            openSubMenu.setRolloverIcon(new ImageIcon(Images.get("open_folder_r.gif")));
             addToMenu(openSubMenu, openFileMenuItem);
             addToMenu(openSubMenu, openURLMenuItem);
             addToMenu(fileMenu, openSubMenu);
@@ -603,7 +598,7 @@ public class SwingViewBuilder {
     public JMenuItem buildOpenFileMenuItem() {
         JMenuItem mi = makeMenuItem(
                 messageBundle.getString("viewer.menu.open.file.label"),
-                buildKeyStroke(KeyEventConstants.KEY_CODE_OPEN_FILE, KeyEventConstants.MODIFIER_OPEN_FILE));
+                    buildKeyStroke(KeyEventConstants.KEY_CODE_OPEN_FILE, KeyEventConstants.MODIFIER_OPEN_FILE));
         if (viewerController != null && mi != null)
             viewerController.setOpenFileMenuItem(mi);
         return mi;
@@ -620,7 +615,7 @@ public class SwingViewBuilder {
 
     public JMenuItem buildCloseMenuItem() {
         JMenuItem mi = makeMenuItem(
-                messageBundle.getString("viewer.menu.close.label"), null, null,
+                messageBundle.getString("viewer.menu.close.label"), null,
                 buildKeyStroke(KeyEventConstants.KEY_CODE_CLOSE, KeyEventConstants.MODIFIER_CLOSE));
         if (viewerController != null && mi != null)
             viewerController.setCloseMenuItem(mi);
@@ -630,7 +625,6 @@ public class SwingViewBuilder {
     public JMenuItem buildSaveAsFileMenuItem() {
         JMenuItem mi = makeMenuItem(
                 messageBundle.getString("viewer.menu.saveAs.label"), "save",
-                Images.SIZE_MEDIUM,
                 buildKeyStroke(KeyEventConstants.KEY_CODE_SAVE_AS, KeyEventConstants.MODIFIER_SAVE_AS, false));
         if (viewerController != null && mi != null)
             viewerController.setSaveAsFileMenuItem(mi);
@@ -639,7 +633,7 @@ public class SwingViewBuilder {
 
     public JMenuItem buildExportTextMenuItem() {
         JMenuItem mi = makeMenuItem(
-                messageBundle.getString("viewer.menu.exportText.label"), null, null, null);
+                messageBundle.getString("viewer.menu.exportText.label"), null, null);
         if (viewerController != null && mi != null)
             viewerController.setExportTextMenuItem(mi);
         return mi;
@@ -652,7 +646,7 @@ public class SwingViewBuilder {
             Class.forName("org.apache.batik.dom.GenericDOMImplementation");
 
             mi = makeMenuItem(
-                    messageBundle.getString("viewer.menu.exportSVG.label"), null, null, null);
+                    messageBundle.getString("viewer.menu.exportSVG.label"), null, null);
             if (viewerController != null && mi != null)
                 viewerController.setExportSVGMenuItem(mi);
         } catch (ClassNotFoundException e) {
@@ -663,7 +657,7 @@ public class SwingViewBuilder {
 
     public JMenuItem buildPermissionsMenuItem() {
         JMenuItem mi = makeMenuItem(
-                messageBundle.getString("viewer.menu.documentPermission.label"), null, null, null);
+                messageBundle.getString("viewer.menu.documentPermission.label"), null, null);
         if (viewerController != null && mi != null)
             viewerController.setPermissionsMenuItem(mi);
         return mi;
@@ -671,7 +665,7 @@ public class SwingViewBuilder {
 
     public JMenuItem buildInformationMenuItem() {
         JMenuItem mi = makeMenuItem(
-                messageBundle.getString("viewer.menu.documentInformation.label"), null, null, null);
+                messageBundle.getString("viewer.menu.documentInformation.label"), null, null);
         if (viewerController != null && mi != null)
             viewerController.setInformationMenuItem(mi);
         return mi;
@@ -679,7 +673,7 @@ public class SwingViewBuilder {
 
     public JMenuItem buildPrintSetupMenuItem() {
         JMenuItem mi = makeMenuItem(
-                messageBundle.getString("viewer.menu.printSetup.label"), null, null,
+                messageBundle.getString("viewer.menu.printSetup.label"), null,
                 buildKeyStroke(KeyEventConstants.KEY_CODE_PRINT_SETUP, KeyEventConstants.MODIFIER_PRINT_SETUP, false));
         if (viewerController != null && mi != null)
             viewerController.setPrintSetupMenuItem(mi);
@@ -689,7 +683,6 @@ public class SwingViewBuilder {
     public JMenuItem buildPrintMenuItem() {
         JMenuItem mi = makeMenuItem(
                 messageBundle.getString("viewer.menu.print.label"), "print",
-                Images.SIZE_MEDIUM,
                 buildKeyStroke(KeyEventConstants.KEY_CODE_PRINT, KeyEventConstants.MODIFIER_PRINT));
         if (viewerController != null && mi != null)
             viewerController.setPrintMenuItem(mi);
@@ -698,8 +691,8 @@ public class SwingViewBuilder {
 
     public JMenuItem buildExitMenuItem() {
         JMenuItem mi = makeMenuItem(
-                messageBundle.getString("viewer.menu.exit.label"), null, null,
-                buildKeyStroke(KeyEventConstants.KEY_CODE_EXIT, KeyEventConstants.MODIFIER_EXIT));
+                messageBundle.getString("viewer.menu.exit.label"),
+                null, buildKeyStroke(KeyEventConstants.KEY_CODE_EXIT, KeyEventConstants.MODIFIER_EXIT));
         if (viewerController != null && mi != null)
             viewerController.setExitMenuItem(mi);
         return mi;
@@ -722,8 +715,8 @@ public class SwingViewBuilder {
     public JMenuItem buildUndoMenuItem() {
         JMenuItem mi = makeMenuItem(
                 messageBundle.getString("viewer.menu.edit.undo.label"),
-                null, null, buildKeyStroke(KeyEventConstants.KEY_CODE_UNDO,
-                KeyEventConstants.MODIFIER_UNDO));
+                null, buildKeyStroke(KeyEventConstants.KEY_CODE_UNDO,
+                        KeyEventConstants.MODIFIER_UNDO));
         if (viewerController != null && mi != null)
             viewerController.setUndoMenuItem(mi);
         return mi;
@@ -732,8 +725,8 @@ public class SwingViewBuilder {
     public JMenuItem buildRedoMenuItem() {
         JMenuItem mi = makeMenuItem(
                 messageBundle.getString("viewer.menu.edit.redo.label"),
-                null, null, buildKeyStroke(KeyEventConstants.KEY_CODE_REDO,
-                KeyEventConstants.MODIFIER_REDO));
+                null, buildKeyStroke(KeyEventConstants.KEY_CODE_REDO,
+                        KeyEventConstants.MODIFIER_REDO));
         if (viewerController != null && mi != null)
             viewerController.setReduMenuItem(mi);
         return mi;
@@ -742,8 +735,8 @@ public class SwingViewBuilder {
     public JMenuItem buildCopyMenuItem() {
         JMenuItem mi = makeMenuItem(
                 messageBundle.getString("viewer.menu.edit.copy.label"),
-                null, null, buildKeyStroke(KeyEventConstants.KEY_CODE_COPY,
-                KeyEventConstants.MODIFIER_COPY));
+                null, buildKeyStroke(KeyEventConstants.KEY_CODE_COPY,
+                        KeyEventConstants.MODIFIER_COPY));
         if (viewerController != null && mi != null)
             viewerController.setCopyMenuItem(mi);
         return mi;
@@ -752,8 +745,8 @@ public class SwingViewBuilder {
     public JMenuItem buildDeleteMenuItem() {
         JMenuItem mi = makeMenuItem(
                 messageBundle.getString("viewer.menu.edit.delete.label"),
-                null, null, buildKeyStroke(KeyEventConstants.KEY_CODE_DELETE,
-                KeyEventConstants.MODIFIER_DELETE));
+                null, buildKeyStroke(KeyEventConstants.KEY_CODE_DELETE,
+                        KeyEventConstants.MODIFIER_DELETE));
         if (viewerController != null && mi != null)
             viewerController.setDeleteMenuItem(mi);
         return mi;
@@ -762,8 +755,8 @@ public class SwingViewBuilder {
     public JMenuItem buildSelectAllMenuItem() {
         JMenuItem mi = makeMenuItem(
                 messageBundle.getString("viewer.menu.edit.selectAll.label"),
-                null, null, buildKeyStroke(KeyEventConstants.KEY_CODE_SELECT_ALL,
-                KeyEventConstants.MODIFIER_SELECT_ALL));
+                null, buildKeyStroke(KeyEventConstants.KEY_CODE_SELECT_ALL,
+                        KeyEventConstants.MODIFIER_SELECT_ALL));
         if (viewerController != null && mi != null)
             viewerController.setSelectAllMenuItem(mi);
         return mi;
@@ -772,8 +765,8 @@ public class SwingViewBuilder {
     public JMenuItem buildDeselectAllMenuItem() {
         JMenuItem mi = makeMenuItem(
                 messageBundle.getString("viewer.menu.edit.deselectAll.label"),
-                null, null, buildKeyStroke(KeyEventConstants.KEY_CODE_DESELECT_ALL,
-                KeyEventConstants.MODIFIER_DESELECT_ALL));
+                null, buildKeyStroke(KeyEventConstants.KEY_CODE_DESELECT_ALL,
+                        KeyEventConstants.MODIFIER_DESELECT_ALL));
         if (viewerController != null && mi != null)
             viewerController.setDselectAllMenuItem(mi);
         return mi;
@@ -799,8 +792,7 @@ public class SwingViewBuilder {
 
     public JMenuItem buildFitActualSizeMenuItem() {
         JMenuItem mi = makeMenuItem(
-                messageBundle.getString("viewer.menu.view.actualSize.label"),
-                "actual_size", Images.SIZE_MEDIUM,
+                messageBundle.getString("viewer.menu.view.actualSize.label"), "actual_size",
                 buildKeyStroke(KeyEventConstants.KEY_CODE_FIT_ACTUAL, KeyEventConstants.MODIFIER_FIT_ACTUAL));
         if (viewerController != null && mi != null)
             viewerController.setFitActualSizeMenuItem(mi);
@@ -809,8 +801,7 @@ public class SwingViewBuilder {
 
     public JMenuItem buildFitPageMenuItem() {
         JMenuItem mi = makeMenuItem(
-                messageBundle.getString("viewer.menu.view.fitInWindow.label"),
-                "fit_window", Images.SIZE_MEDIUM,
+                messageBundle.getString("viewer.menu.view.fitInWindow.label"), "fit_in_window",
                 buildKeyStroke(KeyEventConstants.KEY_CODE_FIT_PAGE, KeyEventConstants.MODIFIER_FIT_PAGE));
         if (viewerController != null && mi != null)
             viewerController.setFitPageMenuItem(mi);
@@ -819,8 +810,7 @@ public class SwingViewBuilder {
 
     public JMenuItem buildFitWidthMenuItem() {
         JMenuItem mi = makeMenuItem(
-                messageBundle.getString("viewer.menu.view.fitWidth.label"),
-                null, null,
+                messageBundle.getString("viewer.menu.view.fitWidth.label"), "fit_width",
                 buildKeyStroke(KeyEventConstants.KEY_CODE_FIT_WIDTH, KeyEventConstants.MODIFIER_FIT_WIDTH));
         if (viewerController != null && mi != null)
             viewerController.setFitWidthMenuItem(mi);
@@ -829,8 +819,7 @@ public class SwingViewBuilder {
 
     public JMenuItem buildZoomInMenuItem() {
         JMenuItem mi = makeMenuItem(
-                messageBundle.getString("viewer.menu.view.zoomIn.label"),
-                "zoom_in", Images.SIZE_MEDIUM,
+                messageBundle.getString("viewer.menu.view.zoomIn.label"), "round-zoom_in",
                 buildKeyStroke(KeyEventConstants.KEY_CODE_ZOOM_IN, KeyEventConstants.MODIFIER_ZOOM_IN, false));
         if (viewerController != null && mi != null)
             viewerController.setZoomInMenuItem(mi);
@@ -839,8 +828,7 @@ public class SwingViewBuilder {
 
     public JMenuItem buildZoomOutMenuItem() {
         JMenuItem mi = makeMenuItem(
-                messageBundle.getString("viewer.menu.view.zoomOut.label"),
-                "zoom_out", Images.SIZE_MEDIUM,
+                messageBundle.getString("viewer.menu.view.zoomOut.label"), "round-zoom_out",
                 buildKeyStroke(KeyEventConstants.KEY_CODE_ZOOM_OUT, KeyEventConstants.MODIFIER_ZOOM_OUT, false));
         if (viewerController != null && mi != null)
             viewerController.setZoomOutMenuItem(mi);
@@ -849,8 +837,7 @@ public class SwingViewBuilder {
 
     public JMenuItem buildRotateLeftMenuItem() {
         JMenuItem mi = makeMenuItem(
-                messageBundle.getString("viewer.menu.view.rotateLeft.label"),
-                "rotate_left", Images.SIZE_MEDIUM,
+                messageBundle.getString("viewer.menu.view.rotateLeft.label"), "rotate1",
                 buildKeyStroke(KeyEventConstants.KEY_CODE_ROTATE_LEFT, KeyEventConstants.MODIFIER_ROTATE_LEFT));
         if (viewerController != null && mi != null)
             viewerController.setRotateLeftMenuItem(mi);
@@ -859,8 +846,7 @@ public class SwingViewBuilder {
 
     public JMenuItem buildRotateRightMenuItem() {
         JMenuItem mi = makeMenuItem(
-                messageBundle.getString("viewer.menu.view.rotateRight.label"),
-                "rotate_right", Images.SIZE_MEDIUM,
+                messageBundle.getString("viewer.menu.view.rotateRight.label"), "rotate2",
                 buildKeyStroke(KeyEventConstants.KEY_CODE_ROTATE_RIGHT, KeyEventConstants.MODIFIER_ROTATE_RIGHT));
         if (viewerController != null && mi != null)
             viewerController.setRotateRightMenuItem(mi);
@@ -896,8 +882,7 @@ public class SwingViewBuilder {
 
     public JMenuItem buildFirstPageMenuItem() {
         JMenuItem mi = makeMenuItem(
-                messageBundle.getString("viewer.menu.document.firstPage.label"),
-                "page_first", Images.SIZE_MEDIUM,
+                messageBundle.getString("viewer.menu.document.firstPage.label"), "first",
                 buildKeyStroke(KeyEventConstants.KEY_CODE_FIRST_PAGE, KeyEventConstants.MODIFIER_FIRST_PAGE));
         if (viewerController != null && mi != null)
             viewerController.setFirstPageMenuItem(mi);
@@ -906,8 +891,7 @@ public class SwingViewBuilder {
 
     public JMenuItem buildPreviousPageMenuItem() {
         JMenuItem mi = makeMenuItem(
-                messageBundle.getString("viewer.menu.document.previousPage.label"),
-                "page_up", Images.SIZE_MEDIUM,
+                messageBundle.getString("viewer.menu.document.previousPage.label"), "back",
                 buildKeyStroke(KeyEventConstants.KEY_CODE_PREVIOUS_PAGE, KeyEventConstants.MODIFIER_PREVIOUS_PAGE));
         if (viewerController != null && mi != null)
             viewerController.setPreviousPageMenuItem(mi);
@@ -916,8 +900,7 @@ public class SwingViewBuilder {
 
     public JMenuItem buildNextPageMenuItem() {
         JMenuItem mi = makeMenuItem(
-                messageBundle.getString("viewer.menu.document.nextPage.label"),
-                "page_down", Images.SIZE_MEDIUM,
+                messageBundle.getString("viewer.menu.document.nextPage.label"), "forward",
                 buildKeyStroke(KeyEventConstants.KEY_CODE_NEXT_PAGE, KeyEventConstants.MODIFIER_NEXT_PAGE));
         if (viewerController != null && mi != null)
             viewerController.setNextPageMenuItem(mi);
@@ -926,8 +909,7 @@ public class SwingViewBuilder {
 
     public JMenuItem buildLastPageMenuItem() {
         JMenuItem mi = makeMenuItem(
-                messageBundle.getString("viewer.menu.document.lastPage.label"),
-                "page_last", Images.SIZE_MEDIUM,
+                messageBundle.getString("viewer.menu.document.lastPage.label"), "last",
                 buildKeyStroke(KeyEventConstants.KEY_CODE_LAST_PAGE, KeyEventConstants.MODIFIER_LAST_PAGE));
         if (viewerController != null && mi != null)
             viewerController.setLastPageMenuItem(mi);
@@ -998,7 +980,7 @@ public class SwingViewBuilder {
         if (viewerController != null &&
                 viewerController.getWindowManagementCallback() != null) {
             WindowManagementCallback winMgr = viewerController.getWindowManagementCallback();
-            List<Object> windowDocOriginList = (List<Object>) winMgr.getWindowDocumentOriginList(viewerController);
+            List windowDocOriginList = winMgr.getWindowDocumentOriginList(viewerController);
 
             // Get the current window index, if it's given, and remove it from the list
             int currWindowIndex = -1;
@@ -1020,7 +1002,7 @@ public class SwingViewBuilder {
                     mnemonic = messageBundle.getString("viewer.menu.window." + number + ".mnemonic");
                 } catch (Exception e) {
                     logger.log(Level.FINER,
-                            "Error setting viewer window window title", e);
+                            "Error setting viewer window window title",e);
                 }
                 // Allows the user to have an arbitrary number of predefined entries
                 String identifier = (String) windowDocOriginList.get(i);
@@ -1043,7 +1025,7 @@ public class SwingViewBuilder {
         }
     }
 
-    protected void shortenDocumentOrigins(List<Object> windowDocOriginList) {
+    protected void shortenDocumentOrigins(List windowDocOriginList) {
         // At some point we should detect the same filename
         //   in different subdirectories, and keep some of the
         //   directory information, to help differentiate them
@@ -1084,7 +1066,7 @@ public class SwingViewBuilder {
 
     public JToolBar buildCompleteToolBar(boolean embeddableComponent) {
         JToolBar toolbar = new JToolBar();
-        toolbar.setLayout(new ToolbarLayout(ToolbarLayout.LEFT, 0, 0));
+        toolbar.setLayout(new ToolbarLayout( ToolbarLayout.LEFT, 0, 0));
         commonToolBarSetup(toolbar, true);
 
         // Attempt to get the properties manager so we can configure which toolbars are visible
@@ -1107,7 +1089,7 @@ public class SwingViewBuilder {
             addToToolBar(toolbar, buildAnnotationlToolBar());
 
         // we only add the configurable font engin in the demo version
-        if (isDemo) {
+        if (isDemo){
             addToToolBar(toolbar, buildDemoToolBar());
         }
 
@@ -1133,7 +1115,7 @@ public class SwingViewBuilder {
         // if embeddable component, we don't want to create the open dialog, as we
         // have no window manager for this case.
         if ((!embeddableComponent) &&
-                (PropertiesManager.checkAndStoreBooleanProperty(propertiesManager, PropertiesManager.PROPERTY_SHOW_UTILITY_OPEN)))
+            (PropertiesManager.checkAndStoreBooleanProperty(propertiesManager, PropertiesManager.PROPERTY_SHOW_UTILITY_OPEN)))
             addToToolBar(toolbar, buildOpenFileButton());
         if (PropertiesManager.checkAndStoreBooleanProperty(propertiesManager, PropertiesManager.PROPERTY_SHOW_UTILITY_SAVE))
             addToToolBar(toolbar, buildSaveAsFileButton());
@@ -1156,7 +1138,7 @@ public class SwingViewBuilder {
         JButton btn = makeToolbarButton(
                 messageBundle.getString("viewer.toolbar.open.label"),
                 messageBundle.getString("viewer.toolbar.open.tooltip"),
-                "open", Images.SIZE_LARGE, buttonFont);
+                "open_folder", buttonFont);
         if (viewerController != null && btn != null)
             viewerController.setOpenFileButton(btn);
         return btn;
@@ -1166,7 +1148,7 @@ public class SwingViewBuilder {
         JButton btn = makeToolbarButton(
                 messageBundle.getString("viewer.toolbar.saveAs.label"),
                 messageBundle.getString("viewer.toolbar.saveAs.tooltip"),
-                "save", Images.SIZE_LARGE,
+                "save",
                 buttonFont);
         if (viewerController != null && btn != null)
             viewerController.setSaveAsFileButton(btn);
@@ -1177,7 +1159,7 @@ public class SwingViewBuilder {
         JButton btn = makeToolbarButton(
                 messageBundle.getString("viewer.toolbar.print.label"),
                 messageBundle.getString("viewer.toolbar.print.tooltip"),
-                "print", Images.SIZE_LARGE,
+                "print",
                 buttonFont);
         if (viewerController != null && btn != null)
             viewerController.setPrintButton(btn);
@@ -1188,17 +1170,17 @@ public class SwingViewBuilder {
         JButton btn = makeToolbarButton(
                 messageBundle.getString("viewer.toolbar.search.label"),
                 messageBundle.getString("viewer.toolbar.search.tooltip"),
-                "search", Images.SIZE_LARGE, buttonFont);
+                "search", buttonFont);
         if (viewerController != null && btn != null)
             viewerController.setSearchButton(btn);
         return btn;
     }
 
-    public JToggleButton buildShowHideUtilityPaneButton() {
-        JToggleButton btn = makeToolbarToggleButton(
+    public JButton buildShowHideUtilityPaneButton() {
+        JButton btn = makeToolbarButton(
                 messageBundle.getString("viewer.toolbar.utilityPane.label"),
                 messageBundle.getString("viewer.toolbar.utilityPane.tooltip"),
-                "utility_pane", Images.SIZE_LARGE, buttonFont);
+                "utility", buttonFont);
         if (viewerController != null && btn != null)
             viewerController.setShowHideUtilityPaneButton(btn);
         return btn;
@@ -1220,7 +1202,7 @@ public class SwingViewBuilder {
         JButton btn = makeToolbarButton(
                 messageBundle.getString("viewer.toolbar.navigation.firstPage.label"),
                 messageBundle.getString("viewer.toolbar.navigation.firstPage.tooltip"),
-                "first", Images.SIZE_LARGE, buttonFont);
+                "first", buttonFont);
         if (viewerController != null && btn != null)
             viewerController.setFirstPageButton(btn);
         return btn;
@@ -1230,7 +1212,7 @@ public class SwingViewBuilder {
         JButton btn = makeToolbarButton(
                 messageBundle.getString("viewer.toolbar.navigation.previousPage.label"),
                 messageBundle.getString("viewer.toolbar.navigation.previousPage.tooltip"),
-                "back", Images.SIZE_LARGE, buttonFont);
+                "back", buttonFont);
         if (viewerController != null && btn != null)
             viewerController.setPreviousPageButton(btn);
         return btn;
@@ -1240,7 +1222,7 @@ public class SwingViewBuilder {
         JButton btn = makeToolbarButton(
                 messageBundle.getString("viewer.toolbar.navigation.nextPage.label"),
                 messageBundle.getString("viewer.toolbar.navigation.nextPage.tooltip"),
-                "forward", Images.SIZE_LARGE, buttonFont);
+                "forward", buttonFont);
         if (viewerController != null && btn != null)
             viewerController.setNextPageButton(btn);
         return btn;
@@ -1250,7 +1232,7 @@ public class SwingViewBuilder {
         JButton btn = makeToolbarButton(
                 messageBundle.getString("viewer.toolbar.navigation.lastPage.label"),
                 messageBundle.getString("viewer.toolbar.navigation.lastPage.tooltip"),
-                "last", Images.SIZE_LARGE, buttonFont);
+                "last", buttonFont);
         if (viewerController != null && btn != null)
             viewerController.setLastPageButton(btn);
         return btn;
@@ -1293,7 +1275,7 @@ public class SwingViewBuilder {
         JButton btn = makeToolbarButton(
                 messageBundle.getString("viewer.toolbar.zoom.out.label"),
                 messageBundle.getString("viewer.toolbar.zoom.out.tooltip"),
-                "zoom_out", Images.SIZE_LARGE, buttonFont);
+                "round-zoom_out", buttonFont);
         if (viewerController != null && btn != null)
             viewerController.setZoomOutButton(btn);
         return btn;
@@ -1305,8 +1287,8 @@ public class SwingViewBuilder {
 
         // Assign any different zoom ranges from the properties file if possible
         zoomLevels = PropertiesManager.checkAndStoreFloatArrayProperty(propertiesManager,
-                PropertiesManager.PROPERTY_ZOOM_RANGES,
-                zoomLevels);
+                                                                       PropertiesManager.PROPERTY_ZOOM_RANGES,
+                                                                       zoomLevels);
 
         JComboBox tmp = new JComboBox();
         tmp.setToolTipText(messageBundle.getString("viewer.toolbar.zoom.tooltip"));
@@ -1323,7 +1305,7 @@ public class SwingViewBuilder {
         JButton btn = makeToolbarButton(
                 messageBundle.getString("viewer.toolbar.zoom.in.label"),
                 messageBundle.getString("viewer.toolbar.zoom.in.tooltip"),
-                "zoom_in", Images.SIZE_LARGE, buttonFont);
+                "round-zoom_in", buttonFont);
         if (viewerController != null && btn != null)
             viewerController.setZoomInButton(btn);
         return btn;
@@ -1342,7 +1324,7 @@ public class SwingViewBuilder {
         JToggleButton btn = makeToolbarToggleButton(
                 messageBundle.getString("viewer.toolbar.pageFit.actualsize.label"),
                 messageBundle.getString("viewer.toolbar.pageFit.actualsize.tooltip"),
-                "actual_size", Images.SIZE_LARGE, buttonFont);
+                "actual_size", buttonFont);
         if (viewerController != null && btn != null)
             viewerController.setFitActualSizeButton(btn);
         return btn;
@@ -1352,7 +1334,7 @@ public class SwingViewBuilder {
         JToggleButton btn = makeToolbarToggleButton(
                 messageBundle.getString("viewer.toolbar.pageFit.fitWindow.label"),
                 messageBundle.getString("viewer.toolbar.pageFit.fitWindow.tooltip"),
-                "fit_window", Images.SIZE_LARGE, buttonFont);
+                "fit_in_window", buttonFont);
         if (viewerController != null && btn != null)
             viewerController.setFitHeightButton(btn);
         return btn;
@@ -1362,7 +1344,7 @@ public class SwingViewBuilder {
         JToggleButton btn = makeToolbarToggleButton(
                 messageBundle.getString("viewer.toolbar.pageFit.fontEngine.label"),
                 messageBundle.getString("viewer.toolbar.pageFit.fontEngine.tooltip"),
-                "font-engine", 112, 25, buttonFont);
+                "font-engine",112,25, buttonFont);
         if (viewerController != null && btn != null)
             viewerController.setFontEngineButton(btn);
         return btn;
@@ -1372,7 +1354,7 @@ public class SwingViewBuilder {
         JToggleButton btn = makeToolbarToggleButton(
                 messageBundle.getString("viewer.toolbar.pageFit.fitWidth.label"),
                 messageBundle.getString("viewer.toolbar.pageFit.fitWidth.tooltip"),
-                "fit_width", Images.SIZE_LARGE, buttonFont);
+                "fit_width", buttonFont);
         if (viewerController != null && btn != null)
             viewerController.setFitWidthButton(btn);
         return btn;
@@ -1381,8 +1363,8 @@ public class SwingViewBuilder {
     public JToolBar buildRotateToolBar() {
         JToolBar toolbar = new JToolBar();
         commonToolBarSetup(toolbar, false);
-        addToToolBar(toolbar, buildRotateRightButton());
         addToToolBar(toolbar, buildRotateLeftButton());
+        addToToolBar(toolbar, buildRotateRightButton());
         return toolbar;
     }
 
@@ -1390,7 +1372,7 @@ public class SwingViewBuilder {
         JButton btn = makeToolbarButton(
                 messageBundle.getString("viewer.toolbar.rotation.left.label"),
                 messageBundle.getString("viewer.toolbar.rotation.left.tooltip"),
-                "rotate_left", Images.SIZE_LARGE, buttonFont);
+                "rotate1", buttonFont);
         if (viewerController != null && btn != null)
             viewerController.setRotateLeftButton(btn);
         return btn;
@@ -1400,7 +1382,7 @@ public class SwingViewBuilder {
         JButton btn = makeToolbarButton(
                 messageBundle.getString("viewer.toolbar.rotation.right.label"),
                 messageBundle.getString("viewer.toolbar.rotation.right.tooltip"),
-                "rotate_right", Images.SIZE_LARGE, buttonFont);
+                "rotate2", buttonFont);
         if (viewerController != null && btn != null)
             viewerController.setRotateRightButton(btn);
         return btn;
@@ -1419,30 +1401,12 @@ public class SwingViewBuilder {
     public JToolBar buildAnnotationlToolBar() {
         JToolBar toolbar = new JToolBar();
         commonToolBarSetup(toolbar, false);
-        addToToolBar(toolbar, buildSelectToolButton(Images.SIZE_LARGE));
-        addToToolBar(toolbar, buildHighlightAnnotationToolButton(Images.SIZE_LARGE));
-        addToToolBar(toolbar, buildTextAnnotationToolButton(Images.SIZE_LARGE));
-        return toolbar;
-    }
-
-    public JToolBar buildAnnotationUtilityToolBar() {
-        JToolBar toolbar = new JToolBar();
-        commonToolBarSetup(toolbar, true);
-        addToToolBar(toolbar, buildHighlightAnnotationUtilityToolButton(Images.SIZE_MEDIUM));
-        addToToolBar(toolbar, buildStrikeOutAnnotationToolButton());
-        addToToolBar(toolbar, buildUnderlineAnnotationToolButton());
-        addToToolBar(toolbar, buildLineAnnotationToolButton());
+        addToToolBar(toolbar, buildSelectToolButton());
         addToToolBar(toolbar, buildLinkAnnotationToolButton());
-        addToToolBar(toolbar, buildLineArrowAnnotationToolButton());
-        addToToolBar(toolbar, buildSquareAnnotationToolButton());
-        addToToolBar(toolbar, buildCircleAnnotationToolButton());
-        addToToolBar(toolbar, buildInkAnnotationToolButton());
-        addToToolBar(toolbar, buildFreeTextAnnotationToolButton());
-        addToToolBar(toolbar, buildTextAnnotationUtilityToolButton(Images.SIZE_MEDIUM));
         return toolbar;
     }
 
-    public JToolBar buildDemoToolBar() {
+    public JToolBar buildDemoToolBar(){
         JToolBar toolbar = new JToolBar();
         commonToolBarSetup(toolbar, false);
         addToToolBar(toolbar, buildFontEngineButton());
@@ -1453,7 +1417,7 @@ public class SwingViewBuilder {
         JToggleButton btn = makeToolbarToggleButton(
                 messageBundle.getString("viewer.toolbar.tool.pan.label"),
                 messageBundle.getString("viewer.toolbar.tool.pan.tooltip"),
-                "pan", Images.SIZE_LARGE, buttonFont);
+                "pan", buttonFont);
         if (viewerController != null && btn != null)
             viewerController.setPanToolButton(btn);
         return btn;
@@ -1463,157 +1427,37 @@ public class SwingViewBuilder {
         JToggleButton btn = makeToolbarToggleButton(
                 messageBundle.getString("viewer.toolbar.tool.text.label"),
                 messageBundle.getString("viewer.toolbar.tool.text.tooltip"),
-                "selection_text", Images.SIZE_LARGE, buttonFont);
+                "text", buttonFont);
         if (viewerController != null && btn != null)
             viewerController.setTextSelectToolButton(btn);
         return btn;
     }
 
-    public JToggleButton buildSelectToolButton(final String imageSize) {
+    public JToggleButton buildSelectToolButton() {
         JToggleButton btn = makeToolbarToggleButton(
                 messageBundle.getString("viewer.toolbar.tool.select.label"),
                 messageBundle.getString("viewer.toolbar.tool.select.tooltip"),
-                "select", imageSize, buttonFont);
+                "select", buttonFont);
         if (viewerController != null && btn != null)
             viewerController.setSelectToolButton(btn);
         return btn;
     }
 
     public JToggleButton buildLinkAnnotationToolButton() {
-        JToggleButton btn = makeToolbarToggleButtonSmall(
+        JToggleButton btn = makeToolbarToggleButton(
                 messageBundle.getString("viewer.toolbar.tool.link.label"),
                 messageBundle.getString("viewer.toolbar.tool.link.tooltip"),
-                "link_annot", Images.SIZE_MEDIUM, buttonFont);
+                "link", buttonFont);
         if (viewerController != null && btn != null)
             viewerController.setLinkAnnotationToolButton(btn);
         return btn;
     }
 
-    public JToggleButton buildHighlightAnnotationToolButton(final String imageSize) {
-        JToggleButton btn = makeToolbarToggleButton(
-                messageBundle.getString("viewer.toolbar.tool.highlight.label"),
-                messageBundle.getString("viewer.toolbar.tool.highlight.tooltip"),
-                "highlight_annot", imageSize, buttonFont);
-        if (viewerController != null && btn != null)
-            viewerController.setHighlightAnnotationToolButton(btn);
-        return btn;
-    }
-
-    public JToggleButton buildHighlightAnnotationUtilityToolButton(final String imageSize) {
-        JToggleButton btn = makeToolbarToggleButtonSmall(
-                messageBundle.getString("viewer.toolbar.tool.highlight.label"),
-                messageBundle.getString("viewer.toolbar.tool.highlight.tooltip"),
-                "highlight_annot", imageSize, buttonFont);
-        if (viewerController != null && btn != null)
-            viewerController.setHighlightAnnotationUtilityToolButton(btn);
-        return btn;
-    }
-
-    public JToggleButton buildStrikeOutAnnotationToolButton() {
-        JToggleButton btn = makeToolbarToggleButtonSmall(
-                messageBundle.getString("viewer.toolbar.tool.strikeOut.label"),
-                messageBundle.getString("viewer.toolbar.tool.strikeOut.tooltip"),
-                "strikeout", Images.SIZE_MEDIUM, buttonFont);
-        if (viewerController != null && btn != null)
-            viewerController.setStrikeOutAnnotationToolButton(btn);
-        return btn;
-    }
-
-    public JToggleButton buildUnderlineAnnotationToolButton() {
-        JToggleButton btn = makeToolbarToggleButtonSmall(
-                messageBundle.getString("viewer.toolbar.tool.underline.label"),
-                messageBundle.getString("viewer.toolbar.tool.underline.tooltip"),
-                "underline", Images.SIZE_MEDIUM, buttonFont);
-        if (viewerController != null && btn != null)
-            viewerController.setUnderlineAnnotationToolButton(btn);
-        return btn;
-    }
-
-    public JToggleButton buildLineAnnotationToolButton() {
-        JToggleButton btn = makeToolbarToggleButtonSmall(
-                messageBundle.getString("viewer.toolbar.tool.line.label"),
-                messageBundle.getString("viewer.toolbar.tool.line.tooltip"),
-                "line", Images.SIZE_MEDIUM, buttonFont);
-        if (viewerController != null && btn != null)
-            viewerController.setLineAnnotationToolButton(btn);
-        return btn;
-    }
-
-    public JToggleButton buildLineArrowAnnotationToolButton() {
-        JToggleButton btn = makeToolbarToggleButtonSmall(
-                messageBundle.getString("viewer.toolbar.tool.lineArrow.label"),
-                messageBundle.getString("viewer.toolbar.tool.lineArrow.tooltip"),
-                "arrow", Images.SIZE_MEDIUM, buttonFont);
-        if (viewerController != null && btn != null)
-            viewerController.setLineArrowAnnotationToolButton(btn);
-        return btn;
-    }
-
-    public JToggleButton buildSquareAnnotationToolButton() {
-        JToggleButton btn = makeToolbarToggleButtonSmall(
-                messageBundle.getString("viewer.toolbar.tool.rectangle.label"),
-                messageBundle.getString("viewer.toolbar.tool.rectangle.tooltip"),
-                "square", Images.SIZE_MEDIUM, buttonFont);
-        if (viewerController != null && btn != null)
-            viewerController.setSquareAnnotationToolButton(btn);
-        return btn;
-    }
-
-    public JToggleButton buildCircleAnnotationToolButton() {
-        JToggleButton btn = makeToolbarToggleButtonSmall(
-                messageBundle.getString("viewer.toolbar.tool.circle.label"),
-                messageBundle.getString("viewer.toolbar.tool.circle.tooltip"),
-                "circle", Images.SIZE_MEDIUM, buttonFont);
-        if (viewerController != null && btn != null)
-            viewerController.setCircleAnnotationToolButton(btn);
-        return btn;
-    }
-
-    public JToggleButton buildInkAnnotationToolButton() {
-        JToggleButton btn = makeToolbarToggleButtonSmall(
-                messageBundle.getString("viewer.toolbar.tool.ink.label"),
-                messageBundle.getString("viewer.toolbar.tool.ink.tooltip"),
-                "ink", Images.SIZE_MEDIUM, buttonFont);
-        if (viewerController != null && btn != null)
-            viewerController.setInkAnnotationToolButton(btn);
-        return btn;
-    }
-
-    public JToggleButton buildFreeTextAnnotationToolButton() {
-        JToggleButton btn = makeToolbarToggleButtonSmall(
-                messageBundle.getString("viewer.toolbar.tool.freeText.label"),
-                messageBundle.getString("viewer.toolbar.tool.freeText.tooltip"),
-                "freetext_annot", Images.SIZE_MEDIUM, buttonFont);
-        if (viewerController != null && btn != null)
-            viewerController.setFreeTextAnnotationToolButton(btn);
-        return btn;
-    }
-
-    public JToggleButton buildTextAnnotationToolButton(final String imageSize) {
-        JToggleButton btn = makeToolbarToggleButton(
-                messageBundle.getString("viewer.toolbar.tool.textAnno.label"),
-                messageBundle.getString("viewer.toolbar.tool.textAnno.tooltip"),
-                "text_annot", Images.SIZE_MEDIUM, buttonFont);
-        if (viewerController != null && btn != null)
-            viewerController.setTextAnnotationToolButton(btn);
-        return btn;
-    }
-
-    public JToggleButton buildTextAnnotationUtilityToolButton(final String imageSize) {
-        JToggleButton btn = makeToolbarToggleButtonSmall(
-                messageBundle.getString("viewer.toolbar.tool.textAnno.label"),
-                messageBundle.getString("viewer.toolbar.tool.textAnno.tooltip"),
-                "text_annot", Images.SIZE_MEDIUM, buttonFont);
-        if (viewerController != null && btn != null)
-            viewerController.setTextAnnotationUtilityToolButton(btn);
-        return btn;
-    }
-
     public JToggleButton buildZoomInToolButton() {
         JToggleButton btn = makeToolbarToggleButton(
-                messageBundle.getString("viewer.toolbar.tool.zoomMarquis.label"),
-                messageBundle.getString("viewer.toolbar.tool.zoomMarquis.tooltip"),
-                "zoom_marquis", Images.SIZE_LARGE, buttonFont);
+                messageBundle.getString("viewer.toolbar.tool.zoomIn.label"),
+                messageBundle.getString("viewer.toolbar.tool.zoomIn.tooltip"),
+                "zoom_in", buttonFont);
         if (viewerController != null && btn != null)
             viewerController.setZoomInToolButton(btn);
         return btn;
@@ -1621,11 +1465,11 @@ public class SwingViewBuilder {
 
     public JToggleButton buildZoomOutToolButton() {
         JToggleButton btn = makeToolbarToggleButton(
-                messageBundle.getString("viewer.toolbar.tool.zoomDynamic.label"),
-                messageBundle.getString("viewer.toolbar.tool.zoomDynamic.tooltip"),
-                "zoom_dynamic", Images.SIZE_LARGE, buttonFont);
+                messageBundle.getString("viewer.toolbar.tool.zoomOut.label"),
+                messageBundle.getString("viewer.toolbar.tool.zoomOut.tooltip"),
+                "zoom_out", buttonFont);
         if (viewerController != null && btn != null)
-            viewerController.setZoomDynamicToolButton(btn);
+            viewerController.setZoomOutToolButton(btn);
         return btn;
     }
 
@@ -1639,7 +1483,7 @@ public class SwingViewBuilder {
         splitpane.setLeftComponent(buildUtilityTabbedPane());
 
         // set the viewController embeddable flag.
-        DocumentViewController viewController =
+        org.icepdf.core.views.DocumentViewController viewController =
                 viewerController.getDocumentViewController();
         // will add key event listeners
         viewerController.setIsEmbeddedComponent(embeddableComponent);
@@ -1691,15 +1535,9 @@ public class SwingViewBuilder {
                     buildThumbsPanel());
         }
         if (PropertiesManager.checkAndStoreBooleanProperty(propertiesManager,
-                PropertiesManager.PROPERTY_SHOW_UTILITYPANE_LAYERS)) {
-            utilityTabbedPane.add(
-                    messageBundle.getString("viewer.utilityPane.layers.tab.title"),
-                    buildLayersComponents());
-        }
-        if (PropertiesManager.checkAndStoreBooleanProperty(propertiesManager,
                 PropertiesManager.PROPERTY_SHOW_UTILITYPANE_ANNOTATION)) {
             utilityTabbedPane.add(
-                    messageBundle.getString("viewer.utilityPane.annotation.tab.title"),
+                    messageBundle.getString("viewer.utilityPane.link.tab.title"),
                     buildAnnotationPanel());
         }
 
@@ -1723,21 +1561,13 @@ public class SwingViewBuilder {
         return scroll;
     }
 
-    public ThumbnailsPanel buildThumbsPanel() {
+    public ThumbnailsPanel buildThumbsPanel(){
         ThumbnailsPanel thumbsPanel = new ThumbnailsPanel(viewerController,
                 propertiesManager);
-        if (viewerController != null) {
+        if (viewerController != null){
             viewerController.setThumbnailsPanel(thumbsPanel);
         }
         return thumbsPanel;
-    }
-
-    public LayersPanel buildLayersComponents() {
-        LayersPanel layersPanel = new LayersPanel(viewerController);
-        if (viewerController != null) {
-            viewerController.setLayersPanel(layersPanel);
-        }
-        return layersPanel;
     }
 
     public SearchPanel buildSearchPanel() {
@@ -1749,7 +1579,6 @@ public class SwingViewBuilder {
 
     public AnnotationPanel buildAnnotationPanel() {
         AnnotationPanel annotationPanel = new AnnotationPanel(viewerController);
-        annotationPanel.setAnnotationUtilityToolbar(buildAnnotationUtilityToolBar());
         if (viewerController != null)
             viewerController.setAnnotationPanel(annotationPanel);
         return annotationPanel;
@@ -1763,9 +1592,8 @@ public class SwingViewBuilder {
      * 'application.statusbar.show.statuslabel=true|false' and
      * 'application.statusbar.show.viewmode=true|false'.  The default value
      * for all properties is 'true'.
-     *
      * @return status panel JPanel if visible, null if the proeprty
-     *         'application.statusbar=false' is set.
+     *        'application.statusbar=false' is set. 
      */
     public JPanel buildStatusPanel() {
         // check to see if the status bars should be built.
@@ -1778,7 +1606,7 @@ public class SwingViewBuilder {
                 JPanel pgPanel = new JPanel();
                 JLabel lbl = new JLabel(" ");
                 lbl.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 0)); // So text isn't at the very edge
-                pgPanel.add(lbl);
+                pgPanel.add( lbl);
                 statusPanel.add(pgPanel, BorderLayout.WEST);
                 // set status label callback
                 if (viewerController != null) {
@@ -1790,18 +1618,18 @@ public class SwingViewBuilder {
             // Only add actual buttons to the view panel if requested by the properties file
             // Regardless we'll add the parent JPanel, to preserve the same layout behaviour
             if (PropertiesManager.checkAndStoreBooleanProperty(propertiesManager,
-                    PropertiesManager.PROPERTY_SHOW_STATUSBAR_VIEWMODE)) {
+                                                               PropertiesManager.PROPERTY_SHOW_STATUSBAR_VIEWMODE)) {
                 viewPanel.add(buildPageViewSinglePageNonConToggleButton());
                 viewPanel.add(buildPageViewSinglePageConToggleButton());
                 viewPanel.add(buildPageViewFacingPageNonConToggleButton());
                 viewPanel.add(buildPageViewFacingPageConToggleButton());
             }
             statusPanel.add(viewPanel, BorderLayout.CENTER);
-            viewPanel.setLayout(new ToolbarLayout(ToolbarLayout.RIGHT, 0, 1));
+            viewPanel.setLayout( new ToolbarLayout( ToolbarLayout.RIGHT, 0, 1));
 
             JLabel lbl2 = new JLabel(" ");
             lbl2.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 5)); // So text isn't at the very edge
-            statusPanel.add(lbl2, BorderLayout.EAST);
+            statusPanel.add( lbl2, BorderLayout.EAST);
 
             return statusPanel;
         }
@@ -1811,7 +1639,7 @@ public class SwingViewBuilder {
     public JToggleButton buildPageViewSinglePageConToggleButton() {
         JToggleButton btn = makeToolbarToggleButton(messageBundle.getString("viewer.toolbar.pageView.continuous.singlePage.label"),
                 messageBundle.getString("viewer.toolbar.pageView.continuous.singlePage.tooltip"),
-                "single_page_column", Images.SIZE_MEDIUM,
+                "single_page_column",
                 buttonFont);
         if (viewerController != null && btn != null)
             viewerController.setPageViewSinglePageConButton(btn);
@@ -1821,7 +1649,7 @@ public class SwingViewBuilder {
     public JToggleButton buildPageViewFacingPageConToggleButton() {
         JToggleButton btn = makeToolbarToggleButton(messageBundle.getString("viewer.toolbar.pageView.continuous.facingPage.label"),
                 messageBundle.getString("viewer.toolbar.pageView.continuous.facingPage.tooltip"),
-                "two_page_column", Images.SIZE_MEDIUM,
+                "two_page_column",
                 buttonFont);
         if (viewerController != null && btn != null)
             viewerController.setPageViewFacingPageConButton(btn);
@@ -1831,7 +1659,8 @@ public class SwingViewBuilder {
     public JToggleButton buildPageViewSinglePageNonConToggleButton() {
         JToggleButton btn = makeToolbarToggleButton(messageBundle.getString("viewer.toolbar.pageView.nonContinuous.singlePage.label"),
                 messageBundle.getString("viewer.toolbar.pageView.nonContinuous.singlePage.tooltip"),
-                "single_page", Images.SIZE_MEDIUM, buttonFont);
+                "single_page",
+                buttonFont);
         if (viewerController != null && btn != null)
             viewerController.setPageViewSinglePageNonConButton(btn);
         return btn;
@@ -1840,7 +1669,8 @@ public class SwingViewBuilder {
     public JToggleButton buildPageViewFacingPageNonConToggleButton() {
         JToggleButton btn = makeToolbarToggleButton(messageBundle.getString("viewer.toolbar.pageView.nonContinuous.facingPage.label"),
                 messageBundle.getString("viewer.toolbar.pageView.nonContinuous.facingPage.tooltip"),
-                "two_page", Images.SIZE_MEDIUM, buttonFont);
+                "two_page",
+                buttonFont);
         if (viewerController != null && btn != null)
             viewerController.setPageViewFacingPageNonConButton(btn);
         return btn;
@@ -1853,29 +1683,24 @@ public class SwingViewBuilder {
      * @param title     display text for the menu item
      * @param toolTip   tool tip text
      * @param imageName display image name
-     * @param imageSize image size file extention constant
      * @param font      display font
      * @return a button with the specified characteristics.
      */
     protected JButton makeToolbarButton(
-            String title, String toolTip, String imageName, final String imageSize,
-            java.awt.Font font) {
+            String title, String toolTip, String imageName, java.awt.Font font) {
         JButton tmp = new JButton(showButtonText ? title : "");
         tmp.setFont(font);
         tmp.setToolTipText(toolTip);
-        ;
-        tmp.setPreferredSize(new Dimension(32, 32));
-        try {
-            tmp.setIcon(new ImageIcon(Images.get(imageName + "_a" + imageSize + ".png")));
-            tmp.setPressedIcon(new ImageIcon(Images.get(imageName + "_i" + imageSize + ".png")));
-            tmp.setRolloverIcon(new ImageIcon(Images.get(imageName + "_r" + imageSize + ".png")));
-            tmp.setDisabledIcon(new ImageIcon(Images.get(imageName + "_i" + imageSize + ".png")));
-        } catch (NullPointerException e) {
+        tmp.setPreferredSize(new Dimension(24, 24));
 
-        }
+        tmp.setIcon(new ImageIcon(Images.get(imageName + "_n.gif")));
+        tmp.setPressedIcon(new ImageIcon(Images.get(imageName + "_d.gif")));
+        tmp.setRolloverIcon(new ImageIcon(Images.get(imageName + "_r.gif")));
+        tmp.setDisabledIcon(new ImageIcon(Images.get(imageName + "_d.gif")));
+
         tmp.setRolloverEnabled(true);
         tmp.setBorderPainted(false);
-        tmp.setContentAreaFilled(false);
+        tmp.setContentAreaFilled(true);
         tmp.setFocusPainted(true);
 
         return tmp;
@@ -1888,26 +1713,21 @@ public class SwingViewBuilder {
      * @param toolTip   tool tip text
      * @param imageName display image name
      * @param font      display font
-     * @param imageSize imageSize image size constant
      * @return a toggle button with the specified characteristics.
      */
     protected JToggleButton makeToolbarToggleButton(
-            String title, String toolTip, String imageName,
-            final String imageSize, java.awt.Font font) {
+            String title, String toolTip, String imageName, java.awt.Font font) {
         JToggleButton tmp = new JToggleButton(showButtonText ? title : "");
         tmp.setFont(font);
         tmp.setToolTipText(toolTip);
-        tmp.setPreferredSize(new Dimension(32, 32));
+        tmp.setPreferredSize(new Dimension(26, 26));
         tmp.setRolloverEnabled(true);
 
-        try {
-            tmp.setIcon(new ImageIcon(Images.get(imageName + "_a" + imageSize + ".png")));
-            tmp.setPressedIcon(new ImageIcon(Images.get(imageName + "_i" + imageSize + ".png")));
-            tmp.setRolloverIcon(new ImageIcon(Images.get(imageName + "_r" + imageSize + ".png")));
-            tmp.setDisabledIcon(new ImageIcon(Images.get(imageName + "_i" + imageSize + ".png")));
-        } catch (NullPointerException e) {
+        tmp.setIcon(new ImageIcon(Images.get(imageName + "_n.gif")));
+        tmp.setPressedIcon(new ImageIcon(Images.get(imageName + "_d.gif")));
+        tmp.setRolloverIcon(new ImageIcon(Images.get(imageName + "_r.gif")));
+        tmp.setDisabledIcon(new ImageIcon(Images.get(imageName + "_d.gif")));
 
-        }
         //tmp.setBorderPainted(false);
         tmp.setBorder(BorderFactory.createEmptyBorder());
         tmp.setContentAreaFilled(false);
@@ -1915,55 +1735,6 @@ public class SwingViewBuilder {
 
         return tmp;
     }
-
-    /**
-     * Utility method for creating small toggle buttons (24x24) that also
-     * have a selected icon state. .
-     *
-     * @param title     display text for the menu item
-     * @param toolTip   tool tip text
-     * @param imageName display image name
-     * @param font      display font
-     * @param imageSize imageSize image size constant
-     * @return a toggle button with the specified characteristics.
-     */
-    protected JToggleButton makeToolbarToggleButtonSmall(
-            String title, String toolTip, String imageName,
-            final String imageSize, java.awt.Font font) {
-        JToggleButton tmp = new JToggleButton(showButtonText ? title : "");
-        tmp.setFont(font);
-        tmp.setToolTipText(toolTip);
-        tmp.setPreferredSize(new Dimension(24, 24));
-        try {
-            tmp.setIcon(new ImageIcon(Images.get(imageName + "_a" + imageSize + ".png")));
-            tmp.setPressedIcon(new ImageIcon(Images.get(imageName + "_i" + imageSize + ".png")));
-            tmp.setSelectedIcon(new ImageIcon(Images.get(imageName + "_s" + imageSize + ".png")));
-            tmp.setRolloverIcon(new ImageIcon(Images.get(imageName + "_r" + imageSize + ".png")));
-            tmp.setDisabledIcon(new ImageIcon(Images.get(imageName + "_i" + imageSize + ".png")));
-        } catch (NullPointerException e) {
-
-        }
-        //tmp.setBorderPainted(false);
-        tmp.setBorder(BorderFactory.createEmptyBorder());
-        tmp.setContentAreaFilled(false);
-        tmp.setRolloverEnabled(true);
-        tmp.setFocusPainted(true);
-
-        return tmp;
-    }
-
-
-    protected JToggleButton makeToolbarToggleButton(
-            String title, String toolTip, java.awt.Font font) {
-        JToggleButton tmp = new JToggleButton(showButtonText ? title : "");
-        tmp.setFont(font);
-        tmp.setToolTipText(toolTip);
-        tmp.setPreferredSize(new Dimension(30, 30));
-        tmp.setText(title);
-        tmp.setFocusPainted(true);
-        return tmp;
-    }
-
 
     protected JToggleButton makeToolbarToggleButton(
             String title, String toolTip, String imageName,
@@ -2003,21 +1774,14 @@ public class SwingViewBuilder {
      *
      * @param text      display text for the menu item
      * @param imageName display image for the menu item
-     * @param imageSize size of the image.
      * @return memu item complete with text, image and action listener
      */
-    protected JMenuItem makeMenuItem(String text, String imageName,
-                                     final String imageSize, KeyStroke accel) {
+    protected JMenuItem makeMenuItem(String text, String imageName, KeyStroke accel) {
         JMenuItem jmi = new JMenuItem(text);
         if (imageName != null) {
-            try {
-                jmi.setIcon(new ImageIcon(Images.get(imageName + "_a." + imageSize + "png")));
-                jmi.setDisabledIcon(new ImageIcon(Images.get(imageName + "_i" + imageSize + ".png")));
-                jmi.setRolloverIcon(new ImageIcon(Images.get(imageName + "_r" + imageSize +
-                        ".png")));
-            } catch (NullPointerException e) {
-
-            }
+            jmi.setIcon(new ImageIcon(Images.get(imageName + "_n.gif")));
+            jmi.setDisabledIcon(new ImageIcon(Images.get(imageName + "_d.gif")));
+            jmi.setRolloverIcon(new ImageIcon(Images.get(imageName + "_r.gif")));
         } else {
             jmi.setIcon(new ImageIcon(Images.get("menu_spacer.gif")));
             jmi.setDisabledIcon(new ImageIcon(Images.get("menu_spacer.gif")));
@@ -2049,12 +1813,12 @@ public class SwingViewBuilder {
 
     /**
      * Method to try to get the properties manager from the window management callback,
-     * if we don't already have a propertiesManager object
+     *  if we don't already have a propertiesManager object
      */
     protected void doubleCheckPropertiesManager() {
         if ((propertiesManager == null) &&
-                (viewerController != null) &&
-                (viewerController.getWindowManagementCallback() != null)) {
+            (viewerController != null) &&
+            (viewerController.getWindowManagementCallback() != null)) {
             propertiesManager = viewerController.getWindowManagementCallback().getProperties();
         }
     }
@@ -2062,7 +1826,7 @@ public class SwingViewBuilder {
     /**
      * Method to attempt to override the system property highlight color
      * If the current color is blank, we'll try to pull the same property from
-     * our local propertiesManager and, if found, apply it to the system properties
+     *  our local propertiesManager and, if found, apply it to the system properties
      * This affects the search highlight coloring
      */
     protected void overrideHighlightColor() {
@@ -2098,6 +1862,6 @@ public class SwingViewBuilder {
 
     protected void addToMenuBar(JMenuBar menuBar, JMenu menu) {
         if (menu != null)
-            menuBar.add(menu);
+            menuBar.add( menu );
     }
 }

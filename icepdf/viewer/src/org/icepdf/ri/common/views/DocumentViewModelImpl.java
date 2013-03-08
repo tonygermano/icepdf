@@ -16,6 +16,8 @@ package org.icepdf.ri.common.views;
 
 import org.icepdf.core.pobjects.Document;
 import org.icepdf.core.pobjects.PageTree;
+import org.icepdf.core.views.swing.PageViewComponentImpl;
+import org.icepdf.core.views.swing.AbstractPageViewComponent;
 
 import javax.swing.*;
 import java.util.ArrayList;

@@ -20,6 +20,7 @@ import org.icepdf.core.pobjects.Name;
 import org.icepdf.core.util.Library;
 
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.Set;
 
 /**
@@ -60,7 +61,7 @@ public class CryptFilter extends Dictionary {
     public HashMap<Name, CryptFilterEntry> cryptFilters;
 
 
-    public CryptFilter(Library library, HashMap entries) {
+    public CryptFilter(Library library, Hashtable entries) {
         super(library, entries);
     }
 
@@ -77,8 +78,8 @@ public class CryptFilter extends Dictionary {
             cryptFilters = new HashMap<Name, CryptFilterEntry>(1);
             Set cryptKeys = entries.keySet();
             for (Object name : cryptKeys) {
-                cryptFilters.put((Name) name, new CryptFilterEntry(library,
-                        (HashMap) entries.get(name)));
+                cryptFilters.put((Name)name, new CryptFilterEntry(library,
+                        (Hashtable) entries.get(name)));
             }
         }
         return cryptFilters.get(cryptFilterName);

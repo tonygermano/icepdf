@@ -15,16 +15,17 @@
 package org.icepdf.ri.util;
 
 import org.icepdf.core.pobjects.Document;
-import org.icepdf.core.pobjects.graphics.text.LineText;
-import org.icepdf.core.search.DocumentSearchController;
+import org.icepdf.ri.common.SearchPanel;
 import org.icepdf.ri.common.SwingController;
 import org.icepdf.ri.common.SwingWorker;
-import org.icepdf.ri.common.utility.search.SearchPanel;
+import org.icepdf.core.search.DocumentSearchController;
+import org.icepdf.core.pobjects.graphics.text.LineText;
+
+import java.util.List;
 
 import javax.swing.*;
 import java.awt.*;
 import java.text.MessageFormat;
-import java.util.List;
 import java.util.ResourceBundle;
 
 /**
@@ -204,7 +205,7 @@ public class SearchTextTask {
                 // get instance of the search controller
                 DocumentSearchController searchController =
                         controller.getDocumentSearchController();
-                if (!cumulative) {
+                if (! cumulative){
                     searchController.clearAllSearchHighlight();
                 }
                 searchController.addSearchTerm(pattern,
@@ -247,10 +248,10 @@ public class SearchTextTask {
                             public void run() {
                                 // add the node
                                 searchPanel.addFoundEntry(
-                                        nodeText,
-                                        currentPage,
-                                        lineItems,
-                                        showPages);
+                                nodeText,
+                                currentPage,
+                                lineItems,
+                                showPages);
                                 // try repainting the container
                                 viewContainer.repaint();
                             }
@@ -262,14 +263,15 @@ public class SearchTextTask {
                 setDialogMessage();
 
                 done = true;
-            } finally {
+            }
+            finally {
                 currentlySearching = false;
             }
 
             // repaint the view container
             SwingUtilities.invokeLater(new Runnable() {
                 public void run() {
-                    viewContainer.validate();
+                    viewContainer.repaint();
                 }
             });
         }

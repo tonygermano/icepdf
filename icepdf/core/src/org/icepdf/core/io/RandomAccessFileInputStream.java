@@ -15,8 +15,8 @@
 package org.icepdf.core.io;
 
 import java.io.*;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * @author Mark Collette
@@ -29,12 +29,12 @@ public class RandomAccessFileInputStream extends InputStream implements Seekable
 
     private long m_lMarkPosition;
     private RandomAccessFile m_RandomAccessFile;
-
-    private final ReentrantLock lock = new ReentrantLock();
+    private Object m_oCurrentUser;
 
     public static RandomAccessFileInputStream build(File file) throws FileNotFoundException {
         RandomAccessFile raf = new RandomAccessFile(file, "r");
-        return new RandomAccessFileInputStream(raf);
+        RandomAccessFileInputStream rafis = new RandomAccessFileInputStream(raf);
+        return rafis;
     }
 
     protected RandomAccessFileInputStream(RandomAccessFile raf) {
@@ -65,18 +65,14 @@ public class RandomAccessFileInputStream extends InputStream implements Seekable
     }
 
     public int available() {
-        try {
-            return (int) (m_RandomAccessFile.getFilePointer());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
         return 0;
     }
 
     public void mark(int readLimit) {
         try {
             m_lMarkPosition = m_RandomAccessFile.getFilePointer();
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             throw new RuntimeException(e.toString());
         }
     }
@@ -129,13 +125,42 @@ public class RandomAccessFileInputStream extends InputStream implements Seekable
         return this;
     }
 
-    public void beginThreadAccess() {
-        lock.lock();
+    public synchronized void beginThreadAccess() {
 
+        Object requestingUser = Thread.currentThread();
+        while (true) {
+            if (m_oCurrentUser == null) {
+                m_oCurrentUser = requestingUser;
+                break;
+            } else if (m_oCurrentUser == requestingUser) {
+                break;
+            } else { // Some other Thread is currently using us
+                try {
+                    this.wait(100L);
+                }
+                catch (InterruptedException ie) {
+                }
+            }
+        }
     }
 
-    public void endThreadAccess() {
-        lock.unlock();
+    public synchronized void endThreadAccess() {
+
+            Object requestingUser = Thread.currentThread();
+            if (m_oCurrentUser == null) {
+                this.notifyAll();
+            } else if (m_oCurrentUser == requestingUser) {
+                m_oCurrentUser = null;
+                this.notifyAll();
+            } else { // Some other Thread is currently using us
+                if (logger.isLoggable(Level.SEVERE)) {
+                    logger.severe(
+                            "ERROR:  Thread finished using SeekableInput, but it wasn't locked by that Thread\n" +
+                            "        Thread: " + Thread.currentThread() + "\n" +
+                            "        Locking Thread: " + m_oCurrentUser + "\n" +
+                            "        SeekableInput: " + this);
+                }
+            }
+        }
     }
-}
 

@@ -45,6 +45,7 @@ public class SearchControllerHeadless {
         // save page captures to file.
         float scale = 1.0f;
         float rotation = 0f;
+        Object pageLock = new Object();
 
         // open the document
         Document document = new Document();
@@ -62,14 +63,14 @@ public class SearchControllerHeadless {
         DocumentSearchController searchController =
                 new DocumentSearchControllerImpl(document);
         // add a specified search terms.
-        searchController.addSearchTerm("PDF", true, false);
-        searchController.addSearchTerm("Part", true, false);
-        searchController.addSearchTerm("Contents", true, false);
+        searchController.addSearchTerm("TABLE", true, false);
+        searchController.addSearchTerm("CONTENTS", true, false);
+        searchController.addSearchTerm("Chapter", true, false);
 
         // Paint each pages content to an image and write the image to file
         for (int i = 0; i < 5; i++) {
 
-            Page page = document.getPageTree().getPage(i);
+            Page page = document.getPageTree().getPage(i, pageLock);
             // initialize the page so we are using the same  WordText object
             // thar are used to paint the page.
             page.init();
@@ -89,8 +90,9 @@ public class SearchControllerHeadless {
 
             // capture current transform for graphics context.
             page.paint(g, GraphicsRenderingHints.SCREEN,
-                    Page.BOUNDARY_CROPBOX, rotation, scale, true, true);
+                    Page.BOUNDARY_CROPBOX, rotation, scale, null, true, true);
             g2d.dispose();
+            document.getPageTree().releasePage(page, pageLock);
 
             // capture the page image to file
             try {

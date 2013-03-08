@@ -14,23 +14,28 @@
  */
 package org.icepdf.core.pobjects;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Comparator;
+import java.util.Collection;
+import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
  * This class is responsible for keeping track of which object in the document
  * have change.  When a file is written to disk this class is used to find
- * the object that should be written in the body section of the file as part of
+ * the object that shoud be written in the body section of the file as part of
  * an incremental update.
  * <p/>
  * Once this object is created should be added to the library so that is
- * accessible by any PObject.
+ * accessable by any PObject.
  *
  * @since 4.0
  */
 public class StateManager {
     private static final Logger logger =
-            Logger.getLogger(StateManager.class.getName());
+        Logger.getLogger(StateManager.class.getName());
 
     // a list is all we might need. 
     private HashMap<Reference, PObject> changes;
@@ -52,8 +57,8 @@ public class StateManager {
 
         // number of objects is always one more then the current size and
         // thus the next available number.
-        if (trailer != null) {
-            nextReferenceNumber = trailer.getNumberOfObjects();
+        if (trailer != null){
+            nextReferenceNumber =    trailer.getNumberOfObjects();
         }
     }
 
@@ -74,7 +79,7 @@ public class StateManager {
     /**
      * Add a new PObject containing changed data to the cache.
      *
-     * @param pObject object to add to cache.
+     * @param pObject object to add to cache. 
      */
     public void addChange(PObject pObject) {
         changes.put(pObject.getReference(), pObject);
@@ -87,7 +92,7 @@ public class StateManager {
      * @param reference reference to look for an existing usuage.
      * @return true if reference is already a key in the cache; otherwise, false.
      */
-    public boolean contains(Reference reference) {
+    public boolean contains(Reference reference){
         return changes.containsKey(reference);
     }
 
@@ -129,7 +134,7 @@ coll = hs;
         List<PObject> sortedList = Arrays.asList(arr);
         return sortedList.iterator();
     }
-
+    
     public PTrailer getTrailer() {
         return trailer;
     }

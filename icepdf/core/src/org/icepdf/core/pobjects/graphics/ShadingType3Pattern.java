@@ -21,9 +21,8 @@ import org.icepdf.core.util.Library;
 
 import java.awt.*;
 import java.awt.geom.Point2D;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.Hashtable;
+import java.util.Vector;
 import java.util.logging.Logger;
 
 /**
@@ -52,23 +51,23 @@ public class ShadingType3Pattern extends ShadingPattern {
     // these two values as the colour gradient varies between the starting and
     // ending points of the axis.  The variable t becomes the argument to the
     // colour function(s).  Default [0,1].
-    protected List<Number> domain;
+    protected Vector<Number> domain;
 
     // An array of six numbers [x0, y0, r0, x1, y1, r1] specifying the centers
     // and radii of the starting and ending circles.  Expressed in the shading
     // target coordinate space.  The radii r0 and r1 must both be greater than
     // or equal to 0. If both are zero nothing is painted.
-    protected List coords;
+    protected Vector coords;
 
     // An array of two Boolean values specifying whether to extend the shading
     // beyond the starting and ending points of the axis, Default [false, false].
-    protected List<Boolean> extend;
+    protected Vector<Boolean> extend;
 
     // radial gradient paint that is used by java for paint. 
     protected RadialGradientPaint radialGradientPaint;
 
 
-    public ShadingType3Pattern(Library library, HashMap entries) {
+    public ShadingType3Pattern(Library library, Hashtable entries) {
         super(library, entries);
     }
 
@@ -80,47 +79,45 @@ public class ShadingType3Pattern extends ShadingPattern {
 
         // shading dictionary
         if (shading == null) {
-            shading = library.getDictionary(entries, SHADING_KEY);
+            shading = library.getDictionary(entries, "Shading");
         }
 
-        shadingType = library.getInt(shading, SHADING_TYPE_KEY);
-        bBox = library.getRectangle(shading, BBOX_KEY);
+        shadingType = library.getInt(shading, "ShadingType");
+        bBox = library.getRectangle(shading, "BBox");
         colorSpace = PColorSpace.getColorSpace(library,
-                library.getObject(shading, COLORSPACE_KEY));
-        if (library.getObject(shading, BACKGROUND_KEY) != null &&
-                library.getObject(shading, BACKGROUND_KEY) instanceof List) {
-            background = (List) library.getObject(shading, BACKGROUND_KEY);
+                library.getObject(shading, "ColorSpace"));
+        if (library.getObject(shading, "Background") != null &&
+                library.getObject(shading, "Background") instanceof Vector) {
+            background = (Vector) library.getObject(shading, "Background");
         }
-        antiAlias = library.getBoolean(shading, ANTIALIAS_KEY);
+        antiAlias = library.getBoolean(shading, "AntiAlias");
 
         // get type 2 specific data.
-        Object tmp = library.getObject(shading, DOMAIN_KEY);
-        if (tmp instanceof List) {
-            domain = (List<Number>) tmp;
+        if (library.getObject(shading, "Domain") instanceof Vector) {
+            domain = (Vector<Number>) library.getObject(shading, "Domain");
         } else {
-            domain = new ArrayList<Number>(2);
+            domain = new Vector<Number>(2);
             domain.add(new Float(0.0));
             domain.add(new Float(1.0));
         }
-        tmp = library.getObject(shading, COORDS_KEY);
-        if (tmp instanceof List) {
-            coords = (List) tmp;
+
+        if (library.getObject(shading, "Coords") instanceof Vector) {
+            coords = (Vector) library.getObject(shading, "Coords");
         }
-        tmp = library.getObject(shading, EXTEND_KEY);
-        if (tmp instanceof List) {
-            extend = (List) tmp;
+        if (library.getObject(shading, "Extend") instanceof Vector) {
+            extend = (Vector) library.getObject(shading, "Extend");
         } else {
-            extend = new ArrayList<Boolean>(2);
+            extend = new Vector<Boolean>(2);
             extend.add(false);
             extend.add(false);
         }
-        tmp = library.getObject(shading, FUNCTION_KEY);
+        Object tmp = library.getObject(shading, "Function");
         if (tmp != null) {
-            if (!(tmp instanceof List)){
+            if (!(tmp instanceof Vector)){
                 function = new Function[]{Function.getFunction(library,
                         tmp)};
             }else{
-                List functionTemp = (List)tmp;
+                Vector functionTemp = (Vector)tmp;
                 function = new Function[functionTemp.size()];
                 for (int i = 0; i < functionTemp.size(); i++) {
                     function[i] = Function.getFunction(library, functionTemp.get(i));
@@ -226,7 +223,7 @@ public class ShadingType3Pattern extends ShadingPattern {
      * @return parametric value.
      */
     private float parametrixValue(float linearMapping, float t0, float t1,
-                                  List extended) {
+                                  Vector extended) {
         return t0 + ((t1 - t0) * linearMapping);
     }
 

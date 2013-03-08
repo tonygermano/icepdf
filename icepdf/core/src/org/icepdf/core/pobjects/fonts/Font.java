@@ -19,7 +19,7 @@ import org.icepdf.core.pobjects.Dictionary;
 import org.icepdf.core.pobjects.Name;
 import org.icepdf.core.util.Library;
 
-import java.util.HashMap;
+import java.util.Hashtable;
 
 /**
  * <p>This class represents a PDF object which has a subtype value equal to "Font".
@@ -62,19 +62,14 @@ import java.util.HashMap;
  */
 public abstract class Font extends Dictionary {
 
-    public static final Name TYPE = new Name("Font");
-
-    public static final Name NAME_KEY = new Name("Name");
-    public static final Name BASEFONT_KEY = new Name("BaseFont");
-
     // Object name always "Font"
-    protected Name name;
+    protected String name;
 
     // The name of the object, Font
     protected String basefont;
 
     // The font subtype, type 0, 1, 2 etc.
-    protected Name subtype;
+    protected String subtype;
 
     /**
      * <p>Indicates that the font used to render this String object is in the
@@ -176,26 +171,27 @@ public abstract class Font extends Dictionary {
      * @param library Libaray of all objects in PDF
      * @param entries hash of parsed font attributes
      */
-    public Font(Library library, HashMap entries) {
+    public Font(Library library, Hashtable entries) {
         super(library, entries);
 
         // name of object  "Font"
-        name = library.getName(entries, NAME_KEY);
+        name = library.getName(entries, "Name");
 
         // Type of the font, type 0, 1, 2, 3 etc.
-        subtype = library.getName(entries, SUBTYPE_KEY);
+        subtype = library.getName(entries, "Subtype");
 
         // figure out type
-        subTypeFormat = (subtype.getName().toLowerCase().equals("type0") |
-                subtype.getName().toLowerCase().contains("cid")) ?
+        subTypeFormat = (subtype.equalsIgnoreCase("type0") | subtype.toLowerCase().indexOf("cid") != -1) ?
                 CID_FORMAT : SIMPLE_FORMAT;
 
         // font name, SanSerif is used as it has a a robust CID, and it
         // is the most commonly used font family for pdfs
         basefont = "Serif";
-        Object tmp = entries.get(BASEFONT_KEY);
-        if (tmp != null && tmp instanceof Name) {
-            basefont = ((Name) tmp).getName();
+        if (entries.containsKey("BaseFont")) {
+            Object o = entries.get("BaseFont");
+            if (o instanceof Name) {
+                basefont = ((Name) o).getName();
+            }
         }
     }
 
@@ -226,7 +222,7 @@ public abstract class Font extends Dictionary {
      *
      * @return string representing the font name
      */
-    public Name getName() {
+    public String getName() {
         return name;
     }
 
@@ -235,7 +231,7 @@ public abstract class Font extends Dictionary {
      *
      * @return string representing the font subtype
      */
-    public Name getSubType() {
+    public String getSubType() {
         return subtype;
     }
 

@@ -13,25 +13,24 @@
  * governing permissions and limitations under the License.
  */
 
+import org.icepdf.core.AnnotationCallback;
 import org.icepdf.core.pobjects.Page;
 import org.icepdf.core.pobjects.actions.*;
 import org.icepdf.core.pobjects.annotations.Annotation;
 import org.icepdf.core.pobjects.annotations.BorderStyle;
 import org.icepdf.core.pobjects.annotations.LinkAnnotation;
-import org.icepdf.ri.common.views.AnnotationCallback;
-import org.icepdf.ri.common.views.AnnotationComponent;
-import org.icepdf.ri.common.views.DocumentViewController;
-import org.icepdf.ri.common.views.PageViewComponent;
+import org.icepdf.core.views.DocumentViewController;
+import org.icepdf.core.views.PageViewComponent;
 import org.icepdf.ri.util.BareBonesBrowserLaunch;
 
 import java.awt.*;
-import java.util.List;
+import java.util.ArrayList;
 import java.util.WeakHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * This class represents a basic implementation of the AnnotationCallback.  This
+ * This class represents a basic implemenation of the AnnotationCallback.  This
  * class also modifies the border of annotation for initial display, showing a
  * border around all annotation.  When an annotation is clicked on we then change
  * the colour of the annotation to an alternate colour to indicate that the link
@@ -71,7 +70,7 @@ public class MyAnnotationCallback implements AnnotationCallback {
      * @param annotation annotation that was activated by a user via the
      *                   PageViewComponent.
      */
-    public void processAnnotationAction(Annotation annotation) {
+    public void proccessAnnotationAction(Annotation annotation) {
         if (logger.isLoggable(Level.INFO)) {
             logger.info("Annotation " + annotation.toString());
             if (annotation.getAction() != null) {
@@ -150,8 +149,9 @@ public class MyAnnotationCallback implements AnnotationCallback {
      * New annotation created with view tool.
      *
      * @param page page that annotation was added to.
+     * @param rect new annotation bounds.
      */
-    public void newAnnotation(PageViewComponent page, AnnotationComponent annotation) {
+    public void newAnnotation(PageViewComponent page, Rectangle rect) {
 
     }
 
@@ -165,7 +165,7 @@ public class MyAnnotationCallback implements AnnotationCallback {
      */
     public void pageAnnotationsInitialized(Page page) {
 
-        List<Annotation> annotations = page.getAnnotations();
+        ArrayList<Annotation> annotations = page.getAnnotations();
         // no annotation, no problem just return.
         if (annotations == null || annotations.size() == 0) {
             return;
@@ -179,10 +179,10 @@ public class MyAnnotationCallback implements AnnotationCallback {
 
     /**
      * Utility method for changing the default state of a annotation border.
-     * There is no guarantee that an annotation will actually have a border.  For
+     * There is no guarentee that an anotation will actualy have a border.  For
      * this example we add a default border and colour to annotations that
      * have a null border style.  If the annotation has a border we just store
-     * the current state in the annotation history map.
+     * the current state in the annoation history map.
      *
      * @param annotation annotation to decorate.
      */

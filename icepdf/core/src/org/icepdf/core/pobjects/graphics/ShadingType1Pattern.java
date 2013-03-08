@@ -18,7 +18,8 @@ import org.icepdf.core.pobjects.functions.Function;
 import org.icepdf.core.util.Library;
 
 import java.awt.*;
-import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.Vector;
 
 /**
  * <p>Currently not support, type 1 algorithm defines a colour for each
@@ -32,13 +33,13 @@ import java.util.HashMap;
 public class ShadingType1Pattern extends ShadingPattern {
 
     // domain, optional, array of four numbers
-    protected List domain;
+    protected Vector domain;
 
-    protected List matrix;
+    protected Vector matrix;
 
     protected Function function;
 
-    public ShadingType1Pattern(Library library, HashMap entries) {
+    public ShadingType1Pattern(Library library, Hashtable entries) {
         super(library, entries);
     }
 

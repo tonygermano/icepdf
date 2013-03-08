@@ -14,12 +14,11 @@
  */
 package org.icepdf.core.pobjects.graphics;
 
-import org.icepdf.core.pobjects.Name;
 import org.icepdf.core.pobjects.Reference;
 import org.icepdf.core.util.Library;
 
 import java.awt.*;
-import java.util.HashMap;
+import java.util.Hashtable;
 
 /**
  * <p>Pattern colour implements PColorSpace but is more of a parser placeholder
@@ -35,8 +34,6 @@ import java.util.HashMap;
  */
 public class PatternColor extends PColorSpace {
 
-    public static final Name PATTERN_KEY = new Name("Pattern");
-
     private Pattern pattern;
 
     private PColorSpace PColorSpace;
@@ -47,7 +44,7 @@ public class PatternColor extends PColorSpace {
      * @param library document library.
      * @param entries dictionary entries.
      */
-    public PatternColor(Library library, HashMap entries) {
+    public PatternColor(Library library, Hashtable entries) {
         super(library, entries);
     }
 

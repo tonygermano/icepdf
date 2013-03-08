@@ -17,24 +17,26 @@ package org.icepdf.core.pobjects;
 import org.icepdf.core.events.PaintPageEvent;
 import org.icepdf.core.events.PaintPageListener;
 import org.icepdf.core.io.SeekableInput;
+import org.icepdf.core.io.SequenceInputStream;
 import org.icepdf.core.pobjects.annotations.Annotation;
+import org.icepdf.core.pobjects.annotations.AnnotationFactory;
+import org.icepdf.core.pobjects.annotations.AnnotationState;
 import org.icepdf.core.pobjects.graphics.Shapes;
 import org.icepdf.core.pobjects.graphics.text.GlyphText;
 import org.icepdf.core.pobjects.graphics.text.LineText;
 import org.icepdf.core.pobjects.graphics.text.PageText;
 import org.icepdf.core.pobjects.graphics.text.WordText;
 import org.icepdf.core.util.*;
-import org.icepdf.core.util.content.ContentParser;
-import org.icepdf.core.util.content.ContentParserFactory;
+import org.icepdf.core.views.common.TextSelectionPageHandler;
+import org.icepdf.core.views.swing.PageViewComponentImpl;
 
 import java.awt.*;
 import java.awt.geom.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Stack;
+import java.util.Hashtable;
+import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -63,67 +65,13 @@ import java.util.logging.Logger;
  * @see org.icepdf.core.pobjects.PageTree
  * @since 1.0
  */
-public class Page extends Dictionary {
+public class Page extends Dictionary implements MemoryManageable {
 
     private static final Logger logger =
             Logger.getLogger(Page.class.toString());
 
-    /**
-     * Transparency value used to simulate text highlighting.
-     */
-    public static final float selectionAlpha = 0.3f;
-
-    // text selection colour
-    public static Color selectionColor;
-
-    static {
-        // sets the shadow colour of the decorator.
-        try {
-            String color = Defs.sysProperty(
-                    "org.icepdf.core.views.page.text.selectionColor", "#0077FF");
-            int colorValue = ColorUtil.convertColor(color);
-            selectionColor =
-                    new Color(colorValue >= 0 ? colorValue :
-                            Integer.parseInt("0077FF", 16));
-        } catch (NumberFormatException e) {
-            if (logger.isLoggable(Level.WARNING)) {
-                logger.warning("Error reading text selection colour");
-            }
-        }
-    }
-
-    // text highlight colour
-    public static Color highlightColor;
-
-    static {
-        // sets the shadow colour of the decorator.
-        try {
-            String color = Defs.sysProperty(
-                    "org.icepdf.core.views.page.text.highlightColor", "#CC00FF");
-            int colorValue = ColorUtil.convertColor(color);
-            highlightColor =
-                    new Color(colorValue >= 0 ? colorValue :
-                            Integer.parseInt("FFF600", 16));
-        } catch (NumberFormatException e) {
-            if (logger.isLoggable(Level.WARNING)) {
-                logger.warning("Error reading text highlight colour");
-            }
-        }
-    }
-
-    public static final Name TYPE = new Name("Page");
-
     public static final Name ANNOTS_KEY = new Name("Annots");
     public static final Name CONTENTS_KEY = new Name("Contents");
-    public static final Name RESOURCES_KEY = new Name("Resources");
-    public static final Name THUMB_KEY = new Name("Thumb");
-    public static final Name PARENT_KEY = new Name("Parent");
-    public static final Name ROTATE_KEY = new Name("Rotate");
-    public static final Name MEDIABOX_KEY = new Name("MediaBox");
-    public static final Name CROPBOX_KEY = new Name("CropBox");
-    public static final Name ARTBOX_KEY = new Name("ArtBox");
-    public static final Name BLEEDBOX_KEY = new Name("BleedBox");
-    public static final Name TRIMBOX_KEY = new Name("TrimBox");
 
     /**
      * Defines the boundaries of the physical medium on which the page is
@@ -163,15 +111,15 @@ public class Page extends Dictionary {
     private Resources resources;
 
     // Vector of annotations
-    private List<Annotation> annotations;
+    private ArrayList<Annotation> annotations;
 
     // Contents
-    private List<Stream> contents;
+    private Vector<Stream> contents;
     // Container for all shapes stored on page
     private Shapes shapes = null;
 
     // the collection of objects listening for page paint events
-    private final List<PaintPageListener> paintPageListeners = new ArrayList<PaintPageListener>(8);
+    private Vector<PaintPageListener> paintPageListeners = new Vector<PaintPageListener>(8);
 
     // Defines the boundaries of the physical medium on which the page is
     // intended to be displayed on.
@@ -196,10 +144,73 @@ public class Page extends Dictionary {
      * a page entity and all of it child elements that are associated with it.
      *
      * @param l pointer to default library containing all document objects
-     * @param h HashMap containing all of the dictionary entries
+     * @param h hashtable containing all of the dictionary entries
      */
-    public Page(Library l, HashMap h) {
+    public Page(Library l, Hashtable h) {
         super(l, h);
+    }
+
+    /**
+     * Dispose the Page.
+     *
+     * @param cache if true, cached files are removed; otherwise, objects are freed
+     *              but object caches are left intact.
+     */
+    protected synchronized void dispose(boolean cache) {
+        // Do not null out Library library reference here, without taking
+        //   into account that MemoryManager.releaseAllByLibrary(Library)
+        //   requires Page to still have Library library in getLibrary()
+        // dispose only if the pages has been initiated
+        if (isInited) {
+            // un-init a page to free up memory
+            isInited = false;
+            // null data collections for page content
+            if (annotations != null) {
+                annotations.clear();
+                annotations.trimToSize();
+            }
+            // work through contents and null any stream that have images in them
+            if (contents != null) {
+                //System.out.println("   Content size " + contents.size());
+                for (Stream stream : contents) {
+                    stream.dispose(cache);
+                }
+                contents.clear();
+                contents.trimToSize();
+            }
+
+            // work through contents and null any stream that have images in them
+            if (shapes != null) {
+                shapes.dispose();
+                shapes = null;
+            }
+
+            // work through resources and null any images in the image hash
+            if (resources != null) {
+                resources.dispose(cache, this);
+                resources = null;
+            }
+            // clean up references in library to avoid slow bleed
+            if (cache) {
+                // remove the page
+                library.removeObject(this.getPObjectReference());
+                // annotations
+                Object tmp = entries.get(ANNOTS_KEY.getName());
+                if (tmp != null && tmp instanceof Vector) {
+                    Vector annots = (Vector) tmp;
+                    for (Object ref : annots) {
+                        if (ref instanceof Reference) {
+                            library.removeObject((Reference) ref);
+                        }
+                    }
+                }
+            }
+        }
+        // clear vector of listeners
+        if (paintPageListeners != null) {
+            paintPageListeners.clear();
+            paintPageListeners.trimToSize();
+        }
     }
 
     public boolean isInitiated() {
@@ -207,60 +218,62 @@ public class Page extends Dictionary {
     }
 
     private void initPageContents() throws InterruptedException {
-        Object pageContent = library.getObject(entries, CONTENTS_KEY);
+        Object pageContent = library.getObject(entries, CONTENTS_KEY.getName());
 
         // if a stream process it as needed
         if (pageContent instanceof Stream) {
-            contents = new ArrayList<Stream>(1);
+            contents = new Vector<Stream>(1);
             Stream tmpStream = (Stream) pageContent;
             tmpStream.setPObjectReference(
-                    library.getObjectReference(entries, CONTENTS_KEY));
-            contents.add(tmpStream);
+                    library.getObjectReference(entries, CONTENTS_KEY.getName()));
+            contents.addElement(tmpStream);
         }
         // if a vector, process it as needed
-        else if (pageContent instanceof List) {
-            List conts = (List) pageContent;
+        else if (pageContent instanceof Vector) {
+            Vector conts = (Vector) pageContent;
             int sz = conts.size();
-            contents = new ArrayList<Stream>(Math.max(sz, 1));
+            contents = new Vector<Stream>(Math.max(sz, 1));
             // pull all of the page content references from the library
             for (int i = 0; i < sz; i++) {
                 if (Thread.interrupted()) {
                     throw new InterruptedException("Page Content initialization thread interrupted");
                 }
-                Stream tmpStream = (Stream) library.getObject((Reference) conts.get(i));
+                Stream tmpStream = (Stream) library.getObject((Reference) conts.elementAt(i));
                 if (tmpStream != null) {
-                    tmpStream.setPObjectReference((Reference) conts.get(i));
-                    contents.add(tmpStream);
+                    tmpStream.setPObjectReference((Reference) conts.elementAt(i));
+                    contents.addElement(tmpStream);
                 }
             }
         }
     }
 
     private void initPageResources() throws InterruptedException {
-        Resources res = library.getResources(entries, RESOURCES_KEY);
-        PageTree pageTree;
+        Resources res = library.getResources(entries, "Resources");
         if (res == null) {
-            pageTree = getParent();
-            while (pageTree != null) {
+            PageTree pt = getParent();
+            while (pt != null) {
                 if (Thread.interrupted()) {
                     throw new InterruptedException("Page Resource initialization thread interrupted");
                 }
-                Resources parentResources = pageTree.getResources();
+                Resources parentResources = pt.getResources();
                 if (parentResources != null) {
                     res = parentResources;
                     break;
                 }
-                pageTree = pageTree.getParent();
+                pt = pt.getParent();
             }
         }
         resources = res;
+        if (resources != null) {
+            resources.addReference(this);
+        }
     }
 
     private void initPageAnnotations() throws InterruptedException {
         // find annotations in main library for our pages dictionary
-        Object annots = library.getObject(entries, ANNOTS_KEY);
-        if (annots != null && annots instanceof List) {
-            List v = (List) annots;
+        Object annots = library.getObject(entries, ANNOTS_KEY.getName());
+        if (annots != null && annots instanceof Vector) {
+            Vector v = (Vector) annots;
             annotations = new ArrayList<Annotation>(v.size() + 1);
             // add annotations
             Object annotObj;
@@ -272,11 +285,11 @@ public class Page extends Dictionary {
                             "Page Annotation initialization thread interrupted");
                 }
 
-                annotObj = v.get(i);
+                annotObj = v.elementAt(i);
                 Reference ref = null;
                 // we might have a reference
                 if (annotObj instanceof Reference) {
-                    ref = (Reference) v.get(i);
+                    ref = (Reference) v.elementAt(i);
                     annotObj = library.getObject(ref);
                 }
 
@@ -285,12 +298,12 @@ public class Page extends Dictionary {
                     a = (Annotation) annotObj;
                 }
                 // or build annotations from dictionary.
-                else if (annotObj instanceof HashMap) { // HashMap lacks "Type"->"Annot" entry
-                    a = Annotation.buildAnnotation(library, (HashMap) annotObj);
+                else if (annotObj instanceof Hashtable) { // Hashtable lacks "Type"->"Annot" entry
+                    a = Annotation.buildAnnotation(library, (Hashtable) annotObj);
                 }
                 // set the object reference, so we can save the state correct
                 // and update any references accordingly. 
-                if (ref != null & a != null) {
+                if (ref != null) {
                     a.setPObjectReference(ref);
                 }
 
@@ -298,19 +311,6 @@ public class Page extends Dictionary {
                 annotations.add(a);
             }
         }
-    }
-
-    @Override
-    public void setPObjectReference(Reference reference) {
-        super.setPObjectReference(reference);    //To change body of overridden methods use File | Settings | File Templates.
-    }
-
-    /**
-     * Reset the pages initialized flag and as a result subsequent calls to
-     * this page may trigger a call to init().
-     */
-    public void resetInitializedState() {
-        isInited = false;
     }
 
     /**
@@ -322,6 +322,13 @@ public class Page extends Dictionary {
             // make sure we are not revisiting this method
             if (isInited) {
                 return;
+            }
+//try { throw new RuntimeException("Page.init() ****"); } catch(Exception e) { e.printStackTrace(); }
+
+            // do a little clean up to keep the mem footprint small
+            boolean lowMemory = MemoryManager.getInstance().isLowMemory();
+            if (lowMemory && logger.isLoggable(Level.FINER)) {
+                logger.finer("Low memory conditions encountered, clearing page cache");
             }
 
             // get pages resources
@@ -335,36 +342,43 @@ public class Page extends Dictionary {
 
             /**
              * Finally iterate through the contents vector and concat all of the
-             * the resource streams together so that the content parser can
+             * the resourse streams together so that the content parser can
              * go to town and build all of the page's shapes.
              */
+
             if (contents != null) {
+                Vector<InputStream> inputStreamsVec = new Vector<InputStream>(contents.size());
+                for (Stream stream : contents) {
+                    //byte[] streamBytes = stream.getBytes();
+                    //ByteArrayInputStream input = new ByteArrayInputStream(streamBytes);
+                    InputStream input = stream.getInputStreamForDecodedStreamBytes();
+                    inputStreamsVec.add(input);
+/*
+                    InputStream input = stream.getInputStreamForDecodedStreamBytes();
+                    InputStream[] inArray = new InputStream[] { input };////
+                    String content = Utils.getContentAndReplaceInputStream( inArray, false );
+                    input = inArray[0];
+                    System.out.println("Page.init()  Stream: " + stream);
+                    System.out.println("Page.init()  Content: " + content);
+*/
+                }
+                SequenceInputStream sis = new SequenceInputStream(inputStreamsVec.iterator());
+
+                // push the library and resources to the content parse
+                // and return the the shapes vector for the screen elements
+                // for the page/resources in question.
                 try {
-                    ContentParser cp = ContentParserFactory.getInstance()
-                            .getContentParser(library, resources);
-                    byte[][] streams = new byte[contents.size()][];
-                    byte[] stream;
-                    for (int i = 0, max = contents.size(); i < max; i++) {
-                        stream = contents.get(i).getDecodedStreamBytes();
-                        if (stream != null) {
-                            streams[i] = stream;
-                        }
-                    }
-                    // get any optional groups from the catalog, which control
-                    // visibility
-                    OptionalContent optionalContent =
-                            library.getCatalog().getOptionalContent();
-                    if (optionalContent != null) {
-                        optionalContent.init();
-                    }
-
-                    // pass in option group references into parse.
-                    shapes = cp.parse(streams).getShapes();
-
+                    ContentParser cp = new ContentParser(library, resources);
+                    shapes = cp.parse(sis);
                 } catch (Exception e) {
                     shapes = new Shapes();
                     logger.log(Level.FINE, "Error initializing Page.", e);
-                    e.printStackTrace();
+                } finally {
+                    try {
+                        sis.close();
+                    } catch (IOException e) {
+                        logger.log(Level.FINE, "Error closing page stream.", e);
+                    }
                 }
             }
             // empty page, nothing to do.
@@ -391,7 +405,7 @@ public class Page extends Dictionary {
      *         encoded.
      */
     public Thumbnail getThumbnail() {
-        Object thumb = library.getObject(entries, THUMB_KEY);
+        Object thumb = library.getObject(entries, "Thumb");
         if (thumb != null && thumb instanceof Stream) {
             return new Thumbnail(library, entries);
         } else {
@@ -399,10 +413,9 @@ public class Page extends Dictionary {
         }
     }
 
-    public void requestInterrupt() {
-        if (shapes != null) {
-            shapes.interruptPaint();
-        }
+    public void paint(Graphics g, int renderHintType, final int boundary,
+                      float userRotation, float userZoom) {
+        paint(g, renderHintType, boundary, userRotation, userZoom, null);
     }
 
     /**
@@ -417,10 +430,11 @@ public class Page extends Dictionary {
      *                       painting the page content.
      * @param userRotation   Rotation factor, in degrees, to be applied to the rendered page
      * @param userZoom       Zoom factor to be applied to the rendered page
+     * @param pagePainter    class which will receive paint events.
      */
     public void paint(Graphics g, int renderHintType, final int boundary,
-                      float userRotation, float userZoom) {
-        paint(g, renderHintType, boundary, userRotation, userZoom, true, true);
+                      float userRotation, float userZoom, PageViewComponentImpl.PagePainter pagePainter) {
+        paint(g, renderHintType, boundary, userRotation, userZoom, pagePainter, true, true);
     }
 
     /**
@@ -435,8 +449,9 @@ public class Page extends Dictionary {
      *                             painting the page content.
      * @param userRotation         Rotation factor, in degrees, to be applied to the rendered page
      * @param userZoom             Zoom factor to be applied to the rendered page
+     * @param pagePainter          class which will receive paint events.
      * @param paintAnnotations     true enables the painting of page annotations.  False
-     *                             paints no annotations for a given page.
+     *                             paints no annotaitons for a given page.
      * @param paintSearchHighlight true enables the painting of search highlight
      *                             state of text object.  The search controller can
      *                             be used to easily search and add highlighted state
@@ -444,8 +459,11 @@ public class Page extends Dictionary {
      */
     public void paint(Graphics g, int renderHintType, final int boundary,
                       float userRotation, float userZoom,
+                      PageViewComponentImpl.PagePainter pagePainter,
                       boolean paintAnnotations, boolean paintSearchHighlight) {
-        if (!isInited) {
+        if (!isInited && pagePainter == null) {
+            init();
+        } else if (!isInited) {
             // make sure we don't do a page init on the awt thread in the viewer
             // ri, let the
             return;
@@ -488,42 +506,6 @@ public class Page extends Dictionary {
             g2.setClip(area);
         }
 
-        paintPageContent(g2, renderHintType, userRotation, userZoom, paintAnnotations, paintSearchHighlight);
-
-        // one last repaint, just to be sure
-        notifyPaintPageListeners();
-    }
-
-    /**
-     * Paints the contents of this page to the graphics context using
-     * the specified rotation, zoom, rendering hints.
-     * <p/>
-     * The drawing commands that are issued on the given graphics context will use coordinates
-     * in PDF user coordinate space. It is the responsibility of the caller of this method
-     * to setup the graphics context to correctly interpret these coordinates.
-     *
-     * @param g                    graphics context to which the page content will be painted.
-     * @param renderHintType       Constant specified by the GraphicsRenderingHints class.
-     *                             There are two possible entries, SCREEN and PRINT, each with configurable
-     *                             rendering hints settings.
-     * @param userRotation         Rotation factor, in degrees, to be applied to the rendered page
-     * @param userZoom             Zoom factor to be applied to the rendered page
-     * @param paintAnnotations     true enables the painting of page annotations.  False
-     *                             paints no annotations for a given page.
-     * @param paintSearchHighlight true enables the painting of search highlight
-     *                             state of text object.  The search controller can
-     *                             be used to easily search and add highlighted state
-     *                             for search terms.
-     */
-    public void paintPageContent(Graphics g, int renderHintType, float userRotation, float userZoom, boolean paintAnnotations, boolean paintSearchHighlight) {
-        if (!isInited) {
-            init();
-        }
-
-        paintPageContent(((Graphics2D) g), renderHintType, userRotation, userZoom, paintAnnotations, paintSearchHighlight);
-    }
-
-    private void paintPageContent(Graphics2D g2, int renderHintType, float userRotation, float userZoom, boolean paintAnnotations, boolean paintSearchHighlight) {
         // draw page content
         if (shapes != null) {
 
@@ -531,7 +513,7 @@ public class Page extends Dictionary {
             Shape pageClip = g2.getClip();
 
             shapes.setPageParent(this);
-            shapes.paint(g2);
+            shapes.paint(g2, pagePainter);
             shapes.setPageParent(null);
 
             g2.setTransform(pageTransform);
@@ -552,7 +534,7 @@ public class Page extends Dictionary {
             if (pageText != null) {
                 g2.setComposite(AlphaComposite.getInstance(
                         AlphaComposite.SRC_OVER,
-                        selectionAlpha));
+                        TextSelectionPageHandler.selectionAlpha));
                 // paint the sprites
                 GeneralPath textPath;
                 // iterate over the data structure.
@@ -561,13 +543,13 @@ public class Page extends Dictionary {
                         // paint whole word
                         if (wordText.isHighlighted()) {
                             textPath = new GeneralPath(wordText.getBounds());
-                            g2.setColor(highlightColor);
+                            g2.setColor(TextSelectionPageHandler.highlightColor);
                             g2.fill(textPath);
                         } else {
                             for (GlyphText glyph : wordText.getGlyphs()) {
                                 if (glyph.isHighlighted()) {
                                     textPath = new GeneralPath(glyph.getBounds());
-                                    g2.setColor(highlightColor);
+                                    g2.setColor(TextSelectionPageHandler.highlightColor);
                                     g2.fill(textPath);
                                 }
                             }
@@ -677,12 +659,35 @@ public class Page extends Dictionary {
     }
 
     /**
+     * Creates a new annotation instance for his page.  The Annotation is
+     * added to the appropriate dictionaries and is regisitered width the
+     * state manager class.
+     *
+     * @param rect            location of new rectangle
+     * @param annotationState annotation state to use for default values.  Null
+     *                        is allowed if default state is prefered.
+     * @return new annotation reference for this page.
+     */
+    public Annotation createAnnotation(Rectangle rect,
+                                       AnnotationState annotationState) {
+        // create a new instance of the object adding it to the library
+        Annotation newAnnotation =
+                AnnotationFactory.buildAnnotation(library,
+                        AnnotationFactory.LINK_ANNOTATION,
+                        rect,
+                        annotationState);
+
+        // return to caller for further manipulations.
+        return addAnnotation(newAnnotation);
+    }
+
+    /**
      * Adds an annotation that was previously added to the document.  It is
      * assumed that the annotation has a valid object reference.  This
      * is commonly used with the undo/redo state manager in the RI.  Use
      * the method @link{#createAnnotation} for creating new annotations.
      *
-     * @param newAnnotation annotation object to add
+     * @param newAnnotation
      * @return reference to annotaiton that was added.
      */
     public Annotation addAnnotation(Annotation newAnnotation) {
@@ -692,13 +697,13 @@ public class Page extends Dictionary {
             try {
                 initPageAnnotations();
             } catch (InterruptedException e) {
-                logger.warning("Annotation Initialization interrupted");
+                logger.warning("Annotation Initialization interupted");
             }
         }
 
         StateManager stateManager = library.getStateManager();
 
-        Object annots = library.getArray(entries, ANNOTS_KEY);
+        Object annots = library.getObject(entries, ANNOTS_KEY.getName());
         boolean isAnnotAReference = library.isReference(entries, ANNOTS_KEY.getName());
 
         // does the page not already have an annotations or if the annots
@@ -706,9 +711,9 @@ public class Page extends Dictionary {
         // manager
         if (!isAnnotAReference && annots != null) {
             // get annots array from page
-            if (annots instanceof List) {
+            if (annots instanceof Vector) {
                 // update annots dictionary with new annotations reference,
-                ArrayList v = new ArrayList((List) annots);
+                Vector v = (Vector) annots;
                 v.add(newAnnotation.getPObjectReference());
                 // add the page as state change
                 stateManager.addChange(
@@ -716,19 +721,19 @@ public class Page extends Dictionary {
             }
         } else if (isAnnotAReference && annots != null) {
             // get annots array from page
-            if (annots instanceof List) {
+            if (annots instanceof Vector) {
                 // update annots dictionary with new annotations reference,
-                List v = (List) annots;
+                Vector v = (Vector) annots;
                 v.add(newAnnotation.getPObjectReference());
                 // add the annotations reference dictionary as state has changed
                 stateManager.addChange(
                         new PObject(annots, library.getObjectReference(
-                                entries, ANNOTS_KEY)));
+                                entries, ANNOTS_KEY.getName())));
             }
         }
         // we need to add the a new annots reference
         else {
-            List annotsVector = new ArrayList(4);
+            Vector annotsVector = new Vector(4);
             annotsVector.add(newAnnotation.getPObjectReference());
 
             // create a new Dictionary of annotaions using an external reference
@@ -793,7 +798,7 @@ public class Page extends Dictionary {
         annot.setDeleted(true);
 
         // check to see if this is an existing annotations, if the annotations
-        // is existing then we have to mark either the page or annot ref as changed.
+        // is existing then we have to mark either the page or annot ref as chagned.
         if (!annot.isNew() && !isAnnotAReference) {
             // add the page as state change
             stateManager.addChange(
@@ -803,12 +808,12 @@ public class Page extends Dictionary {
         else if (!annot.isNew() && isAnnotAReference) {
             stateManager.addChange(
                     new PObject(annots, library.getObjectReference(
-                            entries, ANNOTS_KEY)));
+                            entries, ANNOTS_KEY.getName())));
         }
         // removed the annotations from the annots vector
-        if (annots instanceof List) {
+        if (annots instanceof Vector) {
             // update annots dictionary with new annotations reference,
-            ArrayList v = new ArrayList((List) annots);
+            Vector v = (Vector) annots;
             v.remove(annot.getPObjectReference());
         }
 
@@ -846,8 +851,8 @@ public class Page extends Dictionary {
 
         StateManager stateManager = library.getStateManager();
         // if we are doing an update we have at least on annot
-        List<Reference> annots = (List)
-                library.getObject(entries, ANNOTS_KEY);
+        Vector<Reference> annots = (Vector)
+                library.getObject(entries, ANNOTS_KEY.getName());
 
         // make sure annotations is in part of page.
         boolean found = false;
@@ -896,7 +901,7 @@ public class Page extends Dictionary {
      * @see org.icepdf.core.util.Library
      */
     protected Reference getParentReference() {
-        return (Reference) entries.get(PARENT_KEY);
+        return (Reference) entries.get("Parent");
     }
 
     /**
@@ -906,12 +911,7 @@ public class Page extends Dictionary {
      */
     public PageTree getParent() {
         // retrieve a pointer to the pageTreeParent
-        Object tmp = library.getObject(entries, PARENT_KEY);
-        if (tmp instanceof PageTree) {
-            return (PageTree) tmp;//library.getObject(entries, "Parent");
-        } else {
-            return null;
-        }
+        return (PageTree) library.getObject(entries, "Parent");
     }
 
     /**
@@ -1154,7 +1154,7 @@ public class Page extends Dictionary {
     private float getPageRotation() {
         // Get the pages default orientation if available, if not defined
         // then it is zero.
-        Object tmpRotation = library.getObject(entries, ROTATE_KEY);
+        Object tmpRotation = library.getObject(entries, "Rotate");
         if (tmpRotation != null) {
             pageRotation = ((Number) tmpRotation).floatValue();
 //            System.out.println("Page Rotation  " + pageRotation);
@@ -1185,13 +1185,9 @@ public class Page extends Dictionary {
      *
      * @return annotation associated with page; null, if there are no annotations.
      */
-    public List<Annotation> getAnnotations() {
+    public ArrayList<Annotation> getAnnotations() {
         if (!isInited) {
-            try {
-                initPageAnnotations();
-            } catch (InterruptedException e) {
-                logger.finer("Interrupt exception getting annotations. ");
-            }
+            init();
         }
         return annotations;
     }
@@ -1215,7 +1211,7 @@ public class Page extends Dictionary {
             String[] decodedContentStream = new String[contents.size()];
             int i = 0;
             for (Stream stream : contents) {
-                InputStream input = stream.getDecodedByteArrayInputStream();
+                InputStream input = stream.getInputStreamForDecodedStreamBytes();
                 String content;
                 if (input instanceof SeekableInput) {
                     content = Utils.getContentFromSeekableInput((SeekableInput) input, false);
@@ -1230,7 +1226,6 @@ public class Page extends Dictionary {
             return decodedContentStream;
         } catch (InterruptedException e) {
             logger.log(Level.SEVERE, "Error initializing page Contents.", e);
-            e.printStackTrace();
         } catch (IOException e) {
             logger.log(Level.SEVERE, "Error closing content stream");
         }
@@ -1246,7 +1241,7 @@ public class Page extends Dictionary {
      */
     public Rectangle2D.Float getMediaBox() {
         // add all of the pages media box dimensions to a vector and process
-        List boxDimensions = (List) (library.getObject(entries, MEDIABOX_KEY));
+        Vector boxDimensions = (Vector) (library.getObject(entries, "MediaBox"));
         if (boxDimensions != null) {
             mediaBox = new PRectangle(boxDimensions);
 //            System.out.println("Page - MediaBox " + mediaBox);
@@ -1269,11 +1264,8 @@ public class Page extends Dictionary {
      * @return crop box boundary in user space units.
      */
     public Rectangle2D.Float getCropBox() {
-        if (cropBox != null) {
-            return cropBox;
-        }
         // add all of the pages crop box dimensions to a vector and process
-        List boxDimensions = (List) (library.getObject(entries, CROPBOX_KEY));
+        Vector boxDimensions = (Vector) (library.getObject(entries, "CropBox"));
         if (boxDimensions != null) {
             cropBox = new PRectangle(boxDimensions);
 //            System.out.println("Page - CropBox " + cropBox);
@@ -1310,7 +1302,7 @@ public class Page extends Dictionary {
      */
     public Rectangle2D.Float getArtBox() {
         // get the art box vector value
-        List boxDimensions = (List) (library.getObject(entries, ARTBOX_KEY));
+        Vector boxDimensions = (Vector) (library.getObject(entries, "ArtBox"));
         if (boxDimensions != null) {
             artBox = new PRectangle(boxDimensions);
 //            System.out.println("Page - ArtBox " + artBox);
@@ -1330,7 +1322,7 @@ public class Page extends Dictionary {
      */
     public Rectangle2D.Float getBleedBox() {
         // get the art box vector value
-        List boxDimensions = (List) (library.getObject(entries, BLEEDBOX_KEY));
+        Vector boxDimensions = (Vector) (library.getObject(entries, "BleedBox"));
         if (boxDimensions != null) {
             bleedBox = new PRectangle(boxDimensions);
 //            System.out.println("Page - BleedBox " + bleedBox);
@@ -1350,7 +1342,7 @@ public class Page extends Dictionary {
      */
     public Rectangle2D.Float getTrimBox() {
         // get the art box vector value
-        List boxDimensions = (List) (library.getObject(entries, TRIMBOX_KEY));
+        Vector boxDimensions = (Vector) (library.getObject(entries, "TrimBox"));
         if (boxDimensions != null) {
             trimBox = new PRectangle(boxDimensions);
 //            System.out.println("Page - TrimBox " + trimBox);
@@ -1393,7 +1385,7 @@ public class Page extends Dictionary {
             }
         }
 
-        Shapes textBlockShapes = new Shapes();
+        Shapes textBlockShapes = null;
         try {
             /**
              * Finally iterate through the contents vector and concat all of the
@@ -1409,28 +1401,32 @@ public class Page extends Dictionary {
                 // get pages resources
                 initPageResources();
             }
-            if (contents != null) {
-                try {
 
-                    ContentParser cp = ContentParserFactory.getInstance()
-                            .getContentParser(library, resources);
-                    byte[][] streams = new byte[contents.size()][];
-                    for (int i = 0, max = contents.size(); i < max; i++) {
-                        streams[i] = contents.get(i).getDecodedStreamBytes();
-                    }
-                    textBlockShapes = cp.parseTextBlocks(streams);
-                    // print off any fuzz left on the stack
-                    if (logger.isLoggable(Level.FINER)) {
-                        Stack<Object> stack = cp.getStack();
-                        while (!stack.isEmpty()) {
-                            String tmp = stack.pop().toString();
-                            if (logger.isLoggable(Level.FINE)) {
-                                logger.fine("STACK=" + tmp);
-                            }
-                        }
-                    }
+            if (contents != null) {
+                Vector<InputStream> inputStreamsVec =
+                        new Vector<InputStream>(contents.size());
+                for (int st = 0, max = contents.size(); st < max; st++) {
+                    Stream stream = contents.elementAt(st);
+                    InputStream input = stream.getInputStreamForDecodedStreamBytes();
+                    inputStreamsVec.add(input);
+                }
+                SequenceInputStream sis = new SequenceInputStream(inputStreamsVec.iterator());
+
+                // push the library and resources to the content parse
+                // and return the the shapes vector for the screen elements
+                // for the page/resources in question.
+                try {
+                    ContentParser cp = new ContentParser(library, resources);
+                    // custom parsing for text extraction, should be faster
+                    textBlockShapes = cp.parseTextBlocks(sis);
                 } catch (Exception e) {
                     logger.log(Level.FINE, "Error getting page text.", e);
+                } finally {
+                    try {
+                        sis.close();
+                    } catch (IOException e) {
+                        logger.log(Level.FINE, "Error closing page stream.", e);
+                    }
                 }
             }
         } catch (InterruptedException e) {
@@ -1439,7 +1435,7 @@ public class Page extends Dictionary {
             isInited = false;
             logger.log(Level.SEVERE, "Page text extraction thread interrupted.", e);
         }
-        if (textBlockShapes.getPageText() != null) {
+        if (textBlockShapes != null && textBlockShapes.getPageText() != null) {
             return textBlockShapes.getPageText();
         } else {
             return null;
@@ -1452,7 +1448,7 @@ public class Page extends Dictionary {
      *
      * @return vector of Images inside the current page
      */
-    public synchronized List<Image> getImages() {
+    public synchronized Vector getImages() {
         if (!isInited) {
             init();
         }
@@ -1463,11 +1459,18 @@ public class Page extends Dictionary {
         return resources;
     }
 
+    /**
+     * Reduces the amount of memory used by this object.
+     */
+    public void reduceMemory() {
+        dispose(true);
+    }
+
     public void addPaintPageListener(PaintPageListener listener) {
         // add a listener if it is not already registered
         synchronized (paintPageListeners) {
             if (!paintPageListeners.contains(listener)) {
-                paintPageListeners.add(listener);
+                paintPageListeners.addElement(listener);
             }
         }
     }
@@ -1476,7 +1479,7 @@ public class Page extends Dictionary {
         // remove a listener if it is already registered
         synchronized (paintPageListeners) {
             if (paintPageListeners.contains(listener)) {
-                paintPageListeners.add(listener);
+                paintPageListeners.removeElement(listener);
             }
 
         }
@@ -1505,7 +1508,7 @@ public class Page extends Dictionary {
         // fire the event to all listeners
         PaintPageListener client;
         for (int i = paintPageListeners.size() - 1; i >= 0; i--) {
-            client = paintPageListeners.get(i);
+            client = paintPageListeners.elementAt(i);
             client.paintPage(evt);
         }
     }

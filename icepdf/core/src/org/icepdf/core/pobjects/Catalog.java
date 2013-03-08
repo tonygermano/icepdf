@@ -14,13 +14,12 @@
  */
 package org.icepdf.core.pobjects;
 
+import org.icepdf.core.application.ProductInfo;
 import org.icepdf.core.util.Library;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.logging.Level;
+import java.util.Hashtable;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * <p>The <code>Catalog</code> object represents the root of a PDF document's
@@ -44,20 +43,9 @@ public class Catalog extends Dictionary {
     private static final Logger logger =
             Logger.getLogger(Catalog.class.toString());
 
-    public static final Name TYPE = new Name("Catalog");
-    public static final Name DESTS_KEY = new Name("Dests");
-    public static final Name VIEWERPREFERENCES_KEY = new Name("ViewerPreferences");
-    public static final Name NAMES_KEY = new Name("Names");
-    public static final Name OUTLINES_KEY = new Name("Outlines");
-    public static final Name OCPROPERTIES_KEY = new Name("OCProperties");
-    public static final Name PAGES_KEY = new Name("Pages");
-    public static final Name PAGELAYOUT_KEY = new Name("PageLayout");
-    public static final Name PAGEMODE_KEY = new Name("PageMode");
-
     private PageTree pageTree;
     private Outlines outlines;
     private NameTree nameTree;
-    private OptionalContent optionalContent;
     private Dictionary dests;
     private ViewerPreferences viewerPref;
 
@@ -65,7 +53,6 @@ public class Catalog extends Dictionary {
     private boolean namesTreeInited = false;
     private boolean destsInited = false;
     private boolean viewerPrefInited = false;
-    private boolean optionalContentInited = false;
 
     // Announce ICEpdf Core
     static {
@@ -80,7 +67,7 @@ public class Catalog extends Dictionary {
      * @param l document library.
      * @param h Catalog dictionary entries.
      */
-    public Catalog(Library l, HashMap<Object, Object> h) {
+    public Catalog(Library l, Hashtable h) {
         super(l, h);
     }
 
@@ -88,30 +75,52 @@ public class Catalog extends Dictionary {
      * Initiate the PageTree.
      */
     public synchronized void init() {
-        Object tmp = library.getObject(entries, PAGES_KEY);
+        Object tmp = library.getObject(entries, "Pages");
         pageTree = null;
         if (tmp instanceof PageTree) {
             pageTree = (PageTree) tmp;
         }
         // malformed core corner case, pages must not be references, but we
         // have a couple cases that break the spec.
-        else if (tmp instanceof HashMap) {
-            pageTree = new PageTree(library, (HashMap) tmp);
-        }
-        // malformed cornercase, just have a page object, instead of tree.
-        else if (tmp instanceof Page) {
-            Page tmpPage = (Page) tmp;
-            HashMap tmpPages = new HashMap();
-            List kids = new ArrayList();
-            kids.add(tmpPage.getPObjectReference());
-            tmpPages.put("Kids", kids);
-            tmpPages.put("Count", 1);
-            pageTree = new PageTree(library, tmpPages);
+        else if (tmp instanceof Hashtable) {
+            pageTree = new PageTree(library, (Hashtable) tmp);
         }
 
-        // let any exception bubble up.
-        pageTree.init();
+        try {
+            pageTree.init();
+            pageTree.initRootPageTree();
+        }
+        catch (NullPointerException e) {
+            logger.log(Level.FINE, "Error parsing page tree.", e);
+        }
+    }
 
+    /**
+     * Dispose the Catalog.
+     *
+     * @param cache if true, cached files are removed, otherwise objects are freed
+     *              but object caches are left intact.
+     */
+    public void dispose(boolean cache) {
+        // dispose the nameTree
+        if (nameTree != null) {
+            nameTree.dispose();
+            namesTreeInited = false;
+            if (!cache)
+                nameTree = null;
+        }
+
+        if (pageTree != null) {
+            pageTree.dispose(cache);
+            if (!cache)
+                pageTree = null;
+        }
+        if (outlines != null) {
+            if (!cache) {
+                outlines.dispose();
+                outlines = null;
+            }
+        }
     }
 
     /**
@@ -135,9 +144,9 @@ public class Catalog extends Dictionary {
     public Outlines getOutlines() {
         if (!outlinesInited) {
             outlinesInited = true;
-            Object o = library.getObject(entries, OUTLINES_KEY);
+            Object o = library.getObject(entries, "Outlines");
             if (o != null)
-                outlines = new Outlines(library, (HashMap) o);
+                outlines = new Outlines(library, (Hashtable) o);
         }
         return outlines;
     }
@@ -153,12 +162,12 @@ public class Catalog extends Dictionary {
     public NameTree getNameTree() {
         if (!namesTreeInited) {
             namesTreeInited = true;
-            Object o = library.getObject(entries, NAMES_KEY);
-            if (o != null && o instanceof HashMap) {
-                HashMap dest = (HashMap) o;
-                Object names = library.getObject(dest, DESTS_KEY);
-                if (names != null && names instanceof HashMap) {
-                    nameTree = new NameTree(library, (HashMap) names);
+            Object o = library.getObject(entries, "Names");
+            if (o != null && o instanceof Hashtable) {
+                Hashtable dest = (Hashtable) o;
+                Object names = library.getObject(dest, "Dests");
+                if (names != null && names instanceof Hashtable) {
+                    nameTree = new NameTree(library, (Hashtable) names);
                     nameTree.init();
                 }
             }
@@ -174,9 +183,9 @@ public class Catalog extends Dictionary {
     public Dictionary getDestinations() {
         if (!destsInited) {
             destsInited = true;
-            Object o = library.getObject(entries, DESTS_KEY);
+            Object o = library.getObject(entries, "Dests");
             if (o != null) {
-                dests = new Dictionary(library, (HashMap<Object, Object>) o);
+                dests = new Dictionary(library, (Hashtable) o);
                 dests.init();
             }
         }
@@ -186,40 +195,20 @@ public class Catalog extends Dictionary {
     /**
      * Gets a dictionary of keys and corresponding viewer preferences
      * This can be used to pull information based on the PDF specification,
-     * such as HideToolbar or FitWindow
+     *  such as HideToolbar or FitWindow
      *
      * @return the constructed ViewerPreferences object
      */
     public ViewerPreferences getViewerPreferences() {
         if (!viewerPrefInited) {
             viewerPrefInited = true;
-            Object o = library.getObject(entries, VIEWERPREFERENCES_KEY);
+            Object o = library.getObject(entries, "ViewerPreferences");
             if (o != null) {
-                viewerPref = new ViewerPreferences(library, (HashMap) o);
+                viewerPref = new ViewerPreferences(library, (Hashtable) o);
                 viewerPref.init();
             }
         }
         return viewerPref;
-    }
-
-    /**
-     * Gets the the optional content properties dictionary if present.
-     *
-     * @return OptionalContent dictionary, null if none exists.
-     */
-    public OptionalContent getOptionalContent() {
-        if (!optionalContentInited) {
-            optionalContentInited = true;
-            Object o = library.getObject(entries, OCPROPERTIES_KEY);
-            if (o != null && o instanceof HashMap) {
-                optionalContent = new OptionalContent(library, ((HashMap) o));
-                optionalContent.init();
-            } else {
-                optionalContent = new OptionalContent(library, new HashMap());
-                optionalContent.init();
-            }
-        }
-        return optionalContent;
     }
 
     /**

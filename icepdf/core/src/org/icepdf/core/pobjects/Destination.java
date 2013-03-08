@@ -16,9 +16,8 @@ package org.icepdf.core.pobjects;
 
 import org.icepdf.core.util.Library;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.Hashtable;
+import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -57,8 +56,6 @@ public class Destination {
 
     private static final Logger logger =
             Logger.getLogger(Destination.class.toString());
-
-    public static final Name D_KEY = new Name("D");
 
     // Vector destination type formats.
     public static final Name TYPE_XYZ = new Name("XYZ");
@@ -119,8 +116,8 @@ public class Destination {
         inited = true;
 
         // if vector we have found /XYZ
-        if (object instanceof List) {
-            parse((List) object);
+        if (object instanceof Vector) {
+            parse((Vector) object);
         }
 
         // find named Destinations, this however is incomplete
@@ -145,14 +142,14 @@ public class Destination {
                 if (nameTree != null) {
                     Object o = nameTree.searchName(s);
                     if (o != null) {
-                        if (o instanceof List) {
-                            parse((List) o);
+                        if (o instanceof Vector) {
+                            parse((Vector) o);
                             found = true;
-                        } else if (o instanceof HashMap) {
-                            HashMap h = (HashMap) o;
-                            Object o1 = h.get(D_KEY);
-                            if (o1 instanceof List) {
-                                parse((List) o1);
+                        } else if (o instanceof Hashtable) {
+                            Hashtable h = (Hashtable) o;
+                            Object o1 = h.get("D");
+                            if (o1 instanceof Vector) {
+                                parse((Vector) o1);
                                 found = true;
                             }
                         }
@@ -161,9 +158,9 @@ public class Destination {
                 if (!found) {
                     Dictionary dests = catalog.getDestinations();
                     if (dests != null) {
-                        Object ob = dests.getObject((Name) object);
-                        if (ob instanceof HashMap) {
-                            parse((List) (((HashMap) ob).get(D_KEY)));
+                        Object ob = dests.getObject(s);
+                        if (ob instanceof Hashtable) {
+                            parse((Vector) (((Hashtable) ob).get("D")));
                         } else {
                             if (logger.isLoggable(Level.FINE)) {
                                 logger.warning("Destination type missed=" + ob);
@@ -176,8 +173,7 @@ public class Destination {
     }
 
     /**
-     * Get the dictionary object, name, string or array.
-     *
+     * Get the dictionary object, name, string or array. 
      * @return
      */
     public Object getObject() {
@@ -189,7 +185,7 @@ public class Destination {
      *
      * @param v vector of attributes associated with the Destination
      */
-    private void parse(List v) {
+    private void parse(Vector v) {
 
         // Assign a Reference
         Object ob = v.get(0);
@@ -252,7 +248,7 @@ public class Destination {
         else if (type.equals(TYPE_FITBH)) {
             ob = v.get(2);
             if (ob != null && !ob.equals("null")) {
-                top = ((Number) ob).floatValue();
+                top = ((Number) ob).floatValue();                
             }
         }
         // [page /FitBV left]
@@ -296,7 +292,7 @@ public class Destination {
      *
      * @param destinationSyntax new vector of destination syntax.
      */
-    public void setDestinationSyntax(List destinationSyntax) {
+    public void setDestinationSyntax(Vector destinationSyntax) {
         // clear named destination
         namedDestination = null;
         object = destinationSyntax;
@@ -312,9 +308,9 @@ public class Destination {
      * @param type type of destionation
      * @return new instance of vector containing well formed destination syntax.
      */
-    public static List<Object> destinationSyntax(
+    public static Vector<Object> destinationSyntax(
             Reference page, final Name type) {
-        List<Object> destSyntax = new ArrayList<Object>(2);
+        Vector<Object> destSyntax = new Vector<Object>(2);
         destSyntax.add(page);
         destSyntax.add(type);
         return destSyntax;
@@ -323,17 +319,17 @@ public class Destination {
     /**
      * Utility for creating a /FitH, /FitV, /FitBH or /FitBV syntax vector.
      *
-     * @param page   destination page pointer.
-     * @param type   type of destionation
+     * @param page destination page pointer.
+     * @param type type of destionation
      * @param offset offset coordinate value in page space for specified dest type.
      * @return new instance of vector containing well formed destination syntax.
      */
-    public static List<Object> destinationSyntax(
+    public static Vector<Object> destinationSyntax(
             Reference page, final Name type, Object offset) {
-        List<Object> destSyntax = new ArrayList<Object>(3);
-        destSyntax.add(page);
-        destSyntax.add(type);
-        destSyntax.add(offset);
+        Vector<Object> destSyntax = new Vector<Object>(3);
+        destSyntax.addElement(page);
+        destSyntax.addElement(type);
+        destSyntax.addElement(offset);
         return destSyntax;
     }
 
@@ -343,13 +339,13 @@ public class Destination {
      * @param page destination page pointer.
      * @param type type of destionation
      * @param left offset coordinate value in page space for specified dest type.
-     * @param top  offset coordinate value in page space for specified dest type.
+     * @param top offset coordinate value in page space for specified dest type.
      * @param zoom page zoom, 0 or null indicates no zoom.
      * @return new instance of vector containing well formed destination syntax.
      */
-    public static List<Object> destinationSyntax(
+    public static Vector<Object> destinationSyntax(
             Reference page, final Object type, Object left, Object top, Object zoom) {
-        List<Object> destSyntax = new ArrayList<Object>(5);
+        Vector<Object> destSyntax = new Vector<Object>(5);
         destSyntax.add(page);
         destSyntax.add(type);
         destSyntax.add(left);
@@ -361,18 +357,18 @@ public class Destination {
     /**
      * Utility for creating a /FitR syntax vector.
      *
-     * @param page   destination page pointer.
-     * @param type   type of destionation
-     * @param left   offset coordinate value in page space for specified dest type.
-     * @param top    offset coordinate value in page space for specified dest type.
+     * @param page destination page pointer.
+     * @param type type of destionation
+     * @param left offset coordinate value in page space for specified dest type.
+     * @param top offset coordinate value in page space for specified dest type.
      * @param bottom offset coordinate value in page space for specified dest type.
-     * @param right  offset coordinate value in page space for specified dest type.
+     * @param right offset coordinate value in page space for specified dest type.
      * @return new instance of vector containing well formed destination syntax.
      */
-    public static List<Object> destinationSyntax(
+    public static Vector<Object> destinationSyntax(
             Reference page, final Object type, Object left, Object bottom,
             Object right, Object top) {
-        List<Object> destSyntax = new ArrayList<Object>(6);
+        Vector<Object> destSyntax = new Vector<Object>(6);
         destSyntax.add(page);
         destSyntax.add(type);
         destSyntax.add(left);
@@ -473,8 +469,8 @@ public class Destination {
             return namedDestination;
         }
         // build and return a fector of changed valued.
-        else if (object instanceof List) {
-            List<Object> v = new ArrayList<Object>(7);
+        else if (object instanceof Vector) {
+            Vector<Object> v = new Vector<Object>(7);
             if (ref != null) {
                 v.add(ref);
             }

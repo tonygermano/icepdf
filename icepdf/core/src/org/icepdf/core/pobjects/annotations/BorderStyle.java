@@ -19,9 +19,8 @@ import org.icepdf.core.pobjects.Name;
 import org.icepdf.core.util.Library;
 
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.Hashtable;
+import java.util.Vector;
 
 /**
  * BorderStyle state of a PDF annotation.  Some values of this class are
@@ -109,33 +108,33 @@ public class BorderStyle extends Dictionary {
     /**
      * Solid rectangle border style surrounding the annotation
      */
-    public static final Name BORDER_STYLE_SOLID = new Name("S");
+    public static final String BORDER_STYLE_SOLID = "S";
 
     /**
      * Dashed rectangle border style surrounding the annotation
      */
-    public static final Name BORDER_STYLE_DASHED = new Name("D");
+    public static final String BORDER_STYLE_DASHED = "D";
 
     /**
      * Beveled rectangle border style surrounding the annotation
      */
-    public static final Name BORDER_STYLE_BEVELED = new Name("B");
+    public static final String BORDER_STYLE_BEVELED = "B";
 
     /**
      * Inset rectangle border style surrounding the annotation
      */
-    public static final Name BORDER_STYLE_INSET = new Name("I");
+    public static final String BORDER_STYLE_INSET = "I";
 
     /**
      * Underline rectangle border style surrounding the annotation
      */
-    public static final Name BORDER_STYLE_UNDERLINE = new Name("U");
+    public static final String BORDER_STYLE_UNDERLINE = "U";
 
     // stroke width
     private float strokeWidth = 1.0f;
 
     // border style, default is solid
-    private Name borderStyle;
+    private String borderStyle = null;
 
     // dash array
     private float[] dashArray = DEFAULT_DASH_ARRAY;
@@ -146,7 +145,7 @@ public class BorderStyle extends Dictionary {
      * @param l document library.
      * @param h dictionary entries.
      */
-    public BorderStyle(Library l, HashMap h) {
+    public BorderStyle(Library l, Hashtable h) {
         super(l, h);
         // parse out stroke width
         Number value = (Number) getObject(BORDER_WIDTH_KEY);
@@ -156,10 +155,10 @@ public class BorderStyle extends Dictionary {
         // parse the default style.
         Object style = getObject(BORDER_STYLE_KEY);
         if (style != null) {
-            borderStyle = (Name) style;
+            borderStyle = style.toString();
         }
         // parse dash array.
-        List dashVector = (List) getObject(BORDER_STYLE_DASHED);
+        Vector dashVector = (Vector) getObject(BORDER_STYLE_DASHED);
         if (dashVector != null) {
             int sz = dashVector.size();
             float[] dashArray = new float[sz];
@@ -179,7 +178,7 @@ public class BorderStyle extends Dictionary {
         return strokeWidth;
     }
 
-    public Name getBorderStyle() {
+    public String getBorderStyle() {
         return borderStyle;
     }
 
@@ -197,12 +196,12 @@ public class BorderStyle extends Dictionary {
      * Sets the borderStyle type for this instance.
      *
      * @param lineStyle border style type as defined by, BORDER_STYLE_SOLID,
-     *                  BORDER_STYLE_DASHED, BORDER_STYLE_BEVELED, BORDER_STYLE_INSET,
-     *                  BORDER_STYLE_UNDERLINE
+     *                    BORDER_STYLE_DASHED, BORDER_STYLE_BEVELED, BORDER_STYLE_INSET,
+     *                    BORDER_STYLE_UNDERLINE
      */
-    public void setBorderStyle(final Name lineStyle) {
+    public void setBorderStyle(final String lineStyle) {
         this.borderStyle = lineStyle;
-        entries.put(BORDER_STYLE_KEY, this.borderStyle);
+        entries.put(BORDER_STYLE_KEY, new Name(this.borderStyle));
     }
 
     public boolean isStyleSolid() {
@@ -229,7 +228,7 @@ public class BorderStyle extends Dictionary {
         if (dashArray != null) {
             this.dashArray = dashArray;
             int sz = dashArray.length;
-            List<Number> dashVector = new ArrayList<Number>(sz);
+            Vector<Number> dashVector = new Vector<Number>(sz);
             for (int i = 0; i < sz; i++) {
                 dashVector.add(dashArray[i]);
             }

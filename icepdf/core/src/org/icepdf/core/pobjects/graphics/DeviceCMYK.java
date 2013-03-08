@@ -14,11 +14,11 @@
  */
 package org.icepdf.core.pobjects.graphics;
 
-import org.icepdf.core.pobjects.Name;
+import org.icepdf.core.util.Defs;
 import org.icepdf.core.util.Library;
 
 import java.awt.*;
-import java.util.HashMap;
+import java.util.Hashtable;
 
 /**
  * Device CMYK colour space definitions. The primary purpose of this colour
@@ -27,13 +27,18 @@ import java.util.HashMap;
  */
 public class DeviceCMYK extends PColorSpace {
 
-    public static final Name DEVICECMYK_KEY = new Name("DeviceCMYK");
-    public static final Name CMYK_KEY = new Name("CMYK");
+    public static double cmykBlackRatio;
 
-    DeviceCMYK(Library l, HashMap h) {
-        super(l, h);
+    static {
+        // decide if large images will be scaled
+        cmykBlackRatio =
+                Defs.sysPropertyDouble("org.icepdf.core.color.cmyk.black",
+                        3.0f);
     }
 
+    DeviceCMYK(Library l, Hashtable h) {
+        super(l, h);
+    }
 
     public int getNumComponents() {
         return 4;
@@ -195,8 +200,8 @@ public class DeviceCMYK extends PColorSpace {
         float inBlack = f[0];
 
         // soften the amount of black, but exclude explicit black colorant.
-        if (inCyan != 0 && inMagenta != 0 && inYellow != 0) {
-            inBlack = f[0] / 100;
+        if (inCyan != 0 && inMagenta != 0 && inYellow != 0){
+            inBlack /= cmykBlackRatio;
         }
 
         double c, m, y, aw, ac, am, ay, ar, ag, ab;
@@ -220,17 +225,16 @@ public class DeviceCMYK extends PColorSpace {
 
     /**
      * Clips the value according to the specified floor and ceiling.
-     *
-     * @param floor   floor value of clip
+     * @param floor floor value of clip
      * @param ceiling ceiling value of clip
-     * @param value   value to clip.
+     * @param value value to clip.
      * @return clipped value.
      */
     private static double clip(double floor, double ceiling, double value) {
-        if (value < floor) {
+        if (value < floor){
             value = floor;
         }
-        if (value > ceiling) {
+        if (value > ceiling){
             value = ceiling;
         }
         return value;

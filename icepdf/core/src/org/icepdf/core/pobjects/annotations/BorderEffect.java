@@ -17,7 +17,7 @@ package org.icepdf.core.pobjects.annotations;
 import org.icepdf.core.pobjects.Dictionary;
 import org.icepdf.core.util.Library;
 
-import java.util.HashMap;
+import java.util.Hashtable;
 
 /**
  * <h2>Refer to: 8.4.3 Border Styles</h2>
@@ -63,7 +63,7 @@ public class BorderEffect extends Dictionary {
      * @param l document library.
      * @param h dictionary entries.
      */
-    public BorderEffect(Library l, HashMap h) {
+    public BorderEffect(Library l, Hashtable h) {
         super(l, h);
     }
 }

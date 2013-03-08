@@ -17,8 +17,8 @@ package org.icepdf.core.pobjects.fonts;
 import java.io.*;
 import java.util.HashMap;
 import java.util.StringTokenizer;
-import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
 
 /**
@@ -177,11 +177,9 @@ public class AFM {
     static {
         try {
             for (int i = 0; i < AFMnames.length; i++) {
-                AFM afm = AFM.loadFont("afm/" + AFMnames[i]);
-                if (afm != null) {
-                    afm.setFlags(AFMFlags[i]);
-                    AFMs.put(afm.fontName.toLowerCase(), afm);
-                }
+                AFM afm = new AFM("afm/" + AFMnames[i]);
+                afm.setFlags(AFMFlags[i]);
+                AFMs.put(afm.fontName.toLowerCase(), afm);
             }
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -195,21 +193,15 @@ public class AFM {
      * @throws IOException if the specified resource could not be found or o
      *                     pened.
      */
-    public static AFM loadFont(String resource) throws IOException {
-        InputStream in = AFM.class.getResourceAsStream(resource);
+    public AFM(String resource) throws IOException {
+        InputStream in = getClass().getResourceAsStream(resource);
         if (in != null) {
-            AFM afm = new AFM();
-            afm.parse(new InputStreamReader(in));
-            return afm;
+            parse(new InputStreamReader(in));
         } else {
             if (logger.isLoggable(Level.WARNING)) {
                 logger.warning("Could not find AFM File: " + resource);
             }
-            return null;
         }
-    }
-
-    private AFM() {
     }
 
     public String getFontName() {
@@ -288,7 +280,7 @@ public class AFM {
                 while (!st.nextToken().equals("WX")) ;
                 float wx = Integer.parseInt(st.nextToken()) / 1000f;
                 if (c >= 0 && c < 255) {
-                    widths[count] = wx;
+                    widths[count] = wx ;
                     // update max
                     if (wx > maxWidth) {
                         maxWidth = wx;

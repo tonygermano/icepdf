@@ -16,7 +16,7 @@ package org.icepdf.core.pobjects;
 
 import org.icepdf.core.util.Library;
 
-import java.util.HashMap;
+import java.util.Hashtable;
 
 /**
  * <p>This class represents a PDF document's <i>Dictionary</i> object.  A
@@ -36,10 +36,8 @@ import java.util.HashMap;
 public class Dictionary {
 
     public static final Name TYPE_KEY = new Name("Type");
-
+    
     public static final Name SUBTYPE_KEY = new Name("Subtype");
-
-    public static final Name LENGTH_KEY = new Name("Length");
 
     /**
      * Pointer to the documents <code>Library</code> object which
@@ -50,7 +48,7 @@ public class Dictionary {
     /**
      * Table of associative pairs of objects.
      */
-    protected HashMap entries;
+    protected Hashtable<Object, Object> entries;
 
     /**
      * Indicates if Dictionary has been initiated.
@@ -76,11 +74,11 @@ public class Dictionary {
      * @param library document library.
      * @param entries dictionary entries.
      */
-    public Dictionary(Library library, HashMap entries) {
+    public Dictionary(Library library, Hashtable entries) {
         this.library = library;
         this.entries = entries;
         if (this.entries == null) {
-            this.entries = new HashMap<Object, Object>();
+            this.entries = new Hashtable<Object, Object>();
         }
     }
 
@@ -123,12 +121,16 @@ public class Dictionary {
      *
      * @return a copy of the Dictionary's entries.
      */
-    public HashMap getEntries() {
+    public Hashtable<Object, Object> getEntries() {
         return entries;
     }
 
-    public Object getObject(Name key) {
+    public Object getObject(String key) {
         return library.getObject(entries, key);
+    }
+
+    public Object getObject(Name key) {
+        return library.getObject(entries, key.getName());
     }
 
     /**
@@ -137,10 +139,10 @@ public class Dictionary {
      * reference points to is returned.  If the key cannot be found,
      * or the resulting object is not a Number, then null is returned.
      *
-     * @param key key to find in entries HashMap.
+     * @param key key to find in entries Hashtable.
      * @return Number that the key refers to
      */
-    protected Number getNumber(Name key) {
+    protected Number getNumber(String key) {
         return library.getNumber(entries, key);
     }
 
@@ -149,11 +151,11 @@ public class Dictionary {
      * entries.  If the value is a reference, the int value that the
      * reference points to is returned.
      *
-     * @param key key to find in entries HashMap.
+     * @param key key to find in entries Hashtable.
      * @return int value if a valid key,  else zero if the key does not point
      *         to an int or is invalid.
      */
-    public int getInt(Name key) {
+    public int getInt(String key) {
         return library.getInt(entries, key);
     }
 
@@ -162,11 +164,11 @@ public class Dictionary {
      * entries.  If the value is a reference, the float value that the
      * reference points to is returned.
      *
-     * @param key key to find in entries HashMap.
+     * @param key key to find in entries Hashtable.
      * @return float value if a valid key,  else zero if the key does not point
      *         to a float or is invalid.
      */
-    public float getFloat(Name key) {
+    public float getFloat(String key) {
         return library.getFloat(entries, key);
     }
 

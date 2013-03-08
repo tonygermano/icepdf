@@ -14,32 +14,37 @@
  */
 package org.icepdf.ri.common.views;
 
+import org.icepdf.core.AnnotationCallback;
+import org.icepdf.core.Controller;
 import org.icepdf.core.SecurityCallback;
 import org.icepdf.core.pobjects.Destination;
 import org.icepdf.core.pobjects.Document;
-import org.icepdf.core.pobjects.Page;
 import org.icepdf.core.pobjects.PageTree;
+import org.icepdf.core.pobjects.Page;
+import org.icepdf.core.pobjects.annotations.AnnotationState;
 import org.icepdf.core.search.DocumentSearchController;
 import org.icepdf.core.util.ColorUtil;
 import org.icepdf.core.util.Defs;
 import org.icepdf.core.util.PropertyConstants;
+import org.icepdf.core.views.DocumentView;
+import org.icepdf.core.views.DocumentViewController;
+import org.icepdf.core.views.DocumentViewModel;
+import org.icepdf.core.views.PageViewComponent;
+import org.icepdf.core.views.swing.AbstractPageViewComponent;
+import org.icepdf.core.views.swing.AnnotationComponentImpl;
 import org.icepdf.ri.common.SwingController;
-import org.icepdf.ri.common.views.annotations.AbstractAnnotationComponent;
-import org.icepdf.ri.common.views.annotations.AnnotationState;
-import org.icepdf.ri.common.views.annotations.PopupAnnotationComponent;
 import org.icepdf.ri.images.Images;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.KeyListener;
+import java.awt.event.ActionEvent;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -150,7 +155,7 @@ public class DocumentViewControllerImpl
         // add a delete key functionality for annotation edits.
         Action deleteAnnotation = new AbstractAction() {
             public void actionPerformed(ActionEvent e) {
-                if (documentViewModel != null) {
+                if (documentViewModel != null){
                     deleteCurrentAnnotation();
                     viewerController.reflectUndoCommands();
                 }
@@ -159,9 +164,9 @@ public class DocumentViewControllerImpl
         InputMap inputMap = documentViewScrollPane.getInputMap(
                 JComponent.WHEN_IN_FOCUSED_WINDOW);
         inputMap.put(KeyStroke.getKeyStroke("DELETE"),
-                "removeSelecteAnnotation");
+                                    "removeSelecteAnnotation");
         documentViewScrollPane.getActionMap().put("removeSelecteAnnotation",
-                deleteAnnotation);
+                                     deleteAnnotation);
     }
 
     public Document getDocument() {
@@ -231,10 +236,6 @@ public class DocumentViewControllerImpl
         return documentViewScrollPane.getVerticalScrollBar();
     }
 
-    public JViewport getViewPort() {
-        return documentViewScrollPane.getViewport();
-    }
-
     /**
      * Set an annotation callback.
      *
@@ -245,22 +246,22 @@ public class DocumentViewControllerImpl
         this.annotationCallback = annotationCallback;
     }
 
-    public void setSecurityCallback(SecurityCallback securityCallback) {
+    public void setSecurityCallback(SecurityCallback securityCallback){
         this.securityCallback = securityCallback;
     }
 
-    public void clearSelectedAnnotations() {
-        if (documentViewModel.getCurrentAnnotation() != null) {
+    public void clearSelectedAnnotations(){
+        if (documentViewModel.getCurrentAnnotation() != null){
             documentViewModel.getCurrentAnnotation().setSelected(false);
             // fire change event
             firePropertyChange(PropertyConstants.ANNOTATION_DESELECTED,
-                    documentViewModel.getCurrentAnnotation(),
-                    null);
+                        documentViewModel.getCurrentAnnotation(),
+                        null);
             documentViewModel.setCurrentAnnotation(null);
         }
     }
 
-    public void assignSelectedAnnotation(AnnotationComponent annotationComponent) {
+    public void assignSelectedAnnotation(AnnotationComponentImpl annotationComponent){
         firePropertyChange(PropertyConstants.ANNOTATION_SELECTED,
                 documentViewModel.getCurrentAnnotation(),
                 annotationComponent);
@@ -287,8 +288,8 @@ public class DocumentViewControllerImpl
         }
         // fire property change
         firePropertyChange(PropertyConstants.TEXT_DESELECTED,
-                null,
-                null);
+                    null,
+                    null);
 
     }
 
@@ -312,7 +313,7 @@ public class DocumentViewControllerImpl
     public void selectAllText() {
         documentViewModel.setSelectAll(true);
         documentView.repaint();
-        firePropertyChange(PropertyConstants.TEXT_SELECT_ALL, null, null);
+        firePropertyChange(PropertyConstants.TEXT_SELECT_ALL, null,null);
     }
 
     public String getSelectedText() {
@@ -358,7 +359,7 @@ public class DocumentViewControllerImpl
      *
      * @return security callback associated with this document.
      */
-    public SecurityCallback getSecurityCallback() {
+    public SecurityCallback getSecurityCallback(){
         return securityCallback;
     }
 
@@ -405,7 +406,7 @@ public class DocumentViewControllerImpl
                 // apply zoom, from destination
                 if (destination.getZoom() != null &&
                         destination.getZoom() > 0.0f) {
-                    setZoomCentered(destination.getZoom(), null, false);
+                    setZoom(destination.getZoom(), null, false);
                 }
                 Point newViewPosition = new Point(pageBounds.getLocation());
                 float zoom = getZoom();
@@ -543,12 +544,6 @@ public class DocumentViewControllerImpl
                     new OneColumnPageView(this, documentViewScrollPane, documentViewModel);
         }
 
-        // todo set tool mode, so that mouse listeners can be setup for this view
-        // as it may have been inactive
-        // notify the view of the tool change
-        documentView.setToolMode(documentViewModel.getViewToolMode());
-
-
         // add the new view the scroll pane
         documentViewScrollPane.setViewportView(documentView);
         documentViewScrollPane.validate();
@@ -583,7 +578,7 @@ public class DocumentViewControllerImpl
                     float pageViewHeight = documentView.getDocumentSize().height;
 
                     // pageViewHeight insert padding on each side.
-                    pageViewHeight += AbstractDocumentView.layoutInserts * 2;
+                    pageViewHeight += AbstractDocumentView.layoutInserts *2;
 
                     if (viewportHeight > 0) {
                         newZoom = (viewportHeight / pageViewHeight);
@@ -597,7 +592,7 @@ public class DocumentViewControllerImpl
                     float pageViewWidth = documentView.getDocumentSize().width;
 
                     // add insert padding on each side.
-                    pageViewWidth += AbstractDocumentView.layoutInserts * 2;
+                    pageViewWidth += AbstractDocumentView.layoutInserts *2;
 
                     if (viewportWidth > 0) {
                         newZoom = (viewportWidth / pageViewWidth);
@@ -610,9 +605,10 @@ public class DocumentViewControllerImpl
             // If we're scrolled all the way to the top, center to top of document when zoom,
             //  otherwise the view will zoom into the general center of the page
             if (getVerticalScrollBar().getValue() == 0) {
-                setZoomCentered(newZoom, new Point(0, 0), true);
-            } else {
-                setZoomCentered(newZoom, null, true);
+                setZoom(newZoom, new Point(0, 0), true);
+            }
+            else {
+                setZoom(newZoom, null, true);
             }
         }
 
@@ -734,7 +730,7 @@ public class DocumentViewControllerImpl
      * @return if zoom actually changed
      */
     public boolean setZoom(float viewZoom) {
-        return setZoomCentered(viewZoom, null, false);
+        return setZoom(viewZoom, null, false);
     }
 
     public boolean setZoomIn() {
@@ -809,26 +805,8 @@ public class DocumentViewControllerImpl
 //    }
 
     public boolean setToolMode(final int viewToolMode) {
-
-        if (documentViewModel != null) {
-            boolean changed = documentViewModel.setViewToolMode(viewToolMode);
-            // update the view and page components so the correct tool handler
-            // can ge assigned.
-            if (changed) {
-                // notify the view of the tool change
-                documentView.setToolMode(viewToolMode);
-
-                // notify the page components of the tool change.
-                List<AbstractPageViewComponent> pageComponents =
-                        documentViewModel.getPageComponents();
-                for (AbstractPageViewComponent page : pageComponents) {
-                    page.setToolMode(viewToolMode);
-                }
-            }
-            return changed;
-        } else {
-            return false;
-        }
+        return documentViewModel != null &&
+                documentViewModel.setViewToolMode(viewToolMode);
     }
 
     public boolean isToolModeSelected(final int viewToolMode) {
@@ -911,21 +889,21 @@ public class DocumentViewControllerImpl
      */
     public boolean setZoomIn(Point p) {
         float zoom = getZoom() * ZOOM_FACTOR;
-        return setZoomCentered(zoom, p, false);
+        return setZoom(zoom, p, false);
     }
 
     /**
      * Decreases the current page visualization zoom factor by 20%.
      *
-     * @param p Recenter the scrollPane here
+     * @param p Recenter the scrollpane here
      */
     public boolean setZoomOut(Point p) {
         float zoom = getZoom() / ZOOM_FACTOR;
-        return setZoomCentered(zoom, p, false);
+        return setZoom(zoom, p, false);
     }
 
     /**
-     * Utility function for centering the view Port around the given point.
+     * Utility function for centering the viewport around the given point.
      *
      * @param centeringPoint which the view is to be centered on.
      */
@@ -939,32 +917,32 @@ public class DocumentViewControllerImpl
             return;
 
         // get view port information
-        int viewPortWidth = documentViewScrollPane.getViewport().getWidth();
-        int viewPortHeight = documentViewScrollPane.getViewport().getHeight();
+        int scrollpaneWidth = documentViewScrollPane.getViewport().getWidth();
+        int scrollpaneHeight = documentViewScrollPane.getViewport().getHeight();
 
         int scrollPaneX = documentViewScrollPane.getViewport().getViewPosition().x;
         int scrollPaneY = documentViewScrollPane.getViewport().getViewPosition().y;
 
-        Dimension pageViewSize = documentView.getPreferredSize();
-        int pageViewWidth = pageViewSize.width;
-        int pageViewHeight = pageViewSize.height;
+        Dimension pageSize = documentView.getPreferredSize();
+        int pageWidth = pageSize.width;
+        int pageHeight = pageSize.height;
 
         // calculate center coordinates of view port x,y
-        centeringPoint.setLocation(centeringPoint.x - (viewPortWidth / 2),
-                centeringPoint.y - (viewPortHeight / 2));
+        centeringPoint.setLocation(centeringPoint.x - (scrollpaneWidth / 2),
+                centeringPoint.y - (scrollpaneHeight / 2));
 
         // compensate centering point to make sure that preferred site is
         // respected when moving the view port x,y.
 
-        // Special case when page height or width is smaller then the viewPort
+        // Special case when page height or width is smaller then the viewport
         // size.  Respect the zoom but don't try and center on the click
-        if (pageViewWidth < viewPortWidth || pageViewHeight < viewPortHeight) {
-            if (centeringPoint.x >= pageViewWidth - viewPortWidth ||
+        if (pageWidth < scrollpaneWidth || pageHeight < scrollpaneHeight) {
+            if (centeringPoint.x >= pageWidth - scrollpaneWidth ||
                     centeringPoint.x < 0) {
                 centeringPoint.x = scrollPaneX;
             }
 
-            if (centeringPoint.y >= pageViewHeight - viewPortHeight ||
+            if (centeringPoint.y >= pageHeight - scrollpaneHeight ||
                     centeringPoint.y < 0) {
                 centeringPoint.y = scrollPaneY;
             }
@@ -973,20 +951,21 @@ public class DocumentViewControllerImpl
         // the page with out shifting the view port paste the pages width
         else {
             // adjust horizontal
-            if (centeringPoint.x + viewPortWidth > pageViewWidth) {
-                centeringPoint.x = (pageViewWidth - viewPortWidth);
+            if (centeringPoint.x + scrollpaneWidth > pageWidth) {
+                centeringPoint.x = (pageWidth - scrollpaneWidth);
             } else if (centeringPoint.x < 0) {
                 centeringPoint.x = 0;
             }
 
             // adjust vertical
-            if (centeringPoint.y + viewPortHeight > pageViewHeight) {
-                centeringPoint.y = (pageViewHeight - viewPortHeight);
+            if (centeringPoint.y + scrollpaneHeight > pageHeight) {
+                centeringPoint.y = (pageHeight - scrollpaneHeight);
             } else if (centeringPoint.y < 0) {
                 centeringPoint.y = 0;
             }
         }
         // not sure why, but have to set twice for reliable results
+        documentViewScrollPane.getViewport().setViewPosition(centeringPoint);
         documentViewScrollPane.getViewport().setViewPosition(centeringPoint);
     }
 
@@ -999,7 +978,7 @@ public class DocumentViewControllerImpl
      * @param centeringPoint        point to center on.
      * @return true if the zoom level changed, false otherwise.
      */
-    public boolean setZoomCentered(float zoom, Point centeringPoint, boolean becauseOfValidFitMode) {
+    private boolean setZoom(float zoom, Point centeringPoint, boolean becauseOfValidFitMode) {
         if (documentViewModel == null) {
             return false;
         }
@@ -1021,14 +1000,17 @@ public class DocumentViewControllerImpl
         // apply zoom
         boolean changed = documentViewModel.setViewZoom(zoom);
         // get the view port validate the viewport and shift the components
-        documentViewScrollPane.validate();
+        documentViewScrollPane.revalidate();
 
         // center zoom calculation, find current center and pass
         // it along to zoomCenter function.
-        if (changed && centeringPoint != null) {
-            centeringPoint.setLocation(
-                    (centeringPoint.x / previousZoom) * zoom,
-                    (centeringPoint.y / previousZoom) * zoom);
+        if (changed) {
+            float zoomFactor = zoom / previousZoom;
+            if (centeringPoint != null) {
+                centeringPoint.setLocation(
+                        centeringPoint.x * zoomFactor,
+                        centeringPoint.y * zoomFactor);
+            }
         }
         // still center on click
         zoomCenter(centeringPoint);
@@ -1040,61 +1022,6 @@ public class DocumentViewControllerImpl
 
         return changed;
     }
-
-    /**
-     * Zoom to a new zoom level, the viewPort position is set by the addition
-     * of the zoomPointDelta to the page bounds as defined by the view.
-     *
-     * @param zoom                  zoom level which should be in the range of zoomLevels array
-     * @param becauseOfValidFitMode true will update ui elements with zoom state.
-     * @param zoomPointDelta        point to center on.
-     * @param pageIndex             page to zoom in on.
-     * @return true if the zoom level changed, false otherwise.
-     */
-    public boolean setZoomToViewPort(float zoom, Point zoomPointDelta, int pageIndex,
-                                     boolean becauseOfValidFitMode) {
-        if (documentViewModel == null) {
-            return false;
-        }
-        // make sure the zoom falls in between the zoom range
-        if (zoomLevels != null) {
-            if (zoom < zoomLevels[0])
-                zoom = zoomLevels[0];
-            else if (zoom > zoomLevels[zoomLevels.length - 1])
-                zoom = zoomLevels[zoomLevels.length - 1];
-        }
-
-        // set a default centering point if null
-        if (zoomPointDelta == null) {
-            zoomPointDelta = new Point();
-        }
-        // grab previous zoom so that zoom factor can be calculated
-        float previousZoom = getZoom();
-
-        // apply zoom
-        boolean changed = documentViewModel.setViewZoom(zoom);
-        documentViewScrollPane.validate();
-
-        // center zoom calculation, find current center and pass
-        // it along to zoomCenter function.
-        if (changed) {
-            Rectangle bounds = documentViewModel.getPageBounds(pageIndex);
-            zoomPointDelta.setLocation(
-                    (zoomPointDelta.x / previousZoom) * zoom,
-                    (zoomPointDelta.y / previousZoom) * zoom);
-            zoomPointDelta.setLocation(bounds.x + zoomPointDelta.x,
-                    bounds.y + zoomPointDelta.y);
-            getViewPort().setViewPosition(zoomPointDelta);
-        }
-
-        // update the UI controls
-        if (viewerController != null) {
-            viewerController.doCommonZoomUIUpdates(becauseOfValidFitMode);
-        }
-
-        return changed;
-    }
-
 
     /**
      * Utility method for finding the center point of the viewport
@@ -1128,6 +1055,19 @@ public class DocumentViewControllerImpl
         return documentViewModel;
     }
 
+//    private Page getPageLock(int pageNumber) {
+//        PageTree pageTree = getPageTree();
+//        if (pageTree == null)
+//            return null;
+//        return pageTree.getPage(pageNumber, this);
+//    }
+//
+//    private void removePageLock(Page page) {
+//        PageTree pageTree = getPageTree();
+//        if (pageTree != null) {
+//            pageTree.releasePage(page, this);
+//        }
+//    }
     //
     // ComponentListener interface
     //
@@ -1180,13 +1120,13 @@ public class DocumentViewControllerImpl
      * <li>new annotation crreated, currently only for new link annotations</li>
      * <li></li>
      *
-     * @param event    property being changes
+     * @param event property being changes
      * @param oldValue old value, null if no old value
      * @param newValue new annotation value.
      */
     public void firePropertyChange(String event, Object oldValue,
                                    Object newValue) {
-        changes.firePropertyChange(event, oldValue, newValue);
+        changes.firePropertyChange(event,  oldValue, newValue);
     }
 
     public void addPropertyChangeListener(PropertyChangeListener l) {
@@ -1194,18 +1134,13 @@ public class DocumentViewControllerImpl
     }
 
     public void deleteCurrentAnnotation() {
-        AbstractAnnotationComponent annotationComponent = (AbstractAnnotationComponent)
+        // make sure there is a current annotation in model
+        AnnotationComponentImpl annotationComponent =
                 documentViewModel.getCurrentAnnotation();
-        if (!(annotationComponent instanceof PopupAnnotationComponent)) {
-            deleteAnnotation(annotationComponent);
-        }
-    }
-
-    public void deleteAnnotation(AnnotationComponent annotationComponent) {
-        if (documentViewModel != null && annotationComponent != null) {
+        if (documentViewModel != null && annotationComponent !=null ){
 
             // parent component
-            PageViewComponent pageComponent =
+            AbstractPageViewComponent pageComponent =
                     annotationComponent.getPageViewComponent();
 
             // store the annotation state in the caretaker
@@ -1215,11 +1150,13 @@ public class DocumentViewControllerImpl
             // remove annotation
             Document document = getDocument();
             PageTree pageTree = document.getPageTree();
-            Page page = pageTree.getPage(pageComponent.getPageIndex());
+            Page page = pageTree.getPage(pageComponent.getPageIndex(), this);
             // remove from page
             page.deleteAnnotation(annotationComponent.getAnnotation());
             // remove from page view.
             pageComponent.removeAnnotation(annotationComponent);
+            // release the page
+            pageTree.releasePage(pageComponent.getPageIndex(), this);
 
             // store the post delete state.
             AnnotationState postDeleteState =

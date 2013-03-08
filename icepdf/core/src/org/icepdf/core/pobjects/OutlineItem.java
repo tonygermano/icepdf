@@ -15,12 +15,11 @@
 package org.icepdf.core.pobjects;
 
 import org.icepdf.core.pobjects.actions.Action;
+import org.icepdf.core.pobjects.fonts.ofont.Encoding;
 import org.icepdf.core.util.Library;
-import org.icepdf.core.util.Utils;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.Hashtable;
+import java.util.Vector;
 
 /**
  * <p>The <code>OutlineItem</code> represents the individual outline item within
@@ -34,21 +33,11 @@ import java.util.List;
  * hierarchy.  The root node of the outline hierarchy can be accessed through
  * the Outlines class. </p>
  *
- * @see org.icepdf.ri.common.utility.outline.OutlineItemTreeNode
+ * @see org.icepdf.ri.common.OutlineItemTreeNode
  * @see org.icepdf.core.pobjects.Outlines
  * @since 2.0
  */
 public class OutlineItem extends Dictionary {
-
-    public static final Name A_KEY = new Name("A");
-    public static final Name COUNT_KEY = new Name("Count");
-    public static final Name TITLE_KEY = new Name("Title");
-    public static final Name DEST_KEY = new Name("Dest");
-    public static final Name FIRST_KEY = new Name("First");
-    public static final Name LAST_KEY = new Name("Last");
-    public static final Name NEXT_KEY = new Name("Next");
-    public static final Name PREV_KEY = new Name("Prev");
-    public static final Name PARENT_KEY = new Name("Parent");
 
     // The text to be displayed on the screen for this item.
     private String title;
@@ -83,7 +72,7 @@ public class OutlineItem extends Dictionary {
 
     private boolean loadedSubItems;
 
-    private List<OutlineItem> subItems;
+    private Vector<OutlineItem> subItems;
 
 
     /**
@@ -92,10 +81,10 @@ public class OutlineItem extends Dictionary {
      * @param l document library.
      * @param h OutlineItem dictionary entries.
      */
-    public OutlineItem(Library l, HashMap h) {
+    public OutlineItem(Library l, Hashtable h) {
         super(l, h);
         loadedSubItems = false;
-        subItems = new ArrayList<OutlineItem>(Math.max(Math.abs(getCount()), 16));
+        subItems = new Vector<OutlineItem>(Math.max(Math.abs(getCount()), 16));
     }
 
     /**
@@ -141,9 +130,9 @@ public class OutlineItem extends Dictionary {
     public Action getAction() {
         // grab the action attribute
         if (action == null) {
-            Object obj = library.getObject(entries, A_KEY);
-            if (obj instanceof HashMap) {
-                action = new org.icepdf.core.pobjects.actions.Action(library, (HashMap) obj);
+            Object obj = library.getObject(entries, "A");
+            if (obj instanceof Hashtable) {
+                action = new org.icepdf.core.pobjects.actions.Action(library, (Hashtable) obj);
             }
         }
         return action;
@@ -157,7 +146,7 @@ public class OutlineItem extends Dictionary {
      */
     public Reference getFirst() {
         if (first == null) {
-            Object attribute = entries.get(FIRST_KEY);
+            Object attribute = entries.get("First");
             if (attribute instanceof Reference) {
                 first = (Reference) attribute;
             }
@@ -173,7 +162,7 @@ public class OutlineItem extends Dictionary {
      */
     public Reference getLast() {
         if (last == null) {
-            Object attribute = entries.get(LAST_KEY);
+            Object attribute = entries.get("Last");
             if (attribute instanceof Reference) {
                 last = (Reference) attribute;
             }
@@ -188,7 +177,7 @@ public class OutlineItem extends Dictionary {
      */
     public Reference getNext() {
         if (next == null) {
-            Object attribute = entries.get(NEXT_KEY);
+            Object attribute = entries.get("Next");
             if (attribute instanceof Reference) {
                 next = (Reference) attribute;
             }
@@ -203,7 +192,7 @@ public class OutlineItem extends Dictionary {
      */
     public Reference getPrev() {
         if (prev == null) {
-            Object attribute = entries.get(PREV_KEY);
+            Object attribute = entries.get("Prev");
             if (attribute instanceof Reference) {
                 prev = (Reference) attribute;
             }
@@ -219,7 +208,7 @@ public class OutlineItem extends Dictionary {
      */
     public Reference getParent() {
         if (parent == null) {
-            Object attribute = entries.get(PARENT_KEY);
+            Object attribute = entries.get("Parent");
             if (attribute instanceof Reference) {
                 parent = (Reference) attribute;
             }
@@ -235,7 +224,7 @@ public class OutlineItem extends Dictionary {
     private int getCount() {
         if (count < 0) {
             // grab the count attribute
-            count = library.getInt(entries, COUNT_KEY);
+            count = library.getInt(entries, "Count");
         }
         return count;
     }
@@ -246,11 +235,58 @@ public class OutlineItem extends Dictionary {
      * @return text to be displayed
      */
     public String getTitle() {
+
+        /*
+         * Some bizarre code that we have no idea what is for
+         * Written by those crazy Italians
+
+        if (title != null && title.indexOf(13) != -1) {
+            StringBuffer sb = new StringBuffer();
+            sb.append("<html>");
+            StringTokenizer stk = new StringTokenizer(title, "\n\r");
+            while (stk.hasMoreTokens()) {
+                String s = stk.nextToken();
+                sb.append("<p>" + s + "</p>");
+            }
+            sb.append("</html>");
+            title = sb.toString();
+        }
+        */
         if (title == null) {
             // get title String for outline entry
-            Object obj = library.getObject(entries, TITLE_KEY);
+            Object obj = library.getObject(entries, "Title");
             if (obj instanceof StringObject) {
-                title = Utils.convertStringObject(library, (StringObject) obj);
+                StringObject outlineText = (StringObject) obj;
+                String titleText = outlineText.getDecryptedLiteralString(library.securityManager);
+                // If the title begins with 254 and 255 we are working with
+                // Octal encoded strings. Check first to make sure that the
+                // title string is not null, or is at least of length 2.
+                if (titleText != null && titleText.length() >= 2 &&
+                        ((int) titleText.charAt(0)) == 254 &&
+                        ((int) titleText.charAt(1)) == 255) {
+
+                    StringBuilder sb1 = new StringBuilder();
+
+                    // convert teh unicode to characters.
+                    for (int i = 2; i < titleText.length(); i += 2) {
+                        try {
+                            int b1 = ((int) titleText.charAt(i)) & 0xFF;
+                            int b2 = ((int) titleText.charAt(i + 1)) & 0xFF;
+                            //System.err.println(b1 + " " + b2);
+                            sb1.append((char) (b1 * 256 + b2));
+                        } catch (Exception ex) {
+                            // intentionally left blank.
+                        }
+                    }
+                    title = sb1.toString();
+                } else if (titleText != null) {
+                    StringBuilder sb = new StringBuilder();
+                    Encoding enc = Encoding.getPDFDoc();
+                    for (int i = 0; i < titleText.length(); i++) {
+                        sb.append(enc.get(titleText.charAt(i)));
+                    }
+                    title = sb.toString();
+                }
             }
         }
         return title;
@@ -264,7 +300,7 @@ public class OutlineItem extends Dictionary {
     public Destination getDest() {
         if (dest == null) {
             // grab the Destination attribute
-            Object obj = library.getObject(entries, DEST_KEY);
+            Object obj = library.getObject(entries, "Dest");
             if (obj != null) {
                 dest = new Destination(library, obj);
             }
@@ -287,12 +323,12 @@ public class OutlineItem extends Dictionary {
             Reference nextReference = getFirst();
             Reference oldNextReference;
             OutlineItem outLineItem;
-            HashMap dictionary;
+            Hashtable dictionary;
             // iterate through children and see if then have children. 
             while (nextReference != null) {
 
                 // result the outline dictionary
-                dictionary = (HashMap) library.getObject(nextReference);
+                dictionary = (Hashtable) library.getObject(nextReference);
                 if (dictionary == null) {
                     break;
                 }

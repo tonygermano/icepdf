@@ -57,13 +57,10 @@ public class PageTextExtraction {
 
             // Get text from the first page of the document, assuming that there
             // is text to extract.
-            for (int pageNumber = 0, max = document.getNumberOfPages();
-                 pageNumber < max; pageNumber++) {
-                PageText pageText = document.getPageText(pageNumber);
-                System.out.println("Extracting page text: " + pageNumber);
-                if (pageText != null && pageText.getPageLines() != null) {
-                    fileWriter.write(pageText.toString());
-                }
+            int pagNumber = 0;
+            PageText pageText = document.getPageText(pagNumber);
+            if (pageText != null && pageText.getPageLines() != null) {
+                fileWriter.write(pageText.toString());
             }
 
             // close the writer

@@ -279,7 +279,9 @@ public final class LinearGradientPaint extends MultipleGradientPaint {
                     this.getColors(),
                     cycleMethod,
                     colorSpace);
-        } catch (NoninvertibleTransformException e) {
+        }
+
+        catch (NoninvertibleTransformException e) {
             e.printStackTrace();
             throw new IllegalArgumentException("transform should be" +
                     "invertible");

@@ -15,11 +15,10 @@
 package org.icepdf.core.pobjects.actions;
 
 import org.icepdf.core.pobjects.Dictionary;
-import org.icepdf.core.pobjects.Name;
 import org.icepdf.core.pobjects.StringObject;
 import org.icepdf.core.util.Library;
 
-import java.util.HashMap;
+import java.util.Hashtable;
 
 /**
  * <p>The File Specification diction provides more flexibility then the string
@@ -32,24 +31,13 @@ import java.util.HashMap;
  */
 public class FileSpecification extends Dictionary {
 
-    public static final Name FS_KEY = new Name("FS");
-    public static final Name F_KEY = new Name("F");
-    public static final Name DOS_KEY = new Name("DOS");
-    public static final Name MAC_KEY = new Name("Mac");
-    public static final Name UNIX_KEY = new Name("Unix");
-    public static final Name ID_KEY = new Name("ID");
-    public static final Name V_KEY = new Name("V");
-    public static final Name EF_KEY = new Name("EF");
-    public static final Name RF_KEY = new Name("RF");
-    public static final Name DESC_KEY = new Name("Desc");
-
     /**
      * Constructs a new specification dictionary.
      *
      * @param l document library.
      * @param h dictionary entries.
      */
-    public FileSpecification(Library l, HashMap h) {
+    public FileSpecification(Library l, Hashtable h) {
         super(l, h);
     }
 
@@ -59,8 +47,8 @@ public class FileSpecification extends Dictionary {
      *
      * @return type of PDF object, "Filespec".
      */
-    public Name getType() {
-        return library.getName(entries, TYPE_KEY);
+    public String getType() {
+        return library.getName(entries, "Type");
     }
 
     /**
@@ -70,8 +58,8 @@ public class FileSpecification extends Dictionary {
      *
      * @return the name of the file system to be used to interpret this file.
      */
-    public Name getFileSystemName() {
-        return library.getName(entries, FS_KEY);
+    public String getFileSystemName() {
+        return library.getName(entries, "FS");
     }
 
     /**
@@ -80,9 +68,8 @@ public class FileSpecification extends Dictionary {
      * @return file specification string.
      */
     public String getFileSpecification() {
-        Object tmp = library.getObject(entries, F_KEY);
-        if (tmp instanceof StringObject) {
-            return ((StringObject) tmp)
+        if (library.getObject(entries, "F") instanceof StringObject) {
+            return ((StringObject) library.getObject(entries, "F"))
                     .getDecryptedLiteralString(
                             library.getSecurityManager());
         } else {
@@ -96,9 +83,8 @@ public class FileSpecification extends Dictionary {
      * @return DOS file name.
      */
     public String getDos() {
-        Object tmp = library.getObject(entries, DOS_KEY);
-        if (tmp instanceof StringObject) {
-            return ((StringObject) tmp)
+        if (library.getObject(entries, "DOS") instanceof StringObject) {
+            return ((StringObject) library.getObject(entries, "DOS"))
                     .getDecryptedLiteralString(
                             library.getSecurityManager());
         } else {
@@ -112,9 +98,8 @@ public class FileSpecification extends Dictionary {
      * @return Mac file name.
      */
     public String getMac() {
-        Object tmp = library.getObject(entries, MAC_KEY);
-        if (tmp instanceof StringObject) {
-            return ((StringObject) tmp)
+        if (library.getObject(entries, "Mac") instanceof StringObject) {
+            return ((StringObject) library.getObject(entries, "Mac"))
                     .getDecryptedLiteralString(
                             library.getSecurityManager());
         } else {
@@ -128,9 +113,8 @@ public class FileSpecification extends Dictionary {
      * @return Unix file name.
      */
     public String getUnix() {
-        Object tmp = library.getObject(entries, UNIX_KEY);
-        if (tmp instanceof StringObject) {
-            return ((StringObject) tmp)
+        if (library.getObject(entries, "Unix") instanceof StringObject) {
+            return ((StringObject) library.getObject(entries, "Unix"))
                     .getDecryptedLiteralString(
                             library.getSecurityManager());
         } else {
@@ -145,9 +129,8 @@ public class FileSpecification extends Dictionary {
      * @return file identifier.
      */
     public String getId() {
-        Object tmp = library.getObject(entries, ID_KEY);
-        if (tmp != null) {
-            return tmp.toString();
+        if (library.getObject(entries, "ID") != null) {
+            return library.getObject(entries, "ID").toString();
         } else {
             return null;
         }
@@ -161,7 +144,7 @@ public class FileSpecification extends Dictionary {
      *         otherwise true.
      */
     public Boolean isVolitile() {
-        return library.getBoolean(entries, V_KEY);
+        return library.getBoolean(entries, "V");
     }
 
     /**
@@ -170,8 +153,8 @@ public class FileSpecification extends Dictionary {
      *
      * @return embbed file stream properties.
      */
-    public HashMap getEmbeddedFileDictionary() {
-        return library.getDictionary(entries, EF_KEY);
+    public Hashtable getEmbeddedFileDictionary() {
+        return library.getDictionary(entries, "EF");
     }
 
     /**
@@ -182,8 +165,8 @@ public class FileSpecification extends Dictionary {
      *
      * @return related files dictionary.
      */
-    public HashMap getRelatedFilesDictionary() {
-        return library.getDictionary(entries, RF_KEY);
+    public Hashtable getRelatedFilesDictionary() {
+        return library.getDictionary(entries, "RF");
     }
 
     /**
@@ -192,7 +175,7 @@ public class FileSpecification extends Dictionary {
      * @return file identifier.
      */
     public String getDescription() {
-        Object description = library.getObject(entries, DESC_KEY);
+        Object description = library.getObject(entries, "Desc");
         if (description instanceof StringObject) {
             StringObject tmp = (StringObject) description;
             return tmp.getDecryptedLiteralString(library.securityManager);

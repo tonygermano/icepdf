@@ -16,7 +16,7 @@ package org.icepdf.core.pobjects;
 
 import org.icepdf.core.util.Library;
 
-import java.util.HashMap;
+import java.util.Hashtable;
 
 /**
  * <p>This class represents a PDF document outline.  A document outline is
@@ -30,15 +30,11 @@ import java.util.HashMap;
  * the packageorg.icepdf.core.ri.common provides an example on converting
  * this hierarchy to a Swing JTree.</p>
  *
- * @see org.icepdf.ri.common.utility.outline.OutlineItemTreeNode
+ * @see org.icepdf.ri.common.OutlineItemTreeNode
  * @see org.icepdf.core.pobjects.OutlineItem
  * @since 1.0
  */
 public class Outlines extends Dictionary {
-
-    public static final Name D_KEY = new Name("D");
-    public static final Name COUNT_KEY = new Name("Count");
-
     // number of child outline items
     private Integer count;
 
@@ -51,10 +47,10 @@ public class Outlines extends Dictionary {
      * @param l document library.
      * @param h Outlines dictionary entries.
      */
-    public Outlines(Library l, HashMap h) {
+    public Outlines(Library l, Hashtable h) {
         super(l, h);
         if (entries != null) {
-            count = library.getInt(entries, COUNT_KEY);
+            count = library.getInt(entries, "Count");
         }
     }
 
@@ -69,5 +65,13 @@ public class Outlines extends Dictionary {
             return null;
         return new OutlineItem(library, entries);
     }
+
+    /**
+     * Dispose the Outlines.
+     */
+    public void dispose() {
+        // todo  implement a cleanup strategy.
+    }
+
 
 }

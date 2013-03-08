@@ -15,8 +15,6 @@
 package org.icepdf.core.pobjects.graphics;
 
 
-import org.icepdf.core.pobjects.Name;
-
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Rectangle2D;
@@ -51,7 +49,7 @@ public interface Pattern {
      */
     public static final int PATTERN_TYPE_SHADING = 2;
 
-    public Name getType();
+    public String getType();
 
     public int getPatternType();
 
