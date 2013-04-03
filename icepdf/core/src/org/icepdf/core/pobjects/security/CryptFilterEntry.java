@@ -1,16 +1,15 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 
@@ -20,21 +19,18 @@ import org.icepdf.core.pobjects.Dictionary;
 import org.icepdf.core.pobjects.Name;
 import org.icepdf.core.util.Library;
 
-import java.util.HashMap;
+import java.util.Hashtable;
 
 /**
  * Individual Crypt filter definition.  A filter is associated with a name
  * key in the CryptFilter definition.  A stream or string that uses a crypt
  * filter will references it by its name.
  */
-public class CryptFilterEntry extends Dictionary {
+public class CryptFilterEntry extends Dictionary{
 
     public static final Name TYPE = new Name("CryptFilter");
-    public static final Name AUTHEVENT_KEY = new Name("AuthEvent");
-    public static final Name CFM_KEY = new Name("CFM");
-    public static final Name LENGTH_KEY = new Name("Length");
 
-    public CryptFilterEntry(Library library, HashMap entries) {
+    public CryptFilterEntry(Library library, Hashtable entries) {
         super(library, entries);
     }
 
@@ -77,7 +73,7 @@ public class CryptFilterEntry extends Dictionary {
      * @return name of crypt filter method.
      */
     public Name getCryptFilterMethod() {
-        Object tmp = library.getObject(entries, CFM_KEY);
+        Object tmp = library.getObject(entries, "CFM");
         if (tmp instanceof Name) {
             return (Name) tmp;
         }
@@ -101,7 +97,7 @@ public class CryptFilterEntry extends Dictionary {
      * @return authorization event.
      */
     public Name getAuthEvent() {
-        Object tmp = library.getObject(entries, AUTHEVENT_KEY);
+        Object tmp = library.getObject(entries, "AuthEvent");
         if (tmp instanceof Name) {
             return (Name) tmp;
         }
@@ -119,7 +115,7 @@ public class CryptFilterEntry extends Dictionary {
      * @return lenth of encryption key
      */
     public int getLength() {
-        int length = library.getInt(entries, LENGTH_KEY);
+        int length = library.getInt(entries, "Length");
         return Math.min(length * 8, 128);
     }
 }

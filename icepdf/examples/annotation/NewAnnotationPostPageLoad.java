@@ -1,16 +1,15 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 
@@ -20,22 +19,19 @@ import org.icepdf.core.pobjects.Reference;
 import org.icepdf.core.pobjects.actions.ActionFactory;
 import org.icepdf.core.pobjects.actions.GoToAction;
 import org.icepdf.core.pobjects.actions.URIAction;
-import org.icepdf.core.pobjects.annotations.Annotation;
-import org.icepdf.core.pobjects.annotations.AnnotationFactory;
-import org.icepdf.core.pobjects.annotations.LinkAnnotation;
+import org.icepdf.core.pobjects.annotations.*;
 import org.icepdf.core.pobjects.graphics.text.WordText;
 import org.icepdf.core.search.DocumentSearchController;
 import org.icepdf.core.util.Library;
+import org.icepdf.core.views.swing.AbstractPageViewComponent;
 import org.icepdf.ri.common.SwingController;
 import org.icepdf.ri.common.SwingViewBuilder;
-import org.icepdf.ri.common.views.AbstractPageViewComponent;
-import org.icepdf.ri.common.views.AnnotationComponent;
 import org.icepdf.ri.common.views.DocumentViewControllerImpl;
-import org.icepdf.ri.common.views.annotations.AnnotationComponentFactory;
 
 import javax.swing.*;
+import java.awt.*;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Vector;
 
 /**
  * The <code>NewAnnotationPostPageLoad</code> class is an example of how to use
@@ -64,7 +60,7 @@ public class NewAnnotationPostPageLoad {
     public static void main(String[] args) {
 
         if (args.length < 2) {
-            System.out.println("At least two command line arguments must " +
+            System.out.println("At leasts two command line arguments must " +
                     "be specified. ");
             System.out.println("<filename> <term1> ... <termN>");
         }
@@ -85,15 +81,13 @@ public class NewAnnotationPostPageLoad {
         SwingViewBuilder factory = new SwingViewBuilder(controller);
         JPanel viewerComponentPanel = factory.buildViewerPanel();
         JFrame applicationFrame = new JFrame();
-        applicationFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        applicationFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         applicationFrame.getContentPane().add(viewerComponentPanel);
 
         // add interactive mouse link annotation support via callback
-        org.icepdf.ri.common.MyAnnotationCallback myAnnotationCallback =
-                new org.icepdf.ri.common.MyAnnotationCallback(
-                        controller.getDocumentViewController());
         controller.getDocumentViewController().setAnnotationCallback(
-                myAnnotationCallback);
+                new org.icepdf.ri.common.MyAnnotationCallback(
+                        controller.getDocumentViewController()));
         // set document view mode
         controller.getDocumentViewController().setViewType(
                 DocumentViewControllerImpl.ONE_COLUMN_VIEW);
@@ -129,6 +123,10 @@ public class NewAnnotationPostPageLoad {
          * Apply the search -> annotation resulst after the gui is build
          */
         // new annotation look and feel
+        AnnotationState annotationState =
+                new AnnotationState(Annotation.VISIBLE_RECTANGLE,
+                        LinkAnnotation.HIGHLIGHT_INVERT, 1f,
+                        BorderStyle.BORDER_STYLE_SOLID, Color.GRAY);
 
         // list of founds words to print out
         ArrayList<WordText> foundWords;
@@ -147,14 +145,9 @@ public class NewAnnotationPostPageLoad {
                     LinkAnnotation linkAnnotation = (LinkAnnotation)
                             AnnotationFactory.buildAnnotation(
                                     document.getPageTree().getLibrary(),
-                                    Annotation.SUBTYPE_LINK,
-                                    wordText.getBounds().getBounds());
-                    AnnotationComponent annotationComponent =
-                            AnnotationComponentFactory.buildAnnotationComponent(
-                                    linkAnnotation,
-                                    controller.getDocumentViewController(),
-                                    pageViewComponent,
-                                    controller.getDocumentViewController().getDocumentViewModel());
+                                    AnnotationFactory.LINK_ANNOTATION,
+                                    wordText.getBounds().getBounds(),
+                                    annotationState);
                     // create a new URI action
                     org.icepdf.core.pobjects.actions.Action action =
                             createURIAction(document.getPageTree().getLibrary(),
@@ -169,8 +162,7 @@ public class NewAnnotationPostPageLoad {
                     linkAnnotation.addAction(action);
                     // add it to the pageComponent, not the page, as we won't
                     // see it until the page is re-initialized.
-                    myAnnotationCallback.newAnnotation(pageViewComponent,
-                            annotationComponent);
+                    pageViewComponent.addAnnotation(linkAnnotation);
                 }
             }
             // removed the search highlighting
@@ -213,9 +205,9 @@ public class NewAnnotationPostPageLoad {
                         ActionFactory.GOTO_ACTION);
         Reference pageReference = document.getPageTree()
                 .getPageReference(pageIndex);
-        List destArray = Destination.destinationSyntax(pageReference,
+        Vector destVector = Destination.destinationSyntax(pageReference,
                 Destination.TYPE_FIT);
-        action.setDestination(new Destination(library, destArray));
+        action.setDestination(new Destination(library, destVector));
         return action;
     }
 }

@@ -1,16 +1,15 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.pobjects.graphics;
@@ -22,9 +21,8 @@ import org.icepdf.core.util.Library;
 
 import java.awt.*;
 import java.awt.geom.Point2D;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.Hashtable;
+import java.util.Vector;
 import java.util.logging.Logger;
 
 /**
@@ -53,21 +51,21 @@ public class ShadingType2Pattern extends ShadingPattern {
     // these two values as the colour gradient varies between the starting and
     // ending points of the axis.  The variable t becomes the argument to the
     // colour function(s).  Default [0,1].
-    protected List<Float> domain;
+    protected Vector<Float> domain;
 
     // An array of four numbers [x0, y0, x1, y1] specifying the starting and
     // ending coordinates of the axis, expressed in the shading's target
     // coordinate space.
-    protected java.util.List coords;
+    protected Vector coords;
 
     // An array of two Boolean values specifying whether to extend the shading
     // beyond the starting and ending points of the axis, Default [false, false].
-    protected List<Boolean> extend;
+    protected Vector<Boolean> extend;
 
     // linear gradient paint describing the gradient.
     private LinearGradientPaint linearGradientPaint;
 
-    public ShadingType2Pattern(Library library, HashMap entries) {
+    public ShadingType2Pattern(Library library, Hashtable entries) {
         super(library, entries);
     }
 
@@ -79,48 +77,45 @@ public class ShadingType2Pattern extends ShadingPattern {
 
         // shading dictionary
         if (shading == null) {
-            shading = library.getDictionary(entries, SHADING_KEY);
+            shading = library.getDictionary(entries, "Shading");
         }
 
-        shadingType = library.getInt(shading, SHADING_TYPE_KEY);
-        bBox = library.getRectangle(shading, BBOX_KEY);
+        shadingType = library.getInt(shading, "ShadingType");
+        bBox = library.getRectangle(shading, "BBox");
         colorSpace = PColorSpace.getColorSpace(library,
-                library.getObject(shading, COLORSPACE_KEY));
-        Object tmp = library.getObject(shading, BACKGROUND_KEY);
-        if (tmp != null && tmp instanceof List) {
-            background = (java.util.List) tmp;
+                library.getObject(shading, "ColorSpace"));
+        if (library.getObject(shading, "Background") != null &&
+                library.getObject(shading, "Background") instanceof Vector) {
+            background = (Vector) library.getObject(shading, "Background");
         }
-        antiAlias = library.getBoolean(shading, ANTIALIAS_KEY);
+        antiAlias = library.getBoolean(shading, "AntiAlias");
 
         // get type 2 specific data.
-        tmp = library.getObject(shading, DOMAIN_KEY);
-        if (tmp instanceof List) {
-            domain = (List<Float>) tmp;
+        if (library.getObject(shading, "Domain") instanceof Vector) {
+            domain = (Vector<Float>) library.getObject(shading, "Domain");
         } else {
-            domain = new ArrayList<Float>(2);
+            domain = new Vector<Float>(2);
             domain.add(new Float(0.0));
             domain.add(new Float(1.0));
         }
 
-        tmp = library.getObject(shading, COORDS_KEY);
-        if (tmp instanceof List) {
-            coords = (java.util.List) tmp;
+        if (library.getObject(shading, "Coords") instanceof Vector) {
+            coords = (Vector) library.getObject(shading, "Coords");
         }
-        tmp = library.getObject(shading, EXTEND_KEY);
-        if (tmp instanceof List) {
-            extend = (List<Boolean>) tmp;
+        if (library.getObject(shading, "Extend") instanceof Vector) {
+            extend = (Vector<Boolean>) library.getObject(shading, "Extend");
         } else {
-            extend = new ArrayList<Boolean>(2);
+            extend = new Vector<Boolean>(2);
             extend.add(false);
             extend.add(false);
         }
-        tmp = library.getObject(shading, FUNCTION_KEY);
+        Object tmp = library.getObject(shading, "Function");
         if (tmp != null) {
-            if (!(tmp instanceof List)) {
+            if (!(tmp instanceof Vector)){
                 function = new Function[]{Function.getFunction(library,
                         tmp)};
-            } else {
-                List functionTemp = (List) tmp;
+            }else{
+                Vector functionTemp = (Vector)tmp;
                 function = new Function[functionTemp.size()];
                 for (int i = 0; i < functionTemp.size(); i++) {
                     function[i] = Function.getFunction(library, functionTemp.get(i));
@@ -129,8 +124,8 @@ public class ShadingType2Pattern extends ShadingPattern {
         }
 
         // calculate the t's
-        float t0 = domain.get(0);
-        float t1 = domain.get(1);
+        float t0 = ((Number) domain.get(0)).floatValue();
+        float t1 = ((Number) domain.get(1)).floatValue();
 
         // first off, create the two needed start and end points of the line
         Point2D.Float startPoint = new Point2D.Float(
@@ -170,10 +165,10 @@ public class ShadingType2Pattern extends ShadingPattern {
      * @param endPoint       end of line segment.
      * @return list of points found on line
      */
-    protected Color[] calculateColorPoints(int numberOfPoints,
-                                           Point2D.Float startPoint,
-                                           Point2D.Float endPoint,
-                                           float t0, float t1) {
+    private Color[] calculateColorPoints(int numberOfPoints,
+                                         Point2D.Float startPoint,
+                                         Point2D.Float endPoint,
+                                         float t0, float t1) {
         // calculate the slope
         float m = (startPoint.y - endPoint.y) / (startPoint.x - endPoint.x);
         // calculate the y intercept
@@ -218,7 +213,7 @@ public class ShadingType2Pattern extends ShadingPattern {
      * @return array of floats the evenly divide t0 and t1, length is
      *         numberOfPoints + 1
      */
-    protected float[] calculateDomainEntries(int numberOfPoints, float t0, float t1) {
+    private float[] calculateDomainEntries(int numberOfPoints, float t0, float t1) {
 
         float offset = 1.0f / numberOfPoints;
         float[] domainEntries = new float[numberOfPoints + 1];
@@ -235,11 +230,11 @@ public class ShadingType2Pattern extends ShadingPattern {
      * Calculate the colours value of the point xy on the line point1 and point2.
      *
      * @param colorSpace colour space to apply to the function output
-     * @param xy         point to calcualte the colour of.
-     * @param point1     start of gradient line
-     * @param point2     end of gradient line.
-     * @param t0         domain min
-     * @param t1         domain max
+     * @param xy point to calcualte the colour of.
+     * @param point1 start of gradient line
+     * @param point2 end of gradient line.
+     * @param t0 domain min
+     * @param t1 domain max
      * @return colour derived from the input parameters.
      */
     private Color calculateColour(PColorSpace colorSpace, Point2D.Float xy,
@@ -257,12 +252,12 @@ public class ShadingType2Pattern extends ShadingPattern {
             float[] output;
             int length = function.length;
             // simple 1 in N out function
-            if (length == 1) {
+            if (length == 1){
                 output = function[0].calculate(input);
-            } else {
+            }else{
                 // vector of function for each colour component, 1 in 1 out.
                 output = new float[length];
-                for (int i = 0; i < length; i++) {
+                for (int i= 0; i < length; i++ ){
                     output[i] = function[i].calculate(input)[0];
                 }
             }
@@ -318,7 +313,7 @@ public class ShadingType2Pattern extends ShadingPattern {
      * @return parametric value.
      */
     private float parametrixValue(float linearMapping, float t0, float t1,
-                                  List extended) {
+                                  Vector extended) {
 
         if (linearMapping < 0 && ((Boolean) extended.get(0))) {
             return t0;

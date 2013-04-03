@@ -1,39 +1,38 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.ri.common;
 
+import org.icepdf.core.Controller;
 import org.icepdf.core.exceptions.PDFException;
 import org.icepdf.core.exceptions.PDFSecurityException;
 import org.icepdf.core.pobjects.*;
 import org.icepdf.core.pobjects.actions.Action;
 import org.icepdf.core.pobjects.actions.GoToAction;
 import org.icepdf.core.pobjects.actions.URIAction;
+import org.icepdf.core.pobjects.annotations.AnnotationState;
 import org.icepdf.core.pobjects.fonts.FontFactory;
 import org.icepdf.core.pobjects.security.Permissions;
 import org.icepdf.core.search.DocumentSearchController;
 import org.icepdf.core.util.Library;
 import org.icepdf.core.util.PropertyConstants;
+import org.icepdf.core.views.DocumentView;
+import org.icepdf.core.views.swing.AnnotationComponentImpl;
+import org.icepdf.ri.common.annotation.AnnotationPanel;
 import org.icepdf.ri.common.search.DocumentSearchControllerImpl;
-import org.icepdf.ri.common.utility.annotation.AnnotationPanel;
-import org.icepdf.ri.common.utility.layers.LayersPanel;
-import org.icepdf.ri.common.utility.outline.OutlineItemTreeNode;
-import org.icepdf.ri.common.utility.search.SearchPanel;
-import org.icepdf.ri.common.utility.thumbs.ThumbnailsPanel;
-import org.icepdf.ri.common.views.*;
-import org.icepdf.ri.common.views.annotations.AnnotationState;
+import org.icepdf.ri.common.views.DocumentViewControllerImpl;
+import org.icepdf.ri.common.views.DocumentViewModelImpl;
 import org.icepdf.ri.util.*;
 
 import javax.print.attribute.PrintRequestAttributeSet;
@@ -61,7 +60,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.MessageFormat;
 import java.text.NumberFormat;
-import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Properties;
 import java.util.ResourceBundle;
@@ -154,7 +153,7 @@ public class SwingController
     private JButton saveAsFileButton;
     private JButton printButton;
     private JButton searchButton;
-    private JToggleButton showHideUtilityPaneButton;
+    private JButton showHideUtilityPaneButton;
 
     private JButton firstPageButton;
     private JButton previousPageButton;
@@ -184,23 +183,10 @@ public class SwingController
     private JToggleButton panToolButton;
     private JToggleButton textSelectToolButton;
     private JToggleButton zoomInToolButton;
-    private JToggleButton zoomDynamicToolButton;
+    private JToggleButton zoomOutToolButton;
 
     private JToggleButton selectToolButton;
-    private JToggleButton highlightAnnotationToolButton;
-    private JToggleButton textAnnotationToolButton;
-
     private JToggleButton linkAnnotationToolButton;
-    private JToggleButton highlightAnnotationUtilityToolButton;
-    private JToggleButton strikeOutAnnotationToolButton;
-    private JToggleButton underlineAnnotationToolButton;
-    private JToggleButton lineAnnotationToolButton;
-    private JToggleButton lineArrowAnnotationToolButton;
-    private JToggleButton squareAnnotationToolButton;
-    private JToggleButton circleAnnotationToolButton;
-    private JToggleButton inkAnnotationToolButton;
-    private JToggleButton freeTextAnnotationToolButton;
-    private JToggleButton textAnnotationUtilityToolButton;
 
     private JToolBar completeToolBar;
 
@@ -212,7 +198,6 @@ public class SwingController
     private JScrollPane outlinesScrollPane;
     private SearchPanel searchPanel;
     private ThumbnailsPanel thumbnailsPanel;
-    private LayersPanel layersPanel;
     private AnnotationPanel annotationPanel;
     private JTabbedPane utilityTabbedPane;
 
@@ -242,7 +227,7 @@ public class SwingController
     private boolean disposed;
 
     // internationalization messages, loads message for default JVM locale.
-    private static ResourceBundle messageBundle = null;
+    private ResourceBundle messageBundle = null;
 
     private PropertiesManager propertiesManager;
 
@@ -279,7 +264,7 @@ public class SwingController
      *
      * @return page view controller.
      */
-    public DocumentViewController getDocumentViewController() {
+    public org.icepdf.core.views.DocumentViewController getDocumentViewController() {
         return documentViewController;
     }
 
@@ -659,7 +644,7 @@ public class SwingController
     /**
      * Called by SwingViewerBuilder, so that SwingController can setup event handling
      */
-    public void setShowHideUtilityPaneButton(JToggleButton btn) {
+    public void setShowHideUtilityPaneButton(JButton btn) {
         showHideUtilityPaneButton = btn;
         btn.addActionListener(this);
     }
@@ -830,105 +815,8 @@ public class SwingController
     /**
      * Called by SwingViewerBuilder, so that SwingController can setup event handling
      */
-    public void setHighlightAnnotationToolButton(JToggleButton btn) {
-        highlightAnnotationToolButton = btn;
-        btn.addItemListener(this);
-    }
-
-    /**
-     * Called by SwingViewerBuilder, so that SwingController can setup event handling
-     */
-    public void setHighlightAnnotationUtilityToolButton(JToggleButton btn) {
-        highlightAnnotationUtilityToolButton = btn;
-        btn.addItemListener(this);
-    }
-
-    /**
-     * Called by SwingViewerBuilder, so that SwingController can setup event handling
-     */
-    public void setStrikeOutAnnotationToolButton(JToggleButton btn) {
-        strikeOutAnnotationToolButton = btn;
-        btn.addItemListener(this);
-    }
-
-    /**
-     * Called by SwingViewerBuilder, so that SwingController can setup event handling
-     */
-    public void setUnderlineAnnotationToolButton(JToggleButton btn) {
-        underlineAnnotationToolButton = btn;
-        btn.addItemListener(this);
-    }
-
-    /**
-     * Called by SwingViewerBuilder, so that SwingController can setup event handling
-     */
-    public void setLineAnnotationToolButton(JToggleButton btn) {
-        lineAnnotationToolButton = btn;
-        btn.addItemListener(this);
-    }
-
-    /**
-     * Called by SwingViewerBuilder, so that SwingController can setup event handling
-     */
-    public void setLineArrowAnnotationToolButton(JToggleButton btn) {
-        lineArrowAnnotationToolButton = btn;
-        btn.addItemListener(this);
-    }
-
-    /**
-     * Called by SwingViewerBuilder, so that SwingController can setup event handling
-     */
-    public void setSquareAnnotationToolButton(JToggleButton btn) {
-        squareAnnotationToolButton = btn;
-        btn.addItemListener(this);
-    }
-
-    /**
-     * Called by SwingViewerBuilder, so that SwingController can setup event handling
-     */
-    public void setCircleAnnotationToolButton(JToggleButton btn) {
-        circleAnnotationToolButton = btn;
-        btn.addItemListener(this);
-    }
-
-    /**
-     * Called by SwingViewerBuilder, so that SwingController can setup event handling
-     */
-    public void setInkAnnotationToolButton(JToggleButton btn) {
-        inkAnnotationToolButton = btn;
-        btn.addItemListener(this);
-    }
-
-    /**
-     * Called by SwingViewerBuilder, so that SwingController can setup event handling
-     */
-    public void setFreeTextAnnotationToolButton(JToggleButton btn) {
-        freeTextAnnotationToolButton = btn;
-        btn.addItemListener(this);
-    }
-
-    /**
-     * Called by SwingViewerBuilder, so that SwingController can setup event handling
-     */
-    public void setTextAnnotationToolButton(JToggleButton btn) {
-        textAnnotationToolButton = btn;
-        btn.addItemListener(this);
-    }
-
-    /**
-     * Called by SwingViewerBuilder, so that SwingController can setup event handling
-     */
-    public void setTextAnnotationUtilityToolButton(JToggleButton btn) {
-        textAnnotationUtilityToolButton = btn;
-        btn.addItemListener(this);
-    }
-
-
-    /**
-     * Called by SwingViewerBuilder, so that SwingController can setup event handling
-     */
-    public void setZoomDynamicToolButton(JToggleButton btn) {
-        zoomDynamicToolButton = btn;
+    public void setZoomOutToolButton(JToggleButton btn) {
+        zoomOutToolButton = btn;
         btn.addItemListener(this);
     }
 
@@ -961,13 +849,6 @@ public class SwingController
      */
     public void setThumbnailsPanel(ThumbnailsPanel tn) {
         thumbnailsPanel = tn;
-    }
-
-    /**
-     * Called by SwingViewerBuilder, so that SwingController can setup event handling
-     */
-    public void setLayersPanel(LayersPanel tn) {
-        layersPanel = tn;
     }
 
     /**
@@ -1135,22 +1016,10 @@ public class SwingController
         setEnabled(rotateRightButton, opened);
         setEnabled(panToolButton, opened);
         setEnabled(zoomInToolButton, opened);
-        setEnabled(zoomDynamicToolButton, opened);
+        setEnabled(zoomOutToolButton, opened);
         setEnabled(textSelectToolButton, opened && canExtract);
         setEnabled(selectToolButton, opened && canModify);
         setEnabled(linkAnnotationToolButton, opened && canModify);
-        setEnabled(highlightAnnotationToolButton, opened && canModify);
-        setEnabled(highlightAnnotationUtilityToolButton, opened && canModify);
-        setEnabled(strikeOutAnnotationToolButton, opened && canModify);
-        setEnabled(underlineAnnotationToolButton, opened && canModify);
-        setEnabled(lineAnnotationToolButton, opened && canModify);
-        setEnabled(lineArrowAnnotationToolButton, opened && canModify);
-        setEnabled(squareAnnotationToolButton, opened && canModify);
-        setEnabled(circleAnnotationToolButton, opened && canModify);
-        setEnabled(inkAnnotationToolButton, opened && canModify);
-        setEnabled(freeTextAnnotationToolButton, opened && canModify);
-        setEnabled(textAnnotationToolButton, opened && canModify);
-        setEnabled(textAnnotationUtilityToolButton, opened && canModify);
         setEnabled(fontEngineButton, opened);
         setEnabled(facingPageViewContinuousButton, opened);
         setEnabled(singlePageViewContinuousButton, opened);
@@ -1372,101 +1241,41 @@ public class SwingController
             if (argToolName == DocumentViewModelImpl.DISPLAY_TOOL_PAN) {
                 actualToolMayHaveChanged =
                         documentViewController.setToolMode(DocumentViewModelImpl.DISPLAY_TOOL_PAN);
-                documentViewController.setViewCursor(DocumentViewController.CURSOR_HAND_OPEN);
-                setCursorOnComponents(DocumentViewController.CURSOR_DEFAULT);
+                documentViewController.setViewCursor(org.icepdf.core.views.DocumentViewController.CURSOR_HAND_OPEN);
+                setCursorOnComponents(org.icepdf.core.views.DocumentViewController.CURSOR_DEFAULT);
             } else if (argToolName == DocumentViewModelImpl.DISPLAY_TOOL_TEXT_SELECTION) {
                 actualToolMayHaveChanged =
                         documentViewController.setToolMode(DocumentViewModelImpl.DISPLAY_TOOL_TEXT_SELECTION);
-                documentViewController.setViewCursor(DocumentViewController.CURSOR_SELECT);
-                setCursorOnComponents(DocumentViewController.CURSOR_DEFAULT);
+                documentViewController.setViewCursor(org.icepdf.core.views.DocumentViewController.CURSOR_SELECT);
+                setCursorOnComponents(org.icepdf.core.views.DocumentViewController.CURSOR_DEFAULT);
             } else if (argToolName == DocumentViewModelImpl.DISPLAY_TOOL_SELECTION) {
                 actualToolMayHaveChanged =
                         documentViewController.setToolMode(DocumentViewModelImpl.DISPLAY_TOOL_SELECTION);
-                documentViewController.setViewCursor(DocumentViewController.CURSOR_SELECT);
-                setCursorOnComponents(DocumentViewController.CURSOR_DEFAULT);
+                documentViewController.setViewCursor(org.icepdf.core.views.DocumentViewController.CURSOR_SELECT);
+                setCursorOnComponents(org.icepdf.core.views.DocumentViewController.CURSOR_DEFAULT);
                 showAnnotationPanel(null);
             } else if (argToolName == DocumentViewModelImpl.DISPLAY_TOOL_LINK_ANNOTATION) {
                 actualToolMayHaveChanged =
                         documentViewController.setToolMode(DocumentViewModelImpl.DISPLAY_TOOL_LINK_ANNOTATION);
-                documentViewController.setViewCursor(DocumentViewController.CURSOR_CROSSHAIR);
-                setCursorOnComponents(DocumentViewController.CURSOR_DEFAULT);
-                showAnnotationPanel(null);
-            } else if (argToolName == DocumentViewModelImpl.DISPLAY_TOOL_HIGHLIGHT_ANNOTATION) {
-                actualToolMayHaveChanged =
-                        documentViewController.setToolMode(DocumentViewModelImpl.DISPLAY_TOOL_HIGHLIGHT_ANNOTATION);
-                documentViewController.setViewCursor(DocumentViewController.CURSOR_SELECT);
-                setCursorOnComponents(DocumentViewController.CURSOR_DEFAULT);
-                showAnnotationPanel(null);
-            } else if (argToolName == DocumentViewModelImpl.DISPLAY_TOOL_STRIKEOUT_ANNOTATION) {
-                actualToolMayHaveChanged =
-                        documentViewController.setToolMode(DocumentViewModelImpl.DISPLAY_TOOL_STRIKEOUT_ANNOTATION);
-                documentViewController.setViewCursor(DocumentViewController.CURSOR_SELECT);
-                setCursorOnComponents(DocumentViewController.CURSOR_DEFAULT);
-                showAnnotationPanel(null);
-            } else if (argToolName == DocumentViewModelImpl.DISPLAY_TOOL_UNDERLINE_ANNOTATION) {
-                actualToolMayHaveChanged =
-                        documentViewController.setToolMode(DocumentViewModelImpl.DISPLAY_TOOL_UNDERLINE_ANNOTATION);
-                documentViewController.setViewCursor(DocumentViewController.CURSOR_SELECT);
-                setCursorOnComponents(DocumentViewController.CURSOR_DEFAULT);
-                showAnnotationPanel(null);
-            } else if (argToolName == DocumentViewModelImpl.DISPLAY_TOOL_LINE_ANNOTATION) {
-                actualToolMayHaveChanged =
-                        documentViewController.setToolMode(DocumentViewModelImpl.DISPLAY_TOOL_LINE_ANNOTATION);
-                documentViewController.setViewCursor(DocumentViewController.CURSOR_CROSSHAIR);
-                setCursorOnComponents(DocumentViewController.CURSOR_DEFAULT);
-                showAnnotationPanel(null);
-            } else if (argToolName == DocumentViewModelImpl.DISPLAY_TOOL_LINE_ARROW_ANNOTATION) {
-                actualToolMayHaveChanged =
-                        documentViewController.setToolMode(DocumentViewModelImpl.DISPLAY_TOOL_LINE_ARROW_ANNOTATION);
-                documentViewController.setViewCursor(DocumentViewController.CURSOR_CROSSHAIR);
-                setCursorOnComponents(DocumentViewController.CURSOR_DEFAULT);
-                showAnnotationPanel(null);
-            } else if (argToolName == DocumentViewModelImpl.DISPLAY_TOOL_SQUARE_ANNOTATION) {
-                actualToolMayHaveChanged =
-                        documentViewController.setToolMode(DocumentViewModelImpl.DISPLAY_TOOL_SQUARE_ANNOTATION);
-                documentViewController.setViewCursor(DocumentViewController.CURSOR_CROSSHAIR);
-                setCursorOnComponents(DocumentViewController.CURSOR_DEFAULT);
-                showAnnotationPanel(null);
-            } else if (argToolName == DocumentViewModelImpl.DISPLAY_TOOL_CIRCLE_ANNOTATION) {
-                actualToolMayHaveChanged =
-                        documentViewController.setToolMode(DocumentViewModelImpl.DISPLAY_TOOL_CIRCLE_ANNOTATION);
-                documentViewController.setViewCursor(DocumentViewController.CURSOR_CROSSHAIR);
-                setCursorOnComponents(DocumentViewController.CURSOR_DEFAULT);
-                showAnnotationPanel(null);
-            } else if (argToolName == DocumentViewModelImpl.DISPLAY_TOOL_INK_ANNOTATION) {
-                actualToolMayHaveChanged =
-                        documentViewController.setToolMode(DocumentViewModelImpl.DISPLAY_TOOL_INK_ANNOTATION);
-                documentViewController.setViewCursor(DocumentViewController.CURSOR_CROSSHAIR);
-                setCursorOnComponents(DocumentViewController.CURSOR_DEFAULT);
-                showAnnotationPanel(null);
-            } else if (argToolName == DocumentViewModelImpl.DISPLAY_TOOL_FREE_TEXT_ANNOTATION) {
-                actualToolMayHaveChanged =
-                        documentViewController.setToolMode(DocumentViewModelImpl.DISPLAY_TOOL_FREE_TEXT_ANNOTATION);
-                documentViewController.setViewCursor(DocumentViewController.CURSOR_CROSSHAIR);
-                setCursorOnComponents(DocumentViewController.CURSOR_DEFAULT);
-                showAnnotationPanel(null);
-            } else if (argToolName == DocumentViewModelImpl.DISPLAY_TOOL_TEXT_ANNOTATION) {
-                actualToolMayHaveChanged =
-                        documentViewController.setToolMode(DocumentViewModelImpl.DISPLAY_TOOL_TEXT_ANNOTATION);
-                documentViewController.setViewCursor(DocumentViewController.CURSOR_CROSSHAIR);
-                setCursorOnComponents(DocumentViewController.CURSOR_DEFAULT);
+                documentViewController.setViewCursor(org.icepdf.core.views.DocumentViewController.CURSOR_SELECT);
+                setCursorOnComponents(org.icepdf.core.views.DocumentViewController.CURSOR_DEFAULT);
                 showAnnotationPanel(null);
             } else if (argToolName == DocumentViewModelImpl.DISPLAY_TOOL_ZOOM_IN) {
                 actualToolMayHaveChanged =
                         documentViewController.setToolMode(
                                 DocumentViewModelImpl.DISPLAY_TOOL_ZOOM_IN);
-                documentViewController.setViewCursor(DocumentViewController.CURSOR_ZOOM_IN);
-                setCursorOnComponents(DocumentViewController.CURSOR_DEFAULT);
-            } else if (argToolName == DocumentViewModelImpl.DISPLAY_TOOL_ZOOM_DYNAMIC) {
+                documentViewController.setViewCursor(org.icepdf.core.views.DocumentViewController.CURSOR_ZOOM_IN);
+                setCursorOnComponents(org.icepdf.core.views.DocumentViewController.CURSOR_DEFAULT);
+            } else if (argToolName == DocumentViewModelImpl.DISPLAY_TOOL_ZOOM_OUT) {
                 actualToolMayHaveChanged =
                         documentViewController.setToolMode(
-                                DocumentViewModelImpl.DISPLAY_TOOL_ZOOM_DYNAMIC);
-                documentViewController.setViewCursor(DocumentViewController.CURSOR_ZOOM_OUT);
-                setCursorOnComponents(DocumentViewController.CURSOR_DEFAULT);
+                                DocumentViewModelImpl.DISPLAY_TOOL_ZOOM_OUT);
+                documentViewController.setViewCursor(org.icepdf.core.views.DocumentViewController.CURSOR_ZOOM_OUT);
+                setCursorOnComponents(org.icepdf.core.views.DocumentViewController.CURSOR_DEFAULT);
             } else if (argToolName == DocumentViewModelImpl.DISPLAY_TOOL_WAIT) {
-                setCursorOnComponents(DocumentViewController.CURSOR_WAIT);
+                setCursorOnComponents(org.icepdf.core.views.DocumentViewController.CURSOR_WAIT);
             } else if (argToolName == DocumentViewModelImpl.DISPLAY_TOOL_NONE) {
-                setCursorOnComponents(DocumentViewController.CURSOR_DEFAULT);
+                setCursorOnComponents(org.icepdf.core.views.DocumentViewController.CURSOR_DEFAULT);
             }
             if (actualToolMayHaveChanged) {
                 reflectToolInToolButtons();
@@ -1517,64 +1326,14 @@ public class SwingController
                 documentViewController.isToolModeSelected(
                         DocumentViewModelImpl.DISPLAY_TOOL_LINK_ANNOTATION
                 ));
-        reflectSelectionInButton(highlightAnnotationToolButton,
-                documentViewController.isToolModeSelected(
-                        DocumentViewModelImpl.DISPLAY_TOOL_HIGHLIGHT_ANNOTATION
-                ));
-        reflectSelectionInButton(highlightAnnotationUtilityToolButton,
-                documentViewController.isToolModeSelected(
-                        DocumentViewModelImpl.DISPLAY_TOOL_HIGHLIGHT_ANNOTATION
-                ));
-        reflectSelectionInButton(strikeOutAnnotationToolButton,
-                documentViewController.isToolModeSelected(
-                        DocumentViewModelImpl.DISPLAY_TOOL_STRIKEOUT_ANNOTATION
-                ));
-        reflectSelectionInButton(underlineAnnotationToolButton,
-                documentViewController.isToolModeSelected(
-                        DocumentViewModelImpl.DISPLAY_TOOL_UNDERLINE_ANNOTATION
-                ));
-        reflectSelectionInButton(lineAnnotationToolButton,
-                documentViewController.isToolModeSelected(
-                        DocumentViewModelImpl.DISPLAY_TOOL_LINE_ANNOTATION
-                ));
-        reflectSelectionInButton(lineArrowAnnotationToolButton,
-                documentViewController.isToolModeSelected(
-                        DocumentViewModelImpl.DISPLAY_TOOL_LINE_ARROW_ANNOTATION
-                ));
-        reflectSelectionInButton(squareAnnotationToolButton,
-                documentViewController.isToolModeSelected(
-                        DocumentViewModelImpl.DISPLAY_TOOL_SQUARE_ANNOTATION
-                ));
-        reflectSelectionInButton(circleAnnotationToolButton,
-                documentViewController.isToolModeSelected(
-                        DocumentViewModelImpl.DISPLAY_TOOL_CIRCLE_ANNOTATION
-                ));
-        reflectSelectionInButton(inkAnnotationToolButton,
-                documentViewController.isToolModeSelected(
-                        DocumentViewModelImpl.DISPLAY_TOOL_INK_ANNOTATION
-                ));
-        reflectSelectionInButton(freeTextAnnotationToolButton,
-                documentViewController.isToolModeSelected(
-                        DocumentViewModelImpl.DISPLAY_TOOL_FREE_TEXT_ANNOTATION
-                ));
-        reflectSelectionInButton(textAnnotationToolButton,
-                documentViewController.isToolModeSelected(
-                        DocumentViewModelImpl.DISPLAY_TOOL_TEXT_ANNOTATION
-                ));
-        reflectSelectionInButton(textAnnotationUtilityToolButton,
-                documentViewController.isToolModeSelected(
-                        DocumentViewModelImpl.DISPLAY_TOOL_TEXT_ANNOTATION
-                ));
         reflectSelectionInButton(zoomInToolButton,
                 documentViewController.isToolModeSelected(
                         DocumentViewModelImpl.DISPLAY_TOOL_ZOOM_IN
                 ));
-        reflectSelectionInButton(zoomDynamicToolButton,
+        reflectSelectionInButton(zoomOutToolButton,
                 documentViewController.isToolModeSelected(
-                        DocumentViewModelImpl.DISPLAY_TOOL_ZOOM_DYNAMIC
+                        DocumentViewModelImpl.DISPLAY_TOOL_ZOOM_OUT
                 ));
-        reflectSelectionInButton(showHideUtilityPaneButton,
-                isUtilityPaneVisible());
     }
 
     /**
@@ -1586,11 +1345,11 @@ public class SwingController
             return;
         }
         reflectSelectionInButton(fitWidthButton,
-                isDocumentFitMode(DocumentViewController.PAGE_FIT_WINDOW_WIDTH));
+                isDocumentFitMode(org.icepdf.core.views.DocumentViewController.PAGE_FIT_WINDOW_WIDTH));
         reflectSelectionInButton(fitHeightButton,
-                isDocumentFitMode(DocumentViewController.PAGE_FIT_WINDOW_HEIGHT));
+                isDocumentFitMode(org.icepdf.core.views.DocumentViewController.PAGE_FIT_WINDOW_HEIGHT));
         reflectSelectionInButton(fitActualSizeButton,
-                isDocumentFitMode(DocumentViewController.PAGE_FIT_ACTUAL_SIZE));
+                isDocumentFitMode(org.icepdf.core.views.DocumentViewController.PAGE_FIT_ACTUAL_SIZE));
     }
 
     /**
@@ -1738,7 +1497,6 @@ public class SwingController
                         pathname);
                 document = null;
                 logger.log(Level.FINE, "Error opening document.", e);
-                e.printStackTrace();
             } catch (PDFSecurityException e) {
                 org.icepdf.ri.util.Resources.showMessageDialog(
                         viewer,
@@ -1759,7 +1517,6 @@ public class SwingController
                         pathname);
                 document = null;
                 logger.log(Level.FINE, "Error opening document.", e);
-                e.printStackTrace();
             } finally {
                 setDisplayTool(DocumentViewModelImpl.DISPLAY_TOOL_PAN);
             }
@@ -2044,7 +1801,7 @@ public class SwingController
         // remember the users last view mode via the properties manager.  Possible
         // values are SinglePage, OnceColumn, TwoColumnLeft, TwoColumRight,
         // TwoPageLeft, TwoPageRight.
-        Object tmp = catalog.getObject(Catalog.PAGELAYOUT_KEY);
+        Object tmp = catalog.getObject("PageLayout");
         if (tmp != null && tmp instanceof Name) {
             String pageLayout = ((Name) tmp).getName();
             int viewType = DocumentViewControllerImpl.ONE_PAGE_VIEW;
@@ -2065,7 +1822,7 @@ public class SwingController
         if (utilityTabbedPane != null) {
             // Page mode by default is UseNone, where other options are, UseOutlines,
             // UseThumbs, FullScreen (ignore), UseOC(ignore), Use Attachements(ignore);
-            tmp = catalog.getObject(Catalog.PAGEMODE_KEY);
+            tmp = catalog.getObject("PageMode");
             if (tmp != null && tmp instanceof Name) {
                 String pageMode = ((Name) tmp).getName();
                 showUtilityPane = pageMode.equalsIgnoreCase("UseOutlines");
@@ -2074,10 +1831,6 @@ public class SwingController
 
         // initiates the view layout model, page coordinates and preferred size
         documentViewController.setDocument(document);
-
-        if (layersPanel != null) {
-            layersPanel.setDocument(document);
-        }
 
         // Refresh the properties manager object if we don't already have one
         // This would be not null if the UI was constructed manually
@@ -2095,12 +1848,12 @@ public class SwingController
         setPageFitMode(PropertiesManager.checkAndStoreIntegerProperty(
                 propertiesManager,
                 PropertiesManager.PROPERTY_DEFAULT_PAGEFIT,
-                DocumentViewController.PAGE_FIT_NONE), false);
+                org.icepdf.core.views.DocumentViewController.PAGE_FIT_NONE), false);
 
         // Apply any ViewerPreferences from the doc
         applyViewerPreferences(catalog, propertiesManager);
 
-        // Only show utility panel if there is an outline or layers
+        // Only show utility panel if there is an outline
         OutlineItem item = null;
         Outlines outlines = document.getCatalog().getOutlines();
         if (outlines != null && outlinesTree != null)
@@ -2133,20 +1886,6 @@ public class SwingController
             }
         }
         setUtilityPaneVisible(showUtilityPane);
-
-        // check if there are layers and enable/disable the tab as needed
-        OptionalContent optionalContent = document.getCatalog().getOptionalContent();
-        if (layersPanel != null) {
-            if (optionalContent == null || optionalContent.getOrder() == null) {
-                utilityTabbedPane.setEnabledAt(
-                        utilityTabbedPane.indexOfComponent(layersPanel),
-                        false);
-            } else {
-                utilityTabbedPane.setEnabledAt(
-                        utilityTabbedPane.indexOfComponent(layersPanel),
-                        true);
-            }
-        }
 
         // add to the main pdfContentPanel the document peer
         if (viewer != null) {
@@ -2187,10 +1926,6 @@ public class SwingController
 
         if (thumbnailsPanel != null)
             thumbnailsPanel.setDocument(null);
-
-        if (layersPanel != null) {
-            layersPanel.setDocument(null);
-        }
 
         // set the default cursor.  
         documentViewController.closeDocument();
@@ -2326,22 +2061,10 @@ public class SwingController
 
         panToolButton = null;
         zoomInToolButton = null;
-        zoomDynamicToolButton = null;
+        zoomOutToolButton = null;
         textSelectToolButton = null;
         selectToolButton = null;
         linkAnnotationToolButton = null;
-        highlightAnnotationToolButton = null;
-        highlightAnnotationUtilityToolButton = null;
-        underlineAnnotationToolButton = null;
-        strikeOutAnnotationToolButton = null;
-        lineAnnotationToolButton = null;
-        lineArrowAnnotationToolButton = null;
-        squareAnnotationToolButton = null;
-        circleAnnotationToolButton = null;
-        inkAnnotationToolButton = null;
-        freeTextAnnotationToolButton = null;
-        textAnnotationToolButton = null;
-        textAnnotationUtilityToolButton = null;
 
         fontEngineButton = null;
 
@@ -2359,9 +2082,6 @@ public class SwingController
         if (thumbnailsPanel != null) {
             thumbnailsPanel.dispose();
             thumbnailsPanel = null;
-        }
-        if (layersPanel != null) {
-            layersPanel.dispose();
         }
         if (utilityTabbedPane != null) {
             utilityTabbedPane.removeAll();
@@ -2409,16 +2129,6 @@ public class SwingController
                     "viewer.dialog.saveAs.noPermission.title",
                     "viewer.dialog.saveAs.noPermission.msg");
             return;
-        }
-
-        if (document.getStateManager().isChanged() &&
-                !document.foundIncrementalUpdater) {
-            org.icepdf.ri.util.Resources.showMessageDialog(
-                    viewer,
-                    JOptionPane.INFORMATION_MESSAGE,
-                    messageBundle,
-                    "viewer.dialog.saveAs.noUpdates.title",
-                    "viewer.dialog.saveAs.noUpdates.msg");
         }
 
         // Create and display a file saving dialog
@@ -2492,7 +2202,7 @@ public class SwingController
                 // save file stream
                 try {
                     // If we don't know where the file came from, it's because we
-                    //  used Document.contentStream() or Document.setByteArray(),
+                    //  used Document.setInputStream() or Document.setByteArray(),
                     //  or we used setUrl() with disk caching disabled.
                     //  with no path or URL as the origin.
                     // Note that we used to detect scenarios where we could access
@@ -2718,35 +2428,9 @@ public class SwingController
      * @see #setWindowManagementCallback
      * @see #getWindowManagementCallback
      */
-    public boolean saveChangesDialog() {
-        // check if document changes have been made, if so ask the user if they
-        // want to save the changes.
-        if (document != null) {
-            boolean documentChanges = document.getStateManager().isChanged();
-            if (documentChanges && document.foundIncrementalUpdater) {
-
-                Object[] colorArgument = new Object[]{document.getDocumentOrigin()};
-                MessageFormat formatter = new MessageFormat(
-                        messageBundle.getString("viewer.dialog.saveOnClose.noUpdates.msg"));
-                String dialogMessage = formatter.format(colorArgument);
-
-                int res = JOptionPane.showConfirmDialog(viewer,
-                        dialogMessage,
-                        messageBundle.getString("viewer.dialog.saveOnClose.noUpdates.title"),
-                        JOptionPane.YES_NO_CANCEL_OPTION);
-                if (res == JOptionPane.OK_OPTION) {
-                    // start save as process.
-                    saveFile();
-                    // fall though and close window.
-                } else if (res == JOptionPane.NO_OPTION) {
-                    // nothing to do, just fall through.
-                } else if (res == JOptionPane.CANCEL_OPTION) {
-                    // supress the close action
-                    return true;
-                }
-            }
-        }
-        return false;
+    public void exit() {
+        if (windowManagementCallback != null)
+            windowManagementCallback.quit(this, viewer, null);
     }
 
     /**
@@ -2839,10 +2523,6 @@ public class SwingController
      * Sets the default MediaSizeName and creates an new instance of the
      * the PrintHelp with the new media size.  The media size is also
      * persisted to the PropertiesManager.
-     * <p/>
-     * <b/>Note:</b> this method should only be called after a valid file or
-     * file stream has been loaded by the controller otherwise a null pointer
-     * will result.
      *
      * @param mediaSize MediaSizeName constant of paper size to print to.
      */
@@ -2913,7 +2593,7 @@ public class SwingController
         canPrint = printHelper.setupPrintService(
                 0,
                 document.getNumberOfPages() - 1,
-                viewModel.getPrintCopies(),           // default number of copies.
+                1,           // default number of copies.
                 viewModel.isShrinkToPrintableArea(),        // shrink to printable area
                 withDialog  // show print dialogl
         );
@@ -3104,8 +2784,8 @@ public class SwingController
                         ((URIAction) action).getURI());
             } else {
                 Library library = action.getLibrary();
-                HashMap entries = action.getEntries();
-                dest = new Destination(library, library.getObject(entries, Destination.D_KEY));
+                Hashtable entries = action.getEntries();
+                dest = new Destination(library, library.getObject(entries, "D"));
             }
         }
 
@@ -3169,7 +2849,7 @@ public class SwingController
         // update gui
         reflectZoomInZoomComboBox();    // Might change fit value
         if (!becauseOfValidFitMode)
-            setPageFitMode(DocumentViewController.PAGE_FIT_NONE, false);
+            setPageFitMode(org.icepdf.core.views.DocumentViewController.PAGE_FIT_NONE, false);
     }
 
     /**
@@ -3181,8 +2861,10 @@ public class SwingController
         PageTree pageTree = getPageTree();
         if (pageTree == null)
             return false;
-        Page page = pageTree.getPage(documentViewController.getCurrentPageIndex());
-        return page != null;
+        Page page = pageTree.getPage(documentViewController.getCurrentPageIndex(), this);
+        boolean isCurrentPage = page != null;
+        pageTree.releasePage(page, this);
+        return isCurrentPage;
     }
 
     /**
@@ -3205,6 +2887,7 @@ public class SwingController
      */
     public void showPage(int nPage) {
         if (nPage >= 0 && nPage < getPageTree().getNumberOfPages()) {
+            releaseOldPage();
             documentViewController.setCurrentPageIndex(nPage);
             updateDocumentView();
         }
@@ -3230,9 +2913,16 @@ public class SwingController
         if (nPage < 0)
             nPage = 0;
         if (nPage != currPage) {
+            releaseOldPage();
             documentViewController.setCurrentPageIndex(nPage);
             updateDocumentView();
         }
+    }
+
+    private void releaseOldPage() {
+        PageTree pages = getPageTree();
+        if (pages != null)
+            pages.releasePage(documentViewController.getCurrentPageIndex(), this);
     }
 
     public void updateDocumentView() {
@@ -3361,14 +3051,11 @@ public class SwingController
     }
 
     public void setDocumentToolMode(final int toolType) {
-        // nothing to do tool should already be setup.
         if (documentViewController.isToolModeSelected(toolType))
             return;
 
-        // set the tool mode
         documentViewController.setToolMode(toolType);
 
-        // update the button state
         reflectToolInToolButtons();
     }
 
@@ -3468,7 +3155,7 @@ public class SwingController
      * @param selectedAnnotation the annotation to show in the panel
      * @see #setUtilityPaneVisible(boolean)
      */
-    public void showAnnotationPanel(AnnotationComponent selectedAnnotation) {
+    public void showAnnotationPanel(AnnotationComponentImpl selectedAnnotation) {
         if (utilityTabbedPane != null && annotationPanel != null) {
             // Pass the selected annotation to the link panel
             if (selectedAnnotation != null) {
@@ -3673,10 +3360,7 @@ public class SwingController
                 };
                 SwingUtilities.invokeLater(doSwingWork);
             } else if (source == closeMenuItem) {
-                boolean isCanceled = saveChangesDialog();
-                if (!isCanceled) {
-                    closeDocument();
-                }
+                closeDocument();
             } else if (source == saveAsFileMenuItem || source == saveAsFileButton) {
                 Runnable doSwingWork = new Runnable() {
                     public void run() {
@@ -3699,10 +3383,7 @@ public class SwingController
                 };
                 SwingUtilities.invokeLater(doSwingWork);
             } else if (source == exitMenuItem) {
-                boolean isCanceled = saveChangesDialog();
-                if (!isCanceled && windowManagementCallback != null) {
-                    windowManagementCallback.disposeWindow(this, viewer, null);
-                }
+                exit();
             } else if (source == showHideToolBarMenuItem) {
                 toggleToolBarVisibility();
             } else if (source == minimiseAllMenuItem) {
@@ -3810,15 +3491,15 @@ public class SwingController
                     } else if (source == fitActualSizeMenuItem) {
                         // Clicking only seems to invoke an itemStateChanged() event,
                         //  so this is probably redundant
-                        setPageFitMode(DocumentViewController.PAGE_FIT_ACTUAL_SIZE, false);
+                        setPageFitMode(org.icepdf.core.views.DocumentViewController.PAGE_FIT_ACTUAL_SIZE, false);
                     } else if (source == fitPageMenuItem) {
                         // Clicking only seems to invoke an itemStateChanged() event
                         //  so this is probably redundant
-                        setPageFitMode(DocumentViewController.PAGE_FIT_WINDOW_HEIGHT, false);
+                        setPageFitMode(org.icepdf.core.views.DocumentViewController.PAGE_FIT_WINDOW_HEIGHT, false);
                     } else if (source == fitWidthMenuItem) {
                         // Clicking only seems to invoke an itemStateChanged() event
                         //  so this is probably redundant
-                        setPageFitMode(DocumentViewController.PAGE_FIT_WINDOW_WIDTH, false);
+                        setPageFitMode(org.icepdf.core.views.DocumentViewController.PAGE_FIT_WINDOW_WIDTH, false);
                     } else if (source == zoomInMenuItem || source == zoomInButton) {
                         zoomIn();
                     } else if (source == zoomOutMenuItem || source == zoomOutButton) {
@@ -3924,21 +3605,21 @@ public class SwingController
             if (source == zoomComboBox) {
                 if (e.getStateChange() == ItemEvent.SELECTED) {
                     setZoomFromZoomComboBox();
-                    // Since combo box is an entry component, we don't force focus to the document
+                    // Since combobox is an entry component, we don't force focus to the document
                 }
             } else if (source == fitActualSizeButton) {
                 if (e.getStateChange() == ItemEvent.SELECTED) {
-                    setPageFitMode(DocumentViewController.PAGE_FIT_ACTUAL_SIZE, false);
+                    setPageFitMode(org.icepdf.core.views.DocumentViewController.PAGE_FIT_ACTUAL_SIZE, false);
                     doSetFocus = true;
                 }
             } else if (source == fitHeightButton) {
                 if (e.getStateChange() == ItemEvent.SELECTED) {
-                    setPageFitMode(DocumentViewController.PAGE_FIT_WINDOW_HEIGHT, false);
+                    setPageFitMode(org.icepdf.core.views.DocumentViewController.PAGE_FIT_WINDOW_HEIGHT, false);
                     doSetFocus = true;
                 }
             } else if (source == fitWidthButton) {
                 if (e.getStateChange() == ItemEvent.SELECTED) {
-                    setPageFitMode(DocumentViewController.PAGE_FIT_WINDOW_WIDTH, false);
+                    setPageFitMode(org.icepdf.core.views.DocumentViewController.PAGE_FIT_WINDOW_WIDTH, false);
                     doSetFocus = true;
                 }
             } else if (source == fontEngineButton) {
@@ -3950,27 +3631,11 @@ public class SwingController
                     documentViewController.getDocumentView().getViewModel().invalidate();
                     doSetFocus = true;
                 }
-            }
-            // tool selection - a call to setDocumentToolMode will generate
-            // the property change even which the view and child components
-            // will adjust to.
 
-            else if (source == panToolButton) {
+            } else if (source == panToolButton) {
                 if (e.getStateChange() == ItemEvent.SELECTED) {
                     tool = DocumentViewModelImpl.DISPLAY_TOOL_PAN;
                     setDocumentToolMode(DocumentViewModelImpl.DISPLAY_TOOL_PAN);
-                    doSetFocus = true;
-                }
-            } else if (source == zoomInToolButton) {
-                if (e.getStateChange() == ItemEvent.SELECTED) {
-                    tool = DocumentViewModelImpl.DISPLAY_TOOL_ZOOM_IN;
-                    setDocumentToolMode(DocumentViewModelImpl.DISPLAY_TOOL_ZOOM_IN);
-                    doSetFocus = true;
-                }
-            } else if (source == zoomDynamicToolButton) {
-                if (e.getStateChange() == ItemEvent.SELECTED) {
-                    tool = DocumentViewModelImpl.DISPLAY_TOOL_ZOOM_DYNAMIC;
-                    setDocumentToolMode(DocumentViewModelImpl.DISPLAY_TOOL_ZOOM_DYNAMIC);
                     doSetFocus = true;
                 }
             } else if (source == textSelectToolButton) {
@@ -3979,9 +3644,7 @@ public class SwingController
                     setDocumentToolMode(DocumentViewModelImpl.DISPLAY_TOOL_TEXT_SELECTION);
                     doSetFocus = true;
                 }
-            }
-            // annotations selection and creation tools.
-            else if (source == selectToolButton) {
+            } else if (source == selectToolButton) {
                 if (e.getStateChange() == ItemEvent.SELECTED) {
                     tool = DocumentViewModelImpl.DISPLAY_TOOL_SELECTION;
                     setDocumentToolMode(DocumentViewModelImpl.DISPLAY_TOOL_SELECTION);
@@ -3991,61 +3654,19 @@ public class SwingController
                     tool = DocumentViewModelImpl.DISPLAY_TOOL_LINK_ANNOTATION;
                     setDocumentToolMode(DocumentViewModelImpl.DISPLAY_TOOL_LINK_ANNOTATION);
                 }
-            } else if (source == highlightAnnotationToolButton ||
-                    source == highlightAnnotationUtilityToolButton) {
+            } else if (source == zoomInToolButton) {
                 if (e.getStateChange() == ItemEvent.SELECTED) {
-                    tool = DocumentViewModelImpl.DISPLAY_TOOL_HIGHLIGHT_ANNOTATION;
-                    setDocumentToolMode(DocumentViewModelImpl.DISPLAY_TOOL_HIGHLIGHT_ANNOTATION);
+                    tool = DocumentViewModelImpl.DISPLAY_TOOL_ZOOM_IN;
+                    setDocumentToolMode(DocumentViewModelImpl.DISPLAY_TOOL_ZOOM_IN);
+                    doSetFocus = true;
                 }
-            } else if (source == strikeOutAnnotationToolButton) {
+            } else if (source == zoomOutToolButton) {
                 if (e.getStateChange() == ItemEvent.SELECTED) {
-                    tool = DocumentViewModelImpl.DISPLAY_TOOL_STRIKEOUT_ANNOTATION;
-                    setDocumentToolMode(DocumentViewModelImpl.DISPLAY_TOOL_STRIKEOUT_ANNOTATION);
+                    tool = DocumentViewModelImpl.DISPLAY_TOOL_ZOOM_OUT;
+                    setDocumentToolMode(DocumentViewModelImpl.DISPLAY_TOOL_ZOOM_OUT);
+                    doSetFocus = true;
                 }
-            } else if (source == underlineAnnotationToolButton) {
-                if (e.getStateChange() == ItemEvent.SELECTED) {
-                    tool = DocumentViewModelImpl.DISPLAY_TOOL_UNDERLINE_ANNOTATION;
-                    setDocumentToolMode(DocumentViewModelImpl.DISPLAY_TOOL_UNDERLINE_ANNOTATION);
-                }
-            } else if (source == lineAnnotationToolButton) {
-                if (e.getStateChange() == ItemEvent.SELECTED) {
-                    tool = DocumentViewModelImpl.DISPLAY_TOOL_LINE_ANNOTATION;
-                    setDocumentToolMode(DocumentViewModelImpl.DISPLAY_TOOL_LINE_ANNOTATION);
-                }
-            } else if (source == lineArrowAnnotationToolButton) {
-                if (e.getStateChange() == ItemEvent.SELECTED) {
-                    tool = DocumentViewModelImpl.DISPLAY_TOOL_LINE_ARROW_ANNOTATION;
-                    setDocumentToolMode(DocumentViewModelImpl.DISPLAY_TOOL_LINE_ARROW_ANNOTATION);
-                }
-            } else if (source == squareAnnotationToolButton) {
-                if (e.getStateChange() == ItemEvent.SELECTED) {
-                    tool = DocumentViewModelImpl.DISPLAY_TOOL_SQUARE_ANNOTATION;
-                    setDocumentToolMode(DocumentViewModelImpl.DISPLAY_TOOL_SQUARE_ANNOTATION);
-                }
-            } else if (source == circleAnnotationToolButton) {
-                if (e.getStateChange() == ItemEvent.SELECTED) {
-                    tool = DocumentViewModelImpl.DISPLAY_TOOL_CIRCLE_ANNOTATION;
-                    setDocumentToolMode(DocumentViewModelImpl.DISPLAY_TOOL_CIRCLE_ANNOTATION);
-                }
-            } else if (source == inkAnnotationToolButton) {
-                if (e.getStateChange() == ItemEvent.SELECTED) {
-                    tool = DocumentViewModelImpl.DISPLAY_TOOL_INK_ANNOTATION;
-                    setDocumentToolMode(DocumentViewModelImpl.DISPLAY_TOOL_INK_ANNOTATION);
-                }
-            } else if (source == freeTextAnnotationToolButton) {
-                if (e.getStateChange() == ItemEvent.SELECTED) {
-                    tool = DocumentViewModelImpl.DISPLAY_TOOL_FREE_TEXT_ANNOTATION;
-                    setDocumentToolMode(DocumentViewModelImpl.DISPLAY_TOOL_FREE_TEXT_ANNOTATION);
-                }
-            } else if (source == textAnnotationToolButton ||
-                    source == textAnnotationUtilityToolButton) {
-                if (e.getStateChange() == ItemEvent.SELECTED) {
-                    tool = DocumentViewModelImpl.DISPLAY_TOOL_TEXT_ANNOTATION;
-                    setDocumentToolMode(DocumentViewModelImpl.DISPLAY_TOOL_TEXT_ANNOTATION);
-                }
-            }
-            // page view events,  changes the page layout component.
-            else if (source == facingPageViewNonContinuousButton) {
+            } else if (source == facingPageViewNonContinuousButton) {
                 if (e.getStateChange() == ItemEvent.SELECTED) {
                     setPageViewMode(
                             DocumentViewControllerImpl.TWO_PAGE_RIGHT_VIEW,
@@ -4141,20 +3762,15 @@ public class SwingController
         JFrame v = viewer;
 
         // assign view properties so that they can be saved on close
-        DocumentViewController viewControl = getDocumentViewController();
+        org.icepdf.core.views.DocumentViewController viewControl = getDocumentViewController();
         Properties viewProperties = new Properties();
         viewProperties.setProperty(PropertiesManager.PROPERTY_DEFAULT_PAGEFIT, String.valueOf(viewControl.getFitMode()));
         viewProperties.setProperty("document.viewtype", String.valueOf(viewControl.getViewMode()));
 
-        // save changes and close window
-        boolean cancelled = saveChangesDialog();
-        if (!cancelled) {
-            // dispose the document and other resources.
-            dispose();
+        dispose();
 
-            if (wc != null) {
-                wc.disposeWindow(this, v, viewProperties);
-            }
+        if (wc != null) {
+            wc.disposeWindow(this, v, viewProperties);
         }
     }
 
@@ -4325,13 +3941,13 @@ public class SwingController
                     print(true);
                 } else if (c == KeyEventConstants.KEY_CODE_FIT_ACTUAL &&
                         m == KeyEventConstants.MODIFIER_FIT_ACTUAL) {
-                    setPageFitMode(DocumentViewController.PAGE_FIT_ACTUAL_SIZE, false);
+                    setPageFitMode(org.icepdf.core.views.DocumentViewController.PAGE_FIT_ACTUAL_SIZE, false);
                 } else if (c == KeyEventConstants.KEY_CODE_FIT_PAGE &&
                         m == KeyEventConstants.MODIFIER_FIT_PAGE) {
-                    setPageFitMode(DocumentViewController.PAGE_FIT_WINDOW_HEIGHT, false);
+                    setPageFitMode(org.icepdf.core.views.DocumentViewController.PAGE_FIT_WINDOW_HEIGHT, false);
                 } else if (c == KeyEventConstants.KEY_CODE_FIT_WIDTH &&
                         m == KeyEventConstants.MODIFIER_FIT_WIDTH) {
-                    setPageFitMode(DocumentViewController.PAGE_FIT_WINDOW_WIDTH, false);
+                    setPageFitMode(org.icepdf.core.views.DocumentViewController.PAGE_FIT_WINDOW_WIDTH, false);
                 } else if (c == KeyEventConstants.KEY_CODE_ZOOM_IN &&
                         m == KeyEventConstants.MODIFIER_ZOOM_IN) {
                     zoomIn();
@@ -4434,17 +4050,16 @@ public class SwingController
             setEnabled(deselectAllMenuItem, canExtract);
             setEnabled(copyMenuItem, canExtract);
         }
-        // annotation is selected or has focus
-        else if (propertyName.equals(PropertyConstants.ANNOTATION_SELECTED) ||
-                propertyName.equals(PropertyConstants.ANNOTATION_FOCUS_GAINED)) {
+        // annotation is selected
+        else if (propertyName.equals(PropertyConstants.ANNOTATION_SELECTED)) {
             // enable the delete menu
             setEnabled(deleteMenuItem, true);
             // get the current selected tool, we only care about the select tool or
             // link annotation tool.
             if (documentViewController.getToolMode() ==
                     DocumentViewModelImpl.DISPLAY_TOOL_SELECTION) {
-                AnnotationComponent annotationComponent =
-                        (AnnotationComponent) newValue;
+                AnnotationComponentImpl annotationComponent =
+                        (AnnotationComponentImpl) newValue;
                 if (annotationComponent != null &&
                         annotationComponent.getAnnotation() != null) {
                     // set the annotationPane with the new annotation component

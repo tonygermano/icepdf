@@ -1,16 +1,15 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.pobjects.security;
@@ -20,8 +19,9 @@ import org.icepdf.core.pobjects.Name;
 import org.icepdf.core.pobjects.StringObject;
 import org.icepdf.core.util.Library;
 
-import java.util.HashMap;
-import java.util.List;
+import java.util.Hashtable;
+import java.util.Vector;
+
 
 /**
  * <p>The EncryptionDictionary class is used to hold values needed by the Standard
@@ -277,26 +277,9 @@ import java.util.List;
  */
 public class EncryptionDictionary extends Dictionary {
 
-    public static final Name FILTER_KEY = new Name("Filter");
-    public static final Name SUB_FILTER_KEY = new Name("SubFilter");
-    public static final Name V_KEY = new Name("V");
-    public static final Name LENGTH_KEY = new Name("Length");
-    public static final Name R_KEY = new Name("R");
-    public static final Name O_KEY = new Name("O");
-    public static final Name U_KEY = new Name("U");
-    public static final Name P_KEY = new Name("P");
-    public static final Name CF_KEY = new Name("CF");
-    public static final Name STMF_KEY = new Name("StmF");
-    public static final Name STRF_KEY = new Name("StrF");
-    public static final Name EEF_KEY = new Name("EEF");
-    public static final Name OE_KEY = new Name("OE");
-    public static final Name UE_KEY = new Name("UE");
-    public static final Name PERMS_KEY = new Name("Perms");
-    public static final Name ENCRYPT_METADATA_KEY = new Name("EncryptMetadata");
-
     // File ID,  generated when document is created, first index used by
     // encryption algorithms
-    private List fileID = null;
+    private Vector fileID = null;
 
     private CryptFilter cryptFilter;
 
@@ -314,7 +297,7 @@ public class EncryptionDictionary extends Dictionary {
      * @param fileID               Vector containing the two file ID values originally
      *                             parsed from the Trailer reference.
      */
-    public EncryptionDictionary(Library lib, HashMap encryptionDictionary, List fileID) {
+    public EncryptionDictionary(Library lib, Hashtable encryptionDictionary, Vector fileID) {
         super(lib, encryptionDictionary);
         this.entries = encryptionDictionary;
         this.fileID = fileID;
@@ -325,7 +308,7 @@ public class EncryptionDictionary extends Dictionary {
      *
      * @return vector containing two values that represent the file ID
      */
-    public List getFileID() {
+    public Vector getFileID() {
         return fileID;
     }
 
@@ -338,8 +321,8 @@ public class EncryptionDictionary extends Dictionary {
      *
      * @return handler name.
      */
-    public Name getPreferredSecurityHandlerName() {
-        return library.getName(entries, FILTER_KEY);
+    public String getPreferredSecurityHandlerName() {
+        return library.getName(entries, "Filter");
     }
 
     /**
@@ -347,8 +330,8 @@ public class EncryptionDictionary extends Dictionary {
      *
      * @return handler sub-name.
      */
-    public Name getPreferredSecurityHandlerSubName() {
-        return library.getName(entries, SUB_FILTER_KEY);
+    public String getPreferredSecurityHandlerSubName() {
+        return library.getName(entries, "SubFilter");
     }
 
     /**
@@ -374,7 +357,7 @@ public class EncryptionDictionary extends Dictionary {
      * @return encryption version.
      */
     public int getVersion() {
-        return library.getInt(entries, V_KEY);
+        return library.getInt(entries, "V");
     }
 
     /**
@@ -384,7 +367,7 @@ public class EncryptionDictionary extends Dictionary {
      */
     public int getKeyLength() {
         int length = 40;
-        int len = library.getInt(entries, LENGTH_KEY);
+        int len = library.getInt(entries, "Length");
         if (len != 0) {
             length = len;
         }
@@ -401,7 +384,7 @@ public class EncryptionDictionary extends Dictionary {
      * @return revision number.
      */
     public int getRevisionNumber() {
-        return library.getInt(entries, R_KEY);
+        return library.getInt(entries, "R");
     }
 
     /**
@@ -410,7 +393,7 @@ public class EncryptionDictionary extends Dictionary {
      * @return 32-byte string representing the key O.
      */
     public String getBigO() {
-        Object tmp = library.getObject(entries, O_KEY);
+        Object tmp = library.getObject(entries, "O");
         if (tmp instanceof StringObject) {
             return ((StringObject) tmp).getLiteralString();
         } else {
@@ -424,9 +407,9 @@ public class EncryptionDictionary extends Dictionary {
      * @return 32-byte string representing the key U.
      */
     public String getBigU() {
-        Object tmp = library.getObject(entries, U_KEY);
+        Object tmp = library.getObject(entries, "U");
         if (tmp instanceof StringObject) {
-            return ((StringObject) tmp).getLiteralString();
+            return ((StringObject) library.getObject(entries, "U")).getLiteralString();
         } else {
             return null;
         }
@@ -439,7 +422,7 @@ public class EncryptionDictionary extends Dictionary {
      * @return return flag specifying user access.
      */
     public int getPermissions() {
-        return library.getInt(entries, P_KEY);
+        return library.getInt(entries, "P");
     }
 
 
@@ -458,7 +441,7 @@ public class EncryptionDictionary extends Dictionary {
      */
     public CryptFilter getCryptFilter() {
         if (cryptFilter == null) {
-            HashMap tmp = (HashMap) library.getObject(entries, CF_KEY);
+            Hashtable tmp = (Hashtable) library.getObject(entries, "CF");
             if (tmp != null) {
                 cryptFilter = new CryptFilter(library, tmp);
                 return cryptFilter;
@@ -482,7 +465,7 @@ public class EncryptionDictionary extends Dictionary {
      * @return name of the default stream filter name.
      */
     public Name getStmF() {
-        Object tmp = library.getObject(entries, STMF_KEY);
+        Object tmp = library.getObject(entries, "StmF");
         if (tmp != null && tmp instanceof Name) {
             return (Name) tmp;
         }
@@ -500,8 +483,8 @@ public class EncryptionDictionary extends Dictionary {
      *
      * @return name of the default string filter name.
      */
-    public Name getStrF() {
-        Object tmp = library.getObject(entries, STRF_KEY);
+     public Name getStrF() {
+        Object tmp = library.getObject(entries, "StrF");
         if (tmp != null && tmp instanceof Name) {
             return (Name) tmp;
         }
@@ -521,11 +504,11 @@ public class EncryptionDictionary extends Dictionary {
      * this entry is not present, and the embedded file stream does not contain
      * a crypt filter specifier, the stream shall be encrypted using the default
      * stream crypt filter specified by StmF.
-     * <p/>
+     *
      * EFF:name
      */
     public Name getEEF() {
-        Object tmp = library.getObject(entries, EEF_KEY);
+        Object tmp = library.getObject(entries, "EEF");
         if (tmp != null && tmp instanceof Name) {
             return (Name) tmp;
         }
@@ -540,9 +523,9 @@ public class EncryptionDictionary extends Dictionary {
      * @return 32-byte string representing the key OE.
      */
     public String getBigOE() {
-        Object tmp = library.getObject(entries, OE_KEY);
+        Object tmp = library.getObject(entries, "OE");
         if (tmp instanceof StringObject) {
-            return ((StringObject) tmp).getLiteralString();
+            return ((StringObject) library.getObject(entries, "OE")).getLiteralString();
         } else {
             return null;
         }
@@ -555,9 +538,9 @@ public class EncryptionDictionary extends Dictionary {
      * @return 32-byte string representing the key UE.
      */
     public String getBigUE() {
-        Object tmp = library.getObject(entries, UE_KEY);
+        Object tmp = library.getObject(entries, "UE");
         if (tmp instanceof StringObject) {
-            return ((StringObject) tmp).getLiteralString();
+            return ((StringObject) library.getObject(entries, "UE")).getLiteralString();
         } else {
             return null;
         }
@@ -570,9 +553,9 @@ public class EncryptionDictionary extends Dictionary {
      * @return 16-byte string representing the key Perms.
      */
     public String getPerms() {
-        Object tmp = library.getObject(entries, PERMS_KEY);
+        Object tmp = library.getObject(entries, "Perms");
         if (tmp instanceof StringObject) {
-            return ((StringObject) tmp).getLiteralString();
+            return ((StringObject) library.getObject(entries, "Perms")).getLiteralString();
         } else {
             return null;
         }
@@ -586,7 +569,7 @@ public class EncryptionDictionary extends Dictionary {
      * @return true if document-level metadata is encrypted
      */
     public boolean isEncryptMetaData() {
-        return library.getBoolean(entries, ENCRYPT_METADATA_KEY);
+        return library.getBoolean(entries, "EncryptMetadata");
     }
 
     protected boolean isAuthenticatedUserPassword() {
@@ -606,8 +589,8 @@ public class EncryptionDictionary extends Dictionary {
     }
 
     /**
-     * Class utility methods
-     */
+ * Class utility methods
+ */
 
     /**
      * Gets any dictionary key specified by the key parameter.
@@ -624,7 +607,7 @@ public class EncryptionDictionary extends Dictionary {
      *
      * @return named based hash of all encryption properties.
      */
-    public HashMap getEntries() {
+    public Hashtable getEntries() {
         return entries;
     }
 

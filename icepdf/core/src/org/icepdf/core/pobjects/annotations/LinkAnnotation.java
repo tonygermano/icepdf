@@ -1,27 +1,24 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.pobjects.annotations;
 
-import org.icepdf.core.pobjects.*;
+import org.icepdf.core.pobjects.Destination;
+import org.icepdf.core.pobjects.Name;
 import org.icepdf.core.util.Library;
 
-import java.awt.*;
-import java.awt.geom.AffineTransform;
-import java.util.HashMap;
-
+import java.util.Hashtable;
 
 /**
  * <h2>Refer to: 8.4.5 Annotation Types</h2>
@@ -74,25 +71,25 @@ public class LinkAnnotation extends Annotation {
     /**
      * Indicates that the annotation has no highlight effect.
      */
-    public static final Name HIGHLIGHT_NONE = new Name("N");
+    public static final String HIGHLIGHT_NONE = "N";
 
     /**
      * Indicates that the annotation rectangle colours should be inverted for
      * its highlight effect.
      */
-    public static final Name HIGHLIGHT_INVERT = new Name("I");
+    public static final String HIGHLIGHT_INVERT = "I";
 
     /**
      * Indicates that the annotation rectangle border should be inverted for its
      * highlight effect.
      */
-    public static final Name HIGHLIGHT_OUTLINE = new Name("O");
+    public static final String HIGHLIGHT_OUTLINE = "O";
 
     /**
      * Indicates that the annotation rectangle border should be pushed below the
      * surface of th page.
      */
-    public static final Name HIGHLIGHT_PUSH = new Name("P");
+    public static final String HIGHLIGHT_PUSH = "P";
 
     /**
      * Creates a new instance of a LinkAnnotation.
@@ -100,45 +97,9 @@ public class LinkAnnotation extends Annotation {
      * @param l document library.
      * @param h dictionary entries.
      */
-    public LinkAnnotation(Library l, HashMap h) {
+    public LinkAnnotation(Library l, Hashtable h) {
         super(l, h);
     }
-
-    /**
-     * Gets an instance of a LinkAnnotation that has valid Object Reference.
-     *
-     * @param library document library
-     * @param rect    bounding rectangle in user space
-     * @return new LinkAnnotation Instance.
-     */
-    public static LinkAnnotation getInstance(Library library,
-                                             Rectangle rect) {
-        // state manager
-        StateManager stateManager = library.getStateManager();
-
-        // create a new entries to hold the annotation properties
-        HashMap<Name, Object> entries = new HashMap<Name, Object>();
-        // set default link annotation values.
-        entries.put(Dictionary.TYPE_KEY, Annotation.TYPE_VALUE);
-        entries.put(Dictionary.SUBTYPE_KEY, Annotation.SUBTYPE_LINK);
-        // coordinates
-        if (rect != null) {
-            entries.put(Annotation.RECTANGLE_KEY,
-                    PRectangle.getPRectangleVector(rect));
-        } else {
-            entries.put(Annotation.RECTANGLE_KEY, new Rectangle(10, 10, 50, 100));
-        }
-        // write out the default highlight state.
-        entries.put(HIGHLIGHT_MODE_KEY, HIGHLIGHT_INVERT);
-
-        // create the new instance
-        LinkAnnotation linkAnnotation = new LinkAnnotation(library, entries);
-        linkAnnotation.setPObjectReference(stateManager.getNewReferencNumber());
-        linkAnnotation.setNew(true);
-
-        return linkAnnotation;
-    }
-
 
     /**
      * <p>Gets the link annotations highlight mode (visual effect)taht should
@@ -148,15 +109,15 @@ public class LinkAnnotation extends Annotation {
      * @return one of the predefined highlight effects, HIGHLIGHT_NONE,
      *         HIGHLIGHT_OUTLINE or HIGHLIGHT_PUSH.
      */
-    public Name getHighlightMode() {
+    public String getHighlightMode() {
         Object possibleName = getObject(HIGHLIGHT_MODE_KEY);
         if (possibleName instanceof Name) {
             Name name = (Name) possibleName;
-            if (HIGHLIGHT_NONE.equals(name)) {
+            if (name.getName().equalsIgnoreCase(HIGHLIGHT_NONE)) {
                 return HIGHLIGHT_NONE;
-            } else if (HIGHLIGHT_OUTLINE.equals(name)) {
+            } else if (name.getName().equalsIgnoreCase(HIGHLIGHT_OUTLINE)) {
                 return HIGHLIGHT_OUTLINE;
-            } else if (HIGHLIGHT_PUSH.equals(name)) {
+            } else if (name.getName().equalsIgnoreCase(HIGHLIGHT_PUSH)) {
                 return HIGHLIGHT_PUSH;
             }
         }
@@ -176,10 +137,5 @@ public class LinkAnnotation extends Annotation {
             return new Destination(library, obj);
         }
         return null;
-    }
-
-    @Override
-    public void resetAppearanceStream(double dx, double dy, AffineTransform pageTransform) {
-
     }
 }

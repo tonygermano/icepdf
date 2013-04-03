@@ -1,27 +1,21 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.pobjects.graphics.text;
 
-import org.icepdf.core.pobjects.OptionalContents;
-
 import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Set;
 
 /**
  * Page text represents the root element of a page's text hierarchy which
@@ -50,43 +44,21 @@ public class PageText implements TextSelect {
 
     private ArrayList<LineText> pageLines;
 
-    private HashMap<OptionalContents, PageText> optionalPageLines;
-
     public PageText() {
         pageLines = new ArrayList<LineText>(50);
     }
 
-    public void newLine(LinkedList<OptionalContents> oCGs) {
-        if (oCGs != null && oCGs.size() > 0) {
-            if (optionalPageLines == null) {
-                optionalPageLines = new HashMap<OptionalContents, PageText>(10);
-            }
-            OptionalContents optionalContent = oCGs.peek();
-            PageText pageText = optionalPageLines.get(optionalContent);
-            if (pageText == null) {
-                // create a text object add the glyph.
-                pageText = new PageText();
-                pageText.newLine();
-                optionalPageLines.put(optionalContent, pageText);
-            } else {
-                pageText.newLine();
-            }
-        } else {
-            newLine();
-        }
-    }
-
-    protected void newLine() {
+    public void newLine() {
         // make sure we don't insert a new line if the previous has no words. 
         if (currentLine != null &&
-                currentLine.getWords().size() == 0) {
+                currentLine.getWords().size() == 0){
             return;
         }
         currentLine = new LineText();
         pageLines.add(currentLine);
     }
 
-    protected void addGlyph(GlyphText sprite) {
+    public void addGlyph(GlyphText sprite) {
         if (currentLine == null) {
             newLine();
         }
@@ -94,51 +66,12 @@ public class PageText implements TextSelect {
     }
 
     public ArrayList<LineText> getPageLines() {
-        ArrayList<LineText> visiblePageLines = new ArrayList<LineText>(pageLines);
-        // add optional content text that is visible.
-        // check optional content.
-        if (optionalPageLines != null) {
-            // iterate over optional content keys and extract text from visible groups
-            Set<OptionalContents> keys = optionalPageLines.keySet();
-            for (OptionalContents key : keys) {
-                if (key != null && key.isVisible()) {
-                    visiblePageLines.addAll(optionalPageLines.get(key).getPageLines());
-                }
-            }
-        }
-
-        return visiblePageLines;
-    }
-
-    public void addGlyph(GlyphText glyphText, LinkedList<OptionalContents> oCGs) {
-        if (oCGs != null && oCGs.size() > 0) {
-            if (oCGs.peek() != null) {
-                addOptionalPageLines(oCGs.peek(), glyphText);
-            }
-        } else {
-            addGlyph(glyphText);
-        }
-    }
-
-    protected void addOptionalPageLines(OptionalContents optionalContent,
-                                        GlyphText sprite) {
-        if (optionalPageLines == null) {
-            optionalPageLines = new HashMap<OptionalContents, PageText>(10);
-        }
-        PageText pageText = optionalPageLines.get(optionalContent);
-        if (pageText == null) {
-            // create a text object add the glyph.
-            pageText = new PageText();
-            pageText.addGlyph(sprite);
-            optionalPageLines.put(optionalContent, pageText);
-        } else {
-            pageText.addGlyph(sprite);
-        }
+        return pageLines;
     }
 
     /**
      * Utility method to normalize text created in a Xform content stream
-     * and is only called from the contentParser when parsing 'Do' token.
+     * and is only called from the contentParser when parsing 'Do' token.  
      *
      * @param transform do matrix tranform
      */
@@ -154,43 +87,15 @@ public class PageText implements TextSelect {
         }
     }
 
-    public void clearSelected() {
+    public void clearSelected(){
         for (LineText lineText : pageLines) {
             lineText.clearSelected();
         }
-        // check optional content.
-        if (optionalPageLines != null) {
-            // iterate over optional content keys and extract text from visible groups
-            Set<OptionalContents> keys = optionalPageLines.keySet();
-            ArrayList<LineText> optionalLines;
-            for (OptionalContents key : keys) {
-                if (key != null && key.isVisible()) {
-                    optionalLines = optionalPageLines.get(key).getPageLines();
-                    for (LineText lineText : optionalLines) {
-                        lineText.clearSelected();
-                    }
-                }
-            }
-        }
     }
 
-    public void clearHighlighted() {
+    public void clearHighlighted(){
         for (LineText lineText : pageLines) {
             lineText.clearHighlighted();
-        }
-        // check optional content.
-        if (optionalPageLines != null) {
-            // iterate over optional content keys and extract text from visible groups
-            Set<OptionalContents> keys = optionalPageLines.keySet();
-            ArrayList<LineText> optionalLines;
-            for (OptionalContents key : keys) {
-                if (key != null && key.isVisible()) {
-                    optionalLines = optionalPageLines.get(key).getPageLines();
-                    for (LineText lineText : optionalLines) {
-                        lineText.clearHighlighted();
-                    }
-                }
-            }
         }
     }
 
@@ -199,20 +104,6 @@ public class PageText implements TextSelect {
         for (LineText lineText : pageLines) {
             selectedText.append(lineText.getSelected());
         }
-        // check optional content.
-        if (optionalPageLines != null) {
-            // iterate over optional content keys and extract text from visible groups
-            Set<OptionalContents> keys = optionalPageLines.keySet();
-            ArrayList<LineText> optionalLines;
-            for (OptionalContents key : keys) {
-                if (key != null && key.isVisible()) {
-                    optionalLines = optionalPageLines.get(key).getPageLines();
-                    for (LineText lineText : optionalLines) {
-                        selectedText.append(lineText.getSelected());
-                    }
-                }
-            }
-        }
         return selectedText;
     }
 
@@ -220,25 +111,18 @@ public class PageText implements TextSelect {
         for (LineText lineText : pageLines) {
             lineText.selectAll();
         }
-        // check optional content.
-        if (optionalPageLines != null) {
-            // iterate over optional content keys and extract text from visible groups
-            Set<OptionalContents> keys = optionalPageLines.keySet();
-            ArrayList<LineText> optionalLines;
-            for (OptionalContents key : keys) {
-                if (key != null && key.isVisible()) {
-                    optionalLines = optionalPageLines.get(key).getPageLines();
-                    for (LineText lineText : optionalLines) {
-                        lineText.selectAll();
-                    }
-                }
-            }
+    }
+
+     public void deselectAll() {
+        for (LineText lineText : pageLines) {
+            lineText.clearSelected();
         }
     }
 
-    public void deselectAll() {
-        for (LineText lineText : pageLines) {
-            lineText.clearSelected();
+    public void dispose() {
+        if (pageLines != null) {
+            pageLines.clear();
+            pageLines.trimToSize();
         }
     }
 

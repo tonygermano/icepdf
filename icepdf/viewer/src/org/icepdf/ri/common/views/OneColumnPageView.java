@@ -1,16 +1,15 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.ri.common.views;
@@ -18,9 +17,13 @@ package org.icepdf.ri.common.views;
 import org.icepdf.ri.common.CurrentPageChanger;
 import org.icepdf.ri.common.KeyListenerPageColumnChanger;
 import org.icepdf.ri.common.SwingController;
+import org.icepdf.core.views.DocumentViewController;
+import org.icepdf.core.views.PageViewComponent;
+import org.icepdf.core.views.swing.AbstractPageViewComponent;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseEvent;
 import java.util.List;
 
 
@@ -97,12 +100,12 @@ public class OneColumnPageView extends AbstractDocumentView {
                 documentViewModel.getPageComponents();
 
         if (pageComponents != null) {
-            for (PageViewComponent pageViewComponent : pageComponents) {
-                if (pageViewComponent != null) {
+            for( PageViewComponent pageViewComponent : pageComponents ){
+                if (pageViewComponent != null){
                     pageViewComponent.setDocumentViewCallback(this);
                     // add component to layout
                     pagesPanel.add(new PageViewDecorator(
-                            (AbstractPageViewComponent) pageViewComponent));
+                            (AbstractPageViewComponent)pageViewComponent));
                 }
             }
         }
@@ -127,6 +130,13 @@ public class OneColumnPageView extends AbstractDocumentView {
         return 1;
     }
 
+    public void mouseReleased(MouseEvent e) {
+        super.mouseReleased(e);
+
+        // let the current PageListener now about the mouse release
+        currentPageChanger.mouseReleased(e);
+    }
+
     public void dispose() {
         disposing = true;
         // remove utilities
@@ -146,7 +156,7 @@ public class OneColumnPageView extends AbstractDocumentView {
     }
 
     public Dimension getDocumentSize() {
-        float pageViewWidth = 0;
+       float pageViewWidth = 0;
         float pageViewHeight = 0;
         if (pagesPanel != null) {
             int currCompIndex = documentViewController.getCurrentPageIndex();
@@ -167,9 +177,9 @@ public class OneColumnPageView extends AbstractDocumentView {
         pageViewHeight = Math.abs(pageViewHeight / currentZoom);
 
         // add any horizontal padding from layout manager
-        pageViewWidth += AbstractDocumentView.horizontalSpace * 2;
-        pageViewHeight += AbstractDocumentView.verticalSpace * 2;
-        return new Dimension((int) pageViewWidth, (int) pageViewHeight);
+        pageViewWidth += AbstractDocumentView.horizontalSpace *2;
+        pageViewHeight += AbstractDocumentView.verticalSpace *2;
+        return new Dimension((int)pageViewWidth, (int)pageViewHeight);
     }
 
     public void paintComponent(Graphics g) {

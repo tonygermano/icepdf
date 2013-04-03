@@ -94,7 +94,6 @@ public class DocumentManager implements DisposableBean {
             refreshDocumentState();
         } catch (Throwable e) {
             logger.log(Level.WARNING, "Error opening document.", e);
-            e.printStackTrace();
         }
     }
 

@@ -1,16 +1,15 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.pobjects.graphics.text;
@@ -97,20 +96,20 @@ public class WordText extends AbstractText implements TextSelect {
 
     protected static boolean detectPunctuation(GlyphText sprite) {
         String glyphText = sprite.getUnicode();
-        if (glyphText != null) {
+        if (glyphText != null){
             int c = sprite.getUnicode().charAt(0);
             return isPunctuation(c);
-        } else {
+        }else{
             return false;
         }
     }
 
     protected static boolean detectWhiteSpace(GlyphText sprite) {
         String glyphText = sprite.getUnicode();
-        if (glyphText != null) {
+        if (glyphText != null){
             int c = sprite.getUnicode().charAt(0);
             return isWhiteSpace(c);
-        } else {
+        }else{
             return false;
         }
     }
@@ -158,7 +157,7 @@ public class WordText extends AbstractText implements TextSelect {
                             spaceBounds.y,
                             spaceBounds.width,
                             spaceBounds.height),
-                    String.valueOf((char) 32), String.valueOf((char) 32));
+                    String.valueOf((char)32), String.valueOf((char)32));
             spaceBounds.x += spaceBounds.width;
             whiteSpace.addText(spaceText);
             whiteSpace.setWhiteSpace(true);

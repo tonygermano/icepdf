@@ -1,16 +1,15 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.pobjects;
@@ -96,33 +95,12 @@ public class Name {
      *         false, otherwise.
      */
     public boolean equals(Object obj) {
-        if (obj instanceof Name) {
-            return equals((Name) obj);
-        } else {
-            return obj != null && name.equals(obj);
-        }
-    }
+        if (obj == null)
+            return false;
+        if (obj instanceof Name)
+            return name.equals(((Name) obj).getName());
 
-    /**
-     * Indicates whether some other Name object is "equal to" this one
-     *
-     * @param obj name object that this Name object is compared against
-     * @return true, if this object is the same as the obj argument;
-     *         false, otherwise.
-     */
-    public boolean equals(Name obj) {
-        return obj != null && name.equals(obj.getName());
-    }
-
-    /**
-     * Indicates whether some other String object is "equal to" this one
-     *
-     * @param obj string object that this Name object is compared against
-     * @return true, if this object is the same as the obj argument;
-     *         false, otherwise.
-     */
-    public boolean equals(String obj) {
-        return obj != null && name.equals(obj);
+        return obj instanceof String && name.equals(obj);
     }
 
     /**
@@ -150,9 +128,8 @@ public class Name {
             for (int i = 0; i < name.length(); i++) {
                 if (name.charAt(i) == HEX_CHAR) {
                     // convert digits to hex.
-                    String hex = name.substring(i + 1, i + 3);
                     name.delete(i, i + 3);
-                    name.insert(i, convert(hex));
+                    name.insert(i, convert(name.substring(i + 1, i + 3)));
                 }
             }
         } catch (Throwable e) {
@@ -165,15 +142,14 @@ public class Name {
     }
 
     /**
-     * Converts a hex string to formatted unicode string.
-     *
+     * Converts a hext string to formated unicode string.
      * @param hex 2-digit hex number.
-     * @return hex represented as unicode.
+     * @return
      */
     private String convert(String hex) {
         StringBuilder output = new StringBuilder();
         output.append("\\u"); // standard unicode format.
-        for (int j = 0, max = 4 - hex.length(); j < max; j++) {
+        for (int j = 0, max = 4 - hex.length(); j < max; j++){
             output.append("0");
         }
         output.append(hex.toLowerCase());

@@ -1,27 +1,27 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.ri.common.views;
 
-import org.icepdf.core.util.ColorUtil;
 import org.icepdf.core.util.Defs;
+import org.icepdf.core.util.ColorUtil;
+import org.icepdf.core.views.PageViewComponent;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * <p>The PageViewDecorator class adds a page border and shadow to all of the page
@@ -65,8 +65,8 @@ public class PageViewDecorator extends JComponent {
                     "org.icepdf.core.views.page.shadow.color", "#333333");
             int colorValue = ColorUtil.convertColor(color);
             pageShadowColor =
-                    new Color(colorValue >= 0 ? colorValue :
-                            Integer.parseInt("333333", 16));
+                    new Color( colorValue >= 0? colorValue :
+                            Integer.parseInt("333333", 16 ));
 
         } catch (NumberFormatException e) {
             if (log.isLoggable(Level.WARNING)) {
@@ -80,8 +80,8 @@ public class PageViewDecorator extends JComponent {
                     "org.icepdf.core.views.page.paper.color", "#FFFFFF");
             int colorValue = ColorUtil.convertColor(color);
             pageColor =
-                    new Color(colorValue >= 0 ? colorValue :
-                            Integer.parseInt("FFFFFF", 16));
+                    new Color( colorValue >= 0? colorValue :
+                            Integer.parseInt("FFFFFF", 16 ));
         } catch (NumberFormatException e) {
             if (log.isLoggable(Level.WARNING)) {
                 log.warning("Error reading page paper color.");
@@ -93,15 +93,14 @@ public class PageViewDecorator extends JComponent {
                     "org.icepdf.core.views.page.border.color", "#000000");
             int colorValue = ColorUtil.convertColor(color);
             pageBorderColor =
-                    new Color(colorValue >= 0 ? colorValue :
-                            Integer.parseInt("000000", 16));
+                    new Color( colorValue >= 0? colorValue :
+                            Integer.parseInt("000000", 16 ));
         } catch (NumberFormatException e) {
             if (log.isLoggable(Level.WARNING)) {
                 log.warning("Error reading page paper color.");
             }
         }
     }
-
     public PageViewDecorator(JComponent pageViewComponent) {
         setLayout(new GridLayout(1, 1, 0, 0));
 

@@ -1,16 +1,15 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.pobjects.functions.postscript;
@@ -393,13 +392,12 @@ public class OperatorFactory {
                 operator = new Operator(OperatorNames.OP_IFELSE) {
                     public void eval(Stack stack) {
                         // pop off the proc2 so we can get at the operands
-//                        Stack proc2Stack = new Stack();
+                        Stack proc2Stack = new Stack();
                         // if we don't have an Expression we can't continue.
                         if ((Expression) stack.pop() instanceof Expression) {
                             // copy the expression ops off the stack
                             while (!(stack.peek() instanceof Expression)) {
-//                                proc2Stack.push(stack.pop());
-                                stack.pop();
+                                proc2Stack.push(stack.pop());
                             }
                             // pop of starting expression
                             stack.pop();
@@ -444,7 +442,7 @@ public class OperatorFactory {
                 operator = new Operator(OperatorNames.OP_INDEX) {
                     public void eval(Stack stack) {
                         float n = (Float) stack.pop();
-                        stack.push(stack.get((int) ((stack.size() - 1) - n)));
+                        stack.push(stack.get((int) ((stack.size()-1) - n)));
                     }
                 };
                 break;
@@ -618,9 +616,9 @@ public class OperatorFactory {
                         // each sift consists of removing an element from the top of the
                         // stack and inserting it between element n-1 and element n of the stack
                         if (j > 0) {
-                            for (int i = 0; i < j; i++) {
+                            for (int i = 0; i < j; i++){
                                 stack.insertElementAt(stack.lastElement(),
-                                        (int) (stack.size() - (n)));
+                                        (int) (stack.size() - (n )));
                                 // finish the move by poping the top;
                                 stack.pop();
                             }
@@ -628,8 +626,8 @@ public class OperatorFactory {
                         // each shift consists of removing an element n-1 off the stack
                         // and pushing it on top of the stack
                         else if (j < 0) {
-                            for (int i = 0, max = (int) -j; i < max; i++) {
-                                stack.push(stack.remove((int) (stack.size() - (n))));
+                            for (int i = 0,max=(int)-j; i < max; i++){
+                                stack.push(stack.remove((int) (stack.size() - (n ))));
                             }
                         }
                     }
@@ -710,10 +708,10 @@ public class OperatorFactory {
                         if (obj2 instanceof Number) {
                             float num2 = (Float) obj2;
                             float num1 = (Float) stack.pop();
-                            stack.push((int) num1 ^ (int) num2);
+                            stack.push((int)num1 ^ (int)num2);
                         } else if (obj2 instanceof Boolean) {
-                            boolean bool2 = (Boolean) obj2;
-                            boolean bool1 = (Boolean) stack.pop();
+                            boolean bool2 = (Boolean)obj2;
+                            boolean bool1 = (Boolean)stack.pop();
                             stack.push(bool1 ^ bool2);
                         }
                     }

@@ -1,27 +1,25 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.pobjects.functions;
 
 import org.icepdf.core.pobjects.Dictionary;
-import org.icepdf.core.pobjects.Name;
 import org.icepdf.core.pobjects.Stream;
 
-import java.util.List;
-import java.util.logging.Level;
+import java.util.Vector;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * <p>This class <code>Function_0</code> represents a generic Type 0, sampled function
@@ -42,11 +40,6 @@ public class Function_0 extends Function {
 
     private static final Logger logger =
             Logger.getLogger(Function_0.class.toString());
-
-    public static final Name SIZE_KEY = new Name("Size");
-    public static final Name BITSPERSAMPLE_KEY = new Name("BitsPerSample");
-    public static final Name ENCODE_KEY = new Name("Encode");
-    public static final Name DECODE_KEY = new Name("Decode");
 
     // An array of m positive integers specifying the number of samples in each
     // input dimension of the sample table.
@@ -83,24 +76,24 @@ public class Function_0 extends Function {
         // initiate, domain and range
         super(d);
 
-        List s = (List) d.getObject(SIZE_KEY);
+        Vector s = (Vector) d.getObject("Size");
         // setup size array, each entry represents the number of samples for
         // each input dimension.
         size = new int[s.size()];
         for (int i = 0; i < s.size(); i++) {
-            size[i] = (int) (((Number) s.get(i)).floatValue());
+            size[i] = (int) (((Number) s.elementAt(i)).floatValue());
         }
         // setup bitspersample array, each entry represents the number of bits used
         // for each sample
-        bitspersample = d.getInt(BITSPERSAMPLE_KEY);
+        bitspersample = d.getInt("BitsPerSample");
 
         // setup of encode table, specifies the linear mapping of input values
         // into the domain of the function's sample table.
-        List enc = (List) d.getObject(ENCODE_KEY);
+        Vector enc = (Vector) d.getObject("Encode");
         encode = new float[size.length * 2];
         if (enc != null) {
             for (int i = 0; i < size.length * 2; i++) {
-                encode[i] = ((Number) enc.get(i)).floatValue();
+                encode[i] = ((Number) enc.elementAt(i)).floatValue();
             }
         } else {
             // encoding is optional, so fill up encode area with uniform
@@ -114,11 +107,11 @@ public class Function_0 extends Function {
 
         // setup decode, an array of  2 x n numbers specifying the linear mapping
         // of sample values into the range appropriate for the function's output values.
-        List dec = (List) d.getObject(DECODE_KEY);
+        Vector dec = (Vector) d.getObject("Decode");
         decode = new float[range.length];
         if (dec != null) {
             for (int i = 0; i < range.length; i++) {
-                decode[i] = ((Number) dec.get(i)).floatValue();
+                decode[i] = ((Number) dec.elementAt(i)).floatValue();
             }
         } else {
             // deocode is optional, so we should copy range as a default values
@@ -130,7 +123,7 @@ public class Function_0 extends Function {
 
         // lastly get the stream byte data if any.
         Stream stream = (Stream) d;
-        bytes = stream.getDecodedStreamBytes(0);
+        bytes = stream.getBytes();
     }
 
 
@@ -185,7 +178,8 @@ public class Function_0 extends Function {
 
                 }
             }
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             logger.log(Level.WARNING, "Error calculating function 0 values", e);
         }
         return y;

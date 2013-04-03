@@ -1,29 +1,26 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.util;
 
 import org.icepdf.core.io.SeekableByteArrayInputStream;
 import org.icepdf.core.io.SeekableInput;
-import org.icepdf.core.pobjects.StringObject;
-import org.icepdf.core.pobjects.fonts.ofont.Encoding;
 
 import java.io.*;
 import java.lang.reflect.Method;
-import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * @author Mark Collette
@@ -158,7 +155,8 @@ public class Utils {
                 if (ret instanceof Boolean)
                     return ((Boolean) ret).booleanValue();
             }
-        } catch (Throwable t) {
+        }
+        catch (Throwable t) {
             logger.log(Level.FINE,
                     "ImageCache: Java 1.4 Headless support not found.");
         }
@@ -191,14 +189,17 @@ public class Utils {
             out.flush();
             out.close();
             byte[] data = out.toByteArray();
+            out = null;
             inArray[0] = new ByteArrayInputStream(data);
             if (convertToHex)
                 content = Utils.convertByteArrayToHexString(data, true);
             else
                 content = new String(data);
-        } catch (IOException ioe) {
-            logger.log(Level.FINE, "Problem getting debug string", ioe);
-        } catch (Throwable e) {
+        }
+        catch (IOException ioe) {
+            logger.log(Level.FINE, "Problem getting debug string");
+        }
+        catch (Throwable e) {
             logger.log(Level.FINE, "Problem getting content stream, skipping");
         }
         return content;
@@ -239,9 +240,11 @@ public class Utils {
                 content = Utils.convertByteArrayToHexString(data, true);
             else
                 content = new String(data);
-        } catch (IOException ioe) {
+        }
+        catch (IOException ioe) {
             logger.log(Level.FINE, "Problem getting debug string");
-        } finally {
+        }
+        finally {
             in.endThreadAccess();
         }
         return content;
@@ -277,7 +280,8 @@ public class Utils {
             out.close();
             byte[] data = out.toByteArray();
             sin = new SeekableByteArrayInputStream(data);
-        } catch (IOException ioe) {
+        }
+        catch (IOException ioe) {
             logger.log(Level.FINE, "Problem getting debug string");
         }
         return sin;
@@ -306,7 +310,7 @@ public class Utils {
      * none is specified, then String(byte[]) will use the platform's
      * default encoding. This method is for when encoding is not relevant,
      * when the String simply holds byte values in each char.
-     *
+     * 
      * @see org.icepdf.core.pobjects.LiteralStringObject
      * @see org.icepdf.core.pobjects.HexStringObject
      * @see org.icepdf.core.pobjects.security.StandardEncryption
@@ -319,14 +323,14 @@ public class Utils {
         }
         return bytes;
     }
-
+    
     /**
      * When converting between String chars and bytes, there's an implied
      * encoding to be used, dependent on the context and platform. If
      * none is specified, then String(byte[]) will use the platform's
      * default encoding. This method is for when encoding is not relevant,
      * when the String simply holds byte values in each char.
-     *
+     * 
      * @see org.icepdf.core.pobjects.LiteralStringObject
      * @see org.icepdf.core.pobjects.HexStringObject
      * @see org.icepdf.core.pobjects.security.StandardEncryption
@@ -336,53 +340,8 @@ public class Utils {
         StringBuilder sb = new StringBuilder(max);
         for (int i = 0; i < max; i++) {
             int b = ((int) bytes[i]) & 0xFF;
-            sb.append((char) b);
+            sb.append((char)b);
         }
         return sb.toString();
-    }
-
-    /**
-     * Utility method for decrypting a String object found in a dictionary
-     * as a plaing text.  The string can be encrypted as well as octal encoded,
-     * which is handle by this method.
-     *
-     * @param library      docoument library used for encryption handling.
-     * @param stringObject string object to convert to string
-     * @return converted string.
-     */
-    public static String convertStringObject(Library library, StringObject stringObject) {
-        StringObject outlineText = stringObject;
-        String convertedStringObject = null;
-        String titleText = outlineText.getDecryptedLiteralString(library.securityManager);
-        // If the title begins with 254 and 255 we are working with
-        // Octal encoded strings. Check first to make sure that the
-        // title string is not null, or is at least of length 2.
-        if (titleText != null && titleText.length() >= 2 &&
-                ((int) titleText.charAt(0)) == 254 &&
-                ((int) titleText.charAt(1)) == 255) {
-
-            StringBuilder sb1 = new StringBuilder();
-
-            // convert teh unicode to characters.
-            for (int i = 2; i < titleText.length(); i += 2) {
-                try {
-                    int b1 = ((int) titleText.charAt(i)) & 0xFF;
-                    int b2 = ((int) titleText.charAt(i + 1)) & 0xFF;
-                    //System.err.println(b1 + " " + b2);
-                    sb1.append((char) (b1 * 256 + b2));
-                } catch (Exception ex) {
-                    // intentionally left blank.
-                }
-            }
-            convertedStringObject = sb1.toString();
-        } else if (titleText != null) {
-            StringBuilder sb = new StringBuilder();
-            Encoding enc = Encoding.getPDFDoc();
-            for (int i = 0; i < titleText.length(); i++) {
-                sb.append(enc.get(titleText.charAt(i)));
-            }
-            convertedStringObject = sb.toString();
-        }
-        return convertedStringObject;
     }
 }

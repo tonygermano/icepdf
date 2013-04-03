@@ -1,16 +1,15 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.pobjects.fonts.ofont;
@@ -307,7 +306,6 @@ public class OFont implements FontFile {
     public void drawEstring(Graphics2D g, String displayText, float x, float y,
                             long layout, int mode, Color strokecolor) {
 
-        AffineTransform af = g.getTransform();
         Shape outline = getEstringOutline(displayText, x, y);
 
         if (TextState.MODE_FILL == mode || TextState.MODE_FILL_STROKE == mode ||
@@ -318,7 +316,6 @@ public class OFont implements FontFile {
                 TextState.MODE_STROKE_ADD == mode || TextState.MODE_FILL_STROKE_ADD == mode) {
             g.draw(outline);
         }
-        g.setTransform(af);
 
     }
 
@@ -384,11 +381,11 @@ public class OFont implements FontFile {
         return String.valueOf(c);
     }
 
-    public boolean isOneByteEncoding() {
+    public boolean isOneByteEncoding(){
         return false;
     }
 
-    public Shape getEstringOutline(String displayText, float x, float y) {
+    public Shape getEstringOutline(String displayText, float x, float y){
 
         displayText = toUnicode(displayText);
         FontRenderContext frc = new FontRenderContext(new AffineTransform(), true, true);
@@ -400,7 +397,7 @@ public class OFont implements FontFile {
         // cid -> String will get displayed correctly.
         int displayLength = displayText.length();
         float lastx;
-        if (displayLength > 1) {
+        if (displayLength > 1){
             Point2D p;
             float advance = 0;
             for (int i = 0; i < displayText.length(); i++) {

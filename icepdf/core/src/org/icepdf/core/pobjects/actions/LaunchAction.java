@@ -1,16 +1,15 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.pobjects.actions;
@@ -20,7 +19,7 @@ import org.icepdf.core.pobjects.Name;
 import org.icepdf.core.pobjects.StringObject;
 import org.icepdf.core.util.Library;
 
-import java.util.HashMap;
+import java.util.Hashtable;
 
 /**
  * <p>The launch action launches an applicaiton or opens or prints a
@@ -65,7 +64,7 @@ public class LaunchAction extends Action {
      * @param l document library.
      * @param h Action dictionary entries.
      */
-    public LaunchAction(Library l, HashMap h) {
+    public LaunchAction(Library l, Hashtable h) {
         super(l, h);
         winLaunchParameters = new WindowsLaunchParameters();
     }
@@ -133,8 +132,8 @@ public class LaunchAction extends Action {
      */
     public FileSpecification getFileSpecification() {
         Object value = getObject(FILE_KEY);
-        if (value instanceof HashMap) {
-            fileSpecification = new FileSpecification(library, (HashMap) value);
+        if (value instanceof Hashtable) {
+            fileSpecification = new FileSpecification(library, (Hashtable) value);
         }
         return fileSpecification;
     }
@@ -171,11 +170,11 @@ public class LaunchAction extends Action {
          */
         public WindowsLaunchParameters() {
 
-//            HashMap winLaunch = library.getDictionary(entries, "Win");
+//            Hashtable winLaunch = library.getDictionary(entries, "Win");
             Object value = getObject(FILE_KEY);
-            if (value instanceof HashMap) {
+            if (value instanceof Hashtable) {
                 launchFileSpecification = new FileSpecification(library,
-                        (HashMap) value);
+                        (Hashtable)value);
             } else if (value instanceof StringObject) {
                 launchFile = ((StringObject) value).getDecryptedLiteralString(
                         library.getSecurityManager());

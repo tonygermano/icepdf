@@ -1,24 +1,22 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.pobjects;
 
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Vector;
 
 /**
  * <p>A rectangle in a PDF document is slightly different than the <code>Rectangle</code> class
@@ -93,14 +91,14 @@ public class PRectangle extends Rectangle2D.Float {
      * @throws IllegalArgumentException thrown if coordinates is null or does not
      *                                  have four elements
      */
-    public PRectangle(List coordinates) throws IllegalArgumentException {
+    public PRectangle(Vector coordinates) throws IllegalArgumentException {
         if (coordinates == null || coordinates.size() < 4)
             throw new IllegalArgumentException();
-        float x1 = ((Number) coordinates.get(0)).floatValue();
-        float y1 = ((Number) coordinates.get(1)).floatValue();
+        float x1 = ((Number) coordinates.elementAt(0)).floatValue();
+        float y1 = ((Number) coordinates.elementAt(1)).floatValue();
 
-        float x2 = ((Number) coordinates.get(2)).floatValue();
-        float y2 = ((Number) coordinates.get(3)).floatValue();
+        float x2 = ((Number) coordinates.elementAt(2)).floatValue();
+        float y2 = ((Number) coordinates.elementAt(3)).floatValue();
 
         // assign original data
         p1x = x1;
@@ -167,22 +165,28 @@ public class PRectangle extends Rectangle2D.Float {
     /**
      * Converts a rectangle defined in user page in Java2D coordinates back
      * to PDF space and in the vector for of the rectangle.
-     *
      * @param rect user space rectangle in Java2D coordinates space.
      * @return vector notation of rectangle in PDF space.
+     *
      */
-    public static List getPRectangleVector(Rectangle2D rect) {
+    public static Vector getPRectangleVector(Rectangle2D rect){
 
         // convert the rectangle back to PDF space.
         rect = new Rectangle2D.Double(rect.getX(),
                 rect.getY(),
                 rect.getWidth(), rect.getHeight());
-        ArrayList coords = new ArrayList(4);
-        coords.add(rect.getMinX());
-        coords.add(rect.getMinY());
-        coords.add(rect.getMaxX());
-        coords.add(rect.getMaxY());
-        return coords;
+        // get two adjacent points
+        Number p1x = rect.getMinX();
+        Number ply = rect.getMinY();
+        Number p2x = rect.getMaxX();
+        Number p2y = rect.getMaxY();
+        // create and return the new vector
+        Vector<Number> rectVector = new Vector<Number>(4);
+        rectVector.add(p1x);
+        rectVector.add(ply);
+        rectVector.add(p2x);
+        rectVector.add(p2y);
+        return rectVector;
     }
 
     /**

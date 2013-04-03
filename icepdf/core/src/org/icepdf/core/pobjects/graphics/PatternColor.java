@@ -1,26 +1,24 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.pobjects.graphics;
 
-import org.icepdf.core.pobjects.Name;
 import org.icepdf.core.pobjects.Reference;
 import org.icepdf.core.util.Library;
 
 import java.awt.*;
-import java.util.HashMap;
+import java.util.Hashtable;
 
 /**
  * <p>Pattern colour implements PColorSpace but is more of a parser placeholder
@@ -36,8 +34,6 @@ import java.util.HashMap;
  */
 public class PatternColor extends PColorSpace {
 
-    public static final Name PATTERN_KEY = new Name("Pattern");
-
     private Pattern pattern;
 
     private PColorSpace PColorSpace;
@@ -48,7 +44,7 @@ public class PatternColor extends PColorSpace {
      * @param library document library.
      * @param entries dictionary entries.
      */
-    public PatternColor(Library library, HashMap entries) {
+    public PatternColor(Library library, Hashtable entries) {
         super(library, entries);
     }
 

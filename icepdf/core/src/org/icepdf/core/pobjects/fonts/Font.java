@@ -1,16 +1,15 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.pobjects.fonts;
@@ -18,10 +17,9 @@ package org.icepdf.core.pobjects.fonts;
 
 import org.icepdf.core.pobjects.Dictionary;
 import org.icepdf.core.pobjects.Name;
-import org.icepdf.core.pobjects.Resources;
 import org.icepdf.core.util.Library;
 
-import java.util.HashMap;
+import java.util.Hashtable;
 
 /**
  * <p>This class represents a PDF object which has a subtype value equal to "Font".
@@ -64,20 +62,14 @@ import java.util.HashMap;
  */
 public abstract class Font extends Dictionary {
 
-    public static final Name TYPE = new Name("Font");
-
-    public static final Name NAME_KEY = new Name("Name");
-    public static final Name BASEFONT_KEY = new Name("BaseFont");
-    public static final Name ENCODING_KEY = new Name("Encoding");
-
     // Object name always "Font"
-    protected Name name;
+    protected String name;
 
     // The name of the object, Font
     protected String basefont;
 
     // The font subtype, type 0, 1, 2 etc.
-    protected Name subtype;
+    protected String subtype;
 
     /**
      * <p>Indicates that the font used to render this String object is in the
@@ -115,9 +107,6 @@ public abstract class Font extends Dictionary {
 
     // font substitution being used
     protected boolean isFontSubstitution;
-
-    // parent resource, needed by some type3 fonts to access resources.
-    protected Resources parentResource;
 
     /**
      * Map named CMap to Unicode mapping.
@@ -182,26 +171,27 @@ public abstract class Font extends Dictionary {
      * @param library Libaray of all objects in PDF
      * @param entries hash of parsed font attributes
      */
-    public Font(Library library, HashMap entries) {
+    public Font(Library library, Hashtable entries) {
         super(library, entries);
 
         // name of object  "Font"
-        name = library.getName(entries, NAME_KEY);
+        name = library.getName(entries, "Name");
 
         // Type of the font, type 0, 1, 2, 3 etc.
-        subtype = library.getName(entries, SUBTYPE_KEY);
+        subtype = library.getName(entries, "Subtype");
 
         // figure out type
-        subTypeFormat = (subtype.getName().toLowerCase().equals("type0") |
-                subtype.getName().toLowerCase().contains("cid")) ?
+        subTypeFormat = (subtype.equalsIgnoreCase("type0") | subtype.toLowerCase().indexOf("cid") != -1) ?
                 CID_FORMAT : SIMPLE_FORMAT;
 
         // font name, SanSerif is used as it has a a robust CID, and it
         // is the most commonly used font family for pdfs
         basefont = "Serif";
-        Object tmp = entries.get(BASEFONT_KEY);
-        if (tmp != null && tmp instanceof Name) {
-            basefont = ((Name) tmp).getName();
+        if (entries.containsKey("BaseFont")) {
+            Object o = entries.get("BaseFont");
+            if (o instanceof Name) {
+                basefont = ((Name) o).getName();
+            }
         }
     }
 
@@ -232,7 +222,7 @@ public abstract class Font extends Dictionary {
      *
      * @return string representing the font name
      */
-    public Name getName() {
+    public String getName() {
         return name;
     }
 
@@ -241,7 +231,7 @@ public abstract class Font extends Dictionary {
      *
      * @return string representing the font subtype
      */
-    public Name getSubType() {
+    public String getSubType() {
         return subtype;
     }
 
@@ -311,11 +301,4 @@ public abstract class Font extends Dictionary {
         return getPObjectReference() + " FONT= " + basefont + " " + entries.toString();
     }
 
-    public Resources getParentResource() {
-        return parentResource;
-    }
-
-    public void setParentResource(Resources parentResource) {
-        this.parentResource = parentResource;
-    }
 }

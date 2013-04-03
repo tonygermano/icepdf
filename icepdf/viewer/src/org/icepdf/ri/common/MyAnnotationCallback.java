@@ -1,34 +1,35 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.ri.common;
 
+import org.icepdf.core.AnnotationCallback;
 import org.icepdf.core.pobjects.Document;
 import org.icepdf.core.pobjects.Page;
 import org.icepdf.core.pobjects.PageTree;
-import org.icepdf.core.pobjects.Reference;
 import org.icepdf.core.pobjects.actions.*;
 import org.icepdf.core.pobjects.annotations.Annotation;
+import org.icepdf.core.pobjects.annotations.AnnotationState;
 import org.icepdf.core.pobjects.annotations.LinkAnnotation;
-import org.icepdf.core.pobjects.annotations.MarkupAnnotation;
-import org.icepdf.ri.common.views.*;
-import org.icepdf.ri.common.views.annotations.PopupAnnotationComponent;
+import org.icepdf.core.views.DocumentViewController;
+import org.icepdf.core.views.DocumentViewModel;
+import org.icepdf.core.views.PageViewComponent;
+import org.icepdf.core.views.swing.AnnotationComponentImpl;
 import org.icepdf.ri.util.BareBonesBrowserLaunch;
 
+import java.awt.*;
 import java.io.File;
-import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -60,7 +61,7 @@ public class MyAnnotationCallback implements AnnotationCallback {
      * @param annotation annotation that was activated by a user via the
      *                   PageViewComponent.
      */
-    public void processAnnotationAction(Annotation annotation) {
+    public void proccessAnnotationAction(Annotation annotation) {
         if (logger.isLoggable(Level.FINE)) {
             logger.fine("Annotation " + annotation.toString());
             if (annotation.getAction() != null) {
@@ -136,77 +137,33 @@ public class MyAnnotationCallback implements AnnotationCallback {
     /**
      * New annotation created with view tool.
      *
-     * @param pageComponent       page that annotation was added to.
-     * @param annotationComponent component that will be created.
+     * @param pageComponent page that annotation was added to.
+     * @param rect          annotation bounds
      */
-    public void newAnnotation(PageViewComponent pageComponent,
-                              AnnotationComponent annotationComponent) {
+    public void newAnnotation(PageViewComponent pageComponent, Rectangle rect) {
         // do a bunch a work to get at the page object.
         Document document = documentViewController.getDocument();
         PageTree pageTree = document.getPageTree();
-        Page page = pageTree.getPage(pageComponent.getPageIndex());
-        page.addAnnotation(annotationComponent.getAnnotation());
-
+        Page page = pageTree.getPage(pageComponent.getPageIndex(), this);
+        Annotation annotation = page.createAnnotation(rect, null);
+        // release the page
+        pageTree.releasePage(pageComponent.getPageIndex(), this);
         // no we have let the pageComponent now about it.
-        pageComponent.addAnnotation(annotationComponent);
+        AnnotationComponentImpl annotComponent = (AnnotationComponentImpl)
+                pageComponent.addAnnotation(annotation);
+        // normalize the rectangle
+        annotComponent.setBounds(rect);
+        annotComponent.refreshAnnotationRect();
 
-//        // finally change the current tool to the annotation selection
-//        documentViewController.getParentController().setDocumentToolMode(
-//                DocumentViewModel.DISPLAY_TOOL_SELECTION);
-    }
+        // create new state for memento and apply/restore to save state to
+        // document data structures. 
+        AnnotationState newAnnotationState = new AnnotationState(annotComponent);
+        // saves the state changes back to the document structure.
+        newAnnotationState.apply(newAnnotationState);
+        newAnnotationState.restore();
 
-    /**
-     * Update the annotation and ready state for save.
-     *
-     * @param annotationComponent annotation component to be added to page.
-     */
-    public void updateAnnotation(AnnotationComponent annotationComponent) {
-        Document document = documentViewController.getDocument();
-        PageTree pageTree = document.getPageTree();
-        Page page = pageTree.getPage(annotationComponent.getPageIndex());
-        page.updateAnnotation(annotationComponent.getAnnotation());
-    }
-
-    /**
-     * Remove the annotation and ready state for save.
-     *
-     * @param annotationComponent annotation component to be added to page.
-     */
-    public void removeAnnotation(PageViewComponent pageComponent,
-                                 AnnotationComponent annotationComponent) {
-        // remove annotation
-        Document document = documentViewController.getDocument();
-        PageTree pageTree = document.getPageTree();
-        Page page = pageTree.getPage(pageComponent.getPageIndex());
-        // remove from page
-        page.deleteAnnotation(annotationComponent.getAnnotation());
-        // remove from page view.
-        pageComponent.removeAnnotation(annotationComponent);
-        // check to see if there is an associated popup
-        if (annotationComponent.getAnnotation() instanceof MarkupAnnotation) {
-            MarkupAnnotation markupAnnotation =
-                    (MarkupAnnotation) annotationComponent.getAnnotation();
-            if (markupAnnotation.getPopupAnnotation() != null) {
-                page.deleteAnnotation(markupAnnotation.getPopupAnnotation());
-                // find and remove the popup component
-                ArrayList<AnnotationComponent> annotationComponents =
-                        ((AbstractPageViewComponent) pageComponent).getAnnotationComponents();
-                Reference compReference;
-                Reference popupReference = markupAnnotation.getPopupAnnotation().getPObjectReference();
-                AnnotationComponent annotationComp;
-                for (int i = 0, max = annotationComponents.size(); i < max; i++) {
-                    annotationComp = annotationComponents.get(i);
-                    compReference = annotationComp.getAnnotation().getPObjectReference();
-                    // find the component and toggle it's visibility.
-                    if (compReference.equals(popupReference)) {
-                        if (annotationComp instanceof PopupAnnotationComponent) {
-                            PopupAnnotationComponent popupComponent = ((PopupAnnotationComponent) annotationComp);
-                            pageComponent.removeAnnotation(popupComponent);
-                        }
-                    }
-                }
-            }
-        }
-
+        // finally change the current tool to the annotation selection
+        documentViewController.getParentController().setDocumentToolMode(
+                DocumentViewModel.DISPLAY_TOOL_SELECTION);
     }
 }

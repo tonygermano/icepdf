@@ -1,21 +1,20 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.pobjects.fonts.ofont;
 
-import java.util.HashMap;
+import java.util.Hashtable;
 
 /**
  * put your documentation comment here
@@ -75,7 +74,7 @@ public class Encoding implements org.icepdf.core.pobjects.fonts.Encoding {
         return -1;
     }
 
-    static private HashMap<String, Integer> h;
+    static private Hashtable<String, Integer> h;
     static private char se[], mre[], wae[], pde[], sym[], zap[];
 
     // common symbol alaises,  displayable, followed by aliases
@@ -88,10 +87,10 @@ public class Encoding implements org.icepdf.core.pobjects.fonts.Encoding {
     public static int[] registeredAlaises = {182};
 
     static {
-        h = new HashMap<String, Integer>(1046);
+        h = new Hashtable<String, Integer>(1046);
         h.put("A", 65);
         h.put("AE", 198);
-        h.put("AEacute", 508);
+        h.put("AEacute",508);
         h.put("AEsmall", 63462);
         h.put("Aacute", 193);
         h.put("Aacutesmall", 63457);
@@ -1355,7 +1354,7 @@ public class Encoding implements org.icepdf.core.pobjects.fonts.Encoding {
             mre[i] = '?';
             wae[i] = '?';
             if (i > 040) {
-                wae[i] = (char) h.get("bullet").intValue();
+                wae[i] =  (char)h.get("bullet").intValue();
             }
             pde[i] = '?';
             sym[i] = '?';
@@ -2174,9 +2173,9 @@ public class Encoding implements org.icepdf.core.pobjects.fonts.Encoding {
 
         // addition of white space mappings.        
         // Line feed
-        se[10] = (char) h.get("space").intValue();
-        mre[10] = (char) h.get("space").intValue();
-        wae[10] = (char) h.get("space").intValue();
+        se[10] = (char)h.get("space").intValue();
+        mre[10] = (char)h.get("space").intValue();
+        wae[10] = (char)h.get("space").intValue();
         // carriage return
         se[13] = (char) h.get("space").intValue();
         mre[13] = (char) h.get("space").intValue();

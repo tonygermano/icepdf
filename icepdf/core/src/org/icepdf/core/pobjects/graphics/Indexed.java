@@ -1,38 +1,32 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.pobjects.graphics;
 
-import org.icepdf.core.pobjects.Name;
 import org.icepdf.core.pobjects.Reference;
 import org.icepdf.core.pobjects.Stream;
 import org.icepdf.core.pobjects.StringObject;
 import org.icepdf.core.util.Library;
 
 import java.awt.*;
-import java.util.HashMap;
-import java.util.List;
+import java.util.Hashtable;
+import java.util.Vector;
 
 /**
  * The class represents an indexed colour space.
  */
 public class Indexed extends PColorSpace {
-
-    public static final Name INDEXED_KEY = new Name("Indexed");
-    public static final Name I_KEY = new Name("I");
-
     PColorSpace colorSpace;
     int hival;
     byte[] colors = {
@@ -53,16 +47,16 @@ public class Indexed extends PColorSpace {
      * @param entries    dictionary entries.
      * @param dictionary indexed colour dictionary.
      */
-    Indexed(Library library, HashMap entries, List dictionary) {
+    Indexed(Library library, Hashtable entries, Vector dictionary) {
         super(library, entries);
         // get the base colour space
-        colorSpace = getColorSpace(library, dictionary.get(1));
+        colorSpace = getColorSpace(library, dictionary.elementAt(1));
         // get the hival
-        hival = (((Number) (dictionary.get(2))).intValue());
+        hival = (((Number) (dictionary.elementAt(2))).intValue());
         // check for an instance of a lookup table.
-        if (dictionary.get(3) instanceof StringObject) {
+        if (dictionary.elementAt(3) instanceof StringObject) {
             // peel and decrypt the literal string
-            StringObject tmpText = (StringObject) dictionary.get(3);
+            StringObject tmpText = (StringObject) dictionary.elementAt(3);
             String tmp = tmpText.getDecryptedLiteralString(library.securityManager);
             // build the colour lookup table.
             byte[] textBytes = new byte[colorSpace.getNumComponents() * (hival + 1)]; // m * (hival + 1)
@@ -70,12 +64,10 @@ public class Indexed extends PColorSpace {
                 textBytes[i] = (byte) tmp.charAt(i);
             }
             colors = textBytes;
-        } else if (dictionary.get(3) instanceof Reference) {
+        } else if (dictionary.elementAt(3) instanceof Reference) {
             colors = new byte[colorSpace.getNumComponents() * (hival + 1)];
-            // make sure the colors array is the correct length, so we'll copy
-            // over the data from the stream just to be sure.
-            Stream lookup = (Stream) (library.getObject((Reference) (dictionary.get(3))));
-            byte[] colorStream = lookup.getDecodedStreamBytes(0);
+            Stream lookup = (Stream) (library.getObject((Reference) (dictionary.elementAt(3))));
+            byte[] colorStream = lookup.getBytes();
             int length = colors.length < colorStream.length ? colors.length : colorStream.length;
             System.arraycopy(colorStream, 0, colors, 0, length);
         }

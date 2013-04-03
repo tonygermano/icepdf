@@ -1,16 +1,15 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.pobjects.fonts;
@@ -18,8 +17,8 @@ package org.icepdf.core.pobjects.fonts;
 import java.io.*;
 import java.util.HashMap;
 import java.util.StringTokenizer;
-import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
 
 /**
@@ -178,11 +177,9 @@ public class AFM {
     static {
         try {
             for (int i = 0; i < AFMnames.length; i++) {
-                AFM afm = AFM.loadFont("afm/" + AFMnames[i]);
-                if (afm != null) {
-                    afm.setFlags(AFMFlags[i]);
-                    AFMs.put(afm.fontName.toLowerCase(), afm);
-                }
+                AFM afm = new AFM("afm/" + AFMnames[i]);
+                afm.setFlags(AFMFlags[i]);
+                AFMs.put(afm.fontName.toLowerCase(), afm);
             }
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -196,21 +193,15 @@ public class AFM {
      * @throws IOException if the specified resource could not be found or o
      *                     pened.
      */
-    public static AFM loadFont(String resource) throws IOException {
-        InputStream in = AFM.class.getResourceAsStream(resource);
+    public AFM(String resource) throws IOException {
+        InputStream in = getClass().getResourceAsStream(resource);
         if (in != null) {
-            AFM afm = new AFM();
-            afm.parse(new InputStreamReader(in));
-            return afm;
+            parse(new InputStreamReader(in));
         } else {
             if (logger.isLoggable(Level.WARNING)) {
                 logger.warning("Could not find AFM File: " + resource);
             }
-            return null;
         }
-    }
-
-    private AFM() {
     }
 
     public String getFontName() {
@@ -289,7 +280,7 @@ public class AFM {
                 while (!st.nextToken().equals("WX")) ;
                 float wx = Integer.parseInt(st.nextToken()) / 1000f;
                 if (c >= 0 && c < 255) {
-                    widths[count] = wx;
+                    widths[count] = wx ;
                     // update max
                     if (wx > maxWidth) {
                         maxWidth = wx;

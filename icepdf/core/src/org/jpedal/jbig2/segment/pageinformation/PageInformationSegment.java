@@ -1,16 +1,15 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.jpedal.jbig2.segment.pageinformation;
@@ -25,83 +24,83 @@ import java.io.IOException;
 
 public class PageInformationSegment extends Segment {
 
-    private int pageBitmapHeight, pageBitmapWidth;
-    private int yResolution, xResolution;
+	private int pageBitmapHeight, pageBitmapWidth;
+	private int yResolution, xResolution;
 
-    PageInformationFlags pageInformationFlags = new PageInformationFlags();
-    private int pageStriping;
+	PageInformationFlags pageInformationFlags = new PageInformationFlags();
+	private int pageStriping;
 
-    private JBIG2Bitmap pageBitmap;
+	private JBIG2Bitmap pageBitmap;
 
-    public PageInformationSegment(JBIG2StreamDecoder streamDecoder) {
-        super(streamDecoder);
-    }
+	public PageInformationSegment(JBIG2StreamDecoder streamDecoder) {
+		super(streamDecoder);
+	}
 
-    public PageInformationFlags getPageInformationFlags() {
-        return pageInformationFlags;
-    }
+	public PageInformationFlags getPageInformationFlags() {
+		return pageInformationFlags;
+	}
 
-    public JBIG2Bitmap getPageBitmap() {
-        return pageBitmap;
-    }
+	public JBIG2Bitmap getPageBitmap() {
+		return pageBitmap;
+	}
 
-    public void readSegment() throws IOException, JBIG2Exception {
+	public void readSegment() throws IOException, JBIG2Exception {
 
-        if (JBIG2StreamDecoder.debug)
-            System.out.println("==== Reading Page Information Dictionary ====");
+		if (JBIG2StreamDecoder.debug)
+			System.out.println("==== Reading Page Information Dictionary ====");
 
-        short[] buff = new short[4];
-        decoder.readByte(buff);
-        pageBitmapWidth = BinaryOperation.getInt32(buff);
+		short[] buff = new short[4];
+		decoder.readByte(buff);
+		pageBitmapWidth = BinaryOperation.getInt32(buff);
 
-        buff = new short[4];
-        decoder.readByte(buff);
-        pageBitmapHeight = BinaryOperation.getInt32(buff);
+		buff = new short[4];
+		decoder.readByte(buff);
+		pageBitmapHeight = BinaryOperation.getInt32(buff);
 
-        if (JBIG2StreamDecoder.debug)
-            System.out.println("Bitmap size = " + pageBitmapWidth + 'x' + pageBitmapHeight);
+		if (JBIG2StreamDecoder.debug)
+			System.out.println("Bitmap size = " + pageBitmapWidth + 'x' + pageBitmapHeight);
 
-        buff = new short[4];
-        decoder.readByte(buff);
-        xResolution = BinaryOperation.getInt32(buff);
+		buff = new short[4];
+		decoder.readByte(buff);
+		xResolution = BinaryOperation.getInt32(buff);
 
-        buff = new short[4];
-        decoder.readByte(buff);
-        yResolution = BinaryOperation.getInt32(buff);
+		buff = new short[4];
+		decoder.readByte(buff);
+		yResolution = BinaryOperation.getInt32(buff);
 
-        if (JBIG2StreamDecoder.debug)
-            System.out.println("Resolution = " + xResolution + 'x' + yResolution);
+		if (JBIG2StreamDecoder.debug)
+			System.out.println("Resolution = " + xResolution + 'x' + yResolution);
 
-        /** extract page information flags */
-        short pageInformationFlagsField = decoder.readByte();
+		/** extract page information flags */
+		short pageInformationFlagsField = decoder.readByte();
 
-        pageInformationFlags.setFlags(pageInformationFlagsField);
+		pageInformationFlags.setFlags(pageInformationFlagsField);
 
-        if (JBIG2StreamDecoder.debug)
-            System.out.println("symbolDictionaryFlags = " + pageInformationFlagsField);
+		if (JBIG2StreamDecoder.debug)
+			System.out.println("symbolDictionaryFlags = " + pageInformationFlagsField);
 
-        buff = new short[2];
-        decoder.readByte(buff);
-        pageStriping = BinaryOperation.getInt16(buff);
+		buff = new short[2];
+		decoder.readByte(buff);
+		pageStriping = BinaryOperation.getInt16(buff);
 
-        if (JBIG2StreamDecoder.debug)
-            System.out.println("Page Striping = " + pageStriping);
+		if (JBIG2StreamDecoder.debug)
+			System.out.println("Page Striping = " + pageStriping);
 
-        int defPix = pageInformationFlags.getFlagValue(PageInformationFlags.DEFAULT_PIXEL_VALUE);
+		int defPix = pageInformationFlags.getFlagValue(PageInformationFlags.DEFAULT_PIXEL_VALUE);
 
-        int height;
+		int height;
 
-        if (pageBitmapHeight == -1) {
-            height = pageStriping & 0x7fff;
-        } else {
-            height = pageBitmapHeight;
-        }
+		if (pageBitmapHeight == -1) {
+			height = pageStriping & 0x7fff;
+		} else {
+			height = pageBitmapHeight;
+		}
 
-        pageBitmap = new JBIG2Bitmap(pageBitmapWidth, height, arithmeticDecoder, huffmanDecoder, mmrDecoder);
-        pageBitmap.clear(defPix);
-    }
+		pageBitmap = new JBIG2Bitmap(pageBitmapWidth, height, arithmeticDecoder, huffmanDecoder, mmrDecoder);
+		pageBitmap.clear(defPix);
+	}
 
-    public int getPageBitmapHeight() {
-        return pageBitmapHeight;
-    }
+	public int getPageBitmapHeight() {
+		return pageBitmapHeight;
+	}
 }

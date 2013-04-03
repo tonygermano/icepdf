@@ -1,25 +1,23 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.pobjects;
 
 import org.icepdf.core.util.Library;
 
-import java.lang.ref.WeakReference;
-import java.util.HashMap;
-import java.util.List;
+import java.util.Hashtable;
+import java.util.Vector;
 
 /**
  * <p>This class represents a document's page tree which defines the ordering
@@ -38,22 +36,12 @@ import java.util.List;
  * @since 2.0
  */
 public class PageTree extends Dictionary {
-
-    public static final Name TYPE = new Name("Pages");
-    public static final Name PARENT_KEY = new Name("Parent");
-    public static final Name COUNT_KEY = new Name("Count");
-    public static final Name MEDIABOX_KEY = new Name("MediaBox");
-    public static final Name CROPBOX_KEY = new Name("CropBox");
-    public static final Name KIDS_KEY = new Name("Kids");
-    public static final Name ROTATE_KEY = new Name("Rotate");
-    public static final Name RESOURCES_KEY = new Name("Resources");
-
     // Number of leaf nodes
     private int kidsCount = 0;
     // vector of references to leafs
-    private List kidsReferences;
+    private Vector kidsReferences;
     // vector of the pages associated with tree
-    private HashMap<Integer, WeakReference<Object>> kidsPageAndPages;
+    private Vector kidsPageAndPages;
     // pointer to parent page tree
     private PageTree parent;
     // initiated flag
@@ -83,8 +71,47 @@ public class PageTree extends Dictionary {
      * @param l document library.
      * @param h PageTree dictionary entries.
      */
-    public PageTree(Library l, HashMap h) {
+    public PageTree(Library l, Hashtable h) {
         super(l, h);
+    }
+
+    /**
+     * Dispose the PageTree.
+     */
+    protected synchronized void dispose(boolean cache) {
+        if (kidsReferences != null) {
+            if (!cache) {
+                kidsReferences.clear();
+                kidsReferences.trimToSize();
+            }
+        }
+        if (kidsPageAndPages != null) {
+            for (Object pageOrPages : kidsPageAndPages) {
+                if (pageOrPages instanceof Page)
+                    ((Page) pageOrPages).dispose(cache);
+                else if (pageOrPages instanceof PageTree)
+                    ((PageTree) pageOrPages).dispose(cache);
+            }
+            if (!cache) {
+                kidsPageAndPages.clear();
+                kidsPageAndPages.trimToSize();
+            }
+        }
+        /*
+         * If resources is non-null, then at least one page has got a reference
+         * to it. At which point we'll wait for the last page to reference it
+         * do make the call to dispose.
+         *
+         * It is also possible for type3 fonts to use a resource, so we better
+         * go through the motions to remove the resource, as we don't dispose
+         * of fonts.
+         */
+        if (resources != null) {
+            boolean disposeSuccess = resources.dispose(cache, this);
+            if (disposeSuccess) {
+                loadedResources = false;
+            }
+        }
     }
 
     /**
@@ -94,34 +121,38 @@ public class PageTree extends Dictionary {
         if (inited) {
             return;
         }
-        inited = true;
-        Object parentTree = library.getObject(entries, PARENT_KEY);
+        Object parentTree = library.getObject(entries, "Parent");
         if (parentTree instanceof PageTree) {
-            parent = (PageTree) parentTree;
+            parent = (PageTree) library.getObject(entries, "Parent");
         }
-        kidsCount = library.getNumber(entries, COUNT_KEY).intValue();
-        List boxDimensions = (List) (library.getObject(entries, MEDIABOX_KEY));
+        kidsCount = library.getNumber(entries, "Count").intValue();
+        Vector boxDimensions = (Vector) (library.getObject(entries, "MediaBox"));
         if (boxDimensions != null) {
             mediaBox = new PRectangle(boxDimensions);
 //            System.out.println("PageTree - MediaBox " + mediaBox);
         }
-        boxDimensions = (List) (library.getObject(entries, CROPBOX_KEY));
+        boxDimensions = (Vector) (library.getObject(entries, "CropBox"));
         if (boxDimensions != null) {
             cropBox = new PRectangle(boxDimensions);
 //            System.out.println("PageTree - CropBox " + cropBox);
         }
-        kidsReferences = (List) library.getObject(entries, KIDS_KEY);
-        kidsPageAndPages = new HashMap<Integer, WeakReference<Object>>(kidsReferences.size());
+        kidsReferences = (Vector) library.getObject(entries, "Kids");
+        kidsPageAndPages = new Vector(kidsReferences.size());
+        kidsPageAndPages.setSize(kidsReferences.size());
         // Rotation is only respected if child pages do not have their own
         // rotation value.
-        Object tmpRotation = library.getObject(entries, ROTATE_KEY);
+        Object tmpRotation = library.getObject(entries, "Rotate");
         if (tmpRotation != null) {
             rotationFactor = ((Number) tmpRotation).floatValue();
             // mark that we have an inheritable value
             isRotationFactor = true;
         }
 
+        inited = true;
+    }
 
+    // todo: clean up method
+    void initRootPageTree() {
     }
 
     /**
@@ -152,11 +183,10 @@ public class PageTree extends Dictionary {
      *
      * @return Resources associates with the PageTree
      */
-    public synchronized Resources getResources() {
-        // make sure we synchronize this to avoid a false resource grab.
+    public Resources getResources() {
         if (!loadedResources) {
             loadedResources = true;
-            resources = library.getResources(entries, RESOURCES_KEY);
+            resources = library.getResources(entries, "Resources");
         }
         return resources;
     }
@@ -204,7 +234,7 @@ public class PageTree extends Dictionary {
             }
             globalIndex += localIndex;
             currChildRef = currParentRef;
-            currParentRef = (Reference) currParent.entries.get(PARENT_KEY);
+            currParentRef = (Reference) currParent.entries.get("Parent");
             currParent = currParent.parent;
         }
         return globalIndex;
@@ -232,15 +262,13 @@ public class PageTree extends Dictionary {
      * @return
      */
     private Object getPageOrPagesPotentiallyNotInitedFromReferenceAt(int index) {
-        WeakReference<Object> pageOrPages = kidsPageAndPages.get(index);
-        if (pageOrPages == null || pageOrPages.get() == null) {
+        Object pageOrPages = kidsPageAndPages.get(index);
+        if (pageOrPages == null) {
             Reference ref = (Reference) kidsReferences.get(index);
-            Object tmp = library.getObject(ref);
-            pageOrPages = new WeakReference<Object>(tmp);
-            kidsPageAndPages.put(index, pageOrPages);
-            return tmp;
+            pageOrPages = library.getObject(ref);
+            kidsPageAndPages.set(index, pageOrPages);
         }
-        return pageOrPages.get();
+        return pageOrPages;
     }
 
     /**
@@ -251,10 +279,9 @@ public class PageTree extends Dictionary {
      */
     private Page getPagePotentiallyNotInitedByRecursiveIndex(int globalIndex) {
         int globalIndexSoFar = 0;
-        int numLocalKids = kidsReferences.size();
-        Object pageOrPages;
+        int numLocalKids = kidsPageAndPages.size();
         for (int i = 0; i < numLocalKids; i++) {
-            pageOrPages = getPageOrPagesPotentiallyNotInitedFromReferenceAt(i);
+            Object pageOrPages = getPageOrPagesPotentiallyNotInitedFromReferenceAt(i);
             if (pageOrPages instanceof Page) {
                 if (globalIndex == globalIndexSoFar)
                     return (Page) pageOrPages;
@@ -303,12 +330,20 @@ public class PageTree extends Dictionary {
      * <code>getPage</code> for the same <code>pageIndex</code>.
      *
      * @param pageNumber Zero-based index of the Page to return.
+     * @param user       The object that is asking for the Page to be locked on its behalf.
      * @return The requested Page.
+     * @see #releasePage
      */
-    public Page getPage(int pageNumber) {
+    public Page getPage(int pageNumber, Object user) {
         if (pageNumber < 0)
             return null;
-        return getPagePotentiallyNotInitedByRecursiveIndex(pageNumber);
+        Page p = getPagePotentiallyNotInitedByRecursiveIndex(pageNumber);
+        if (p != null) {
+            // Add Page to cache, and lock it from getting disposed
+            library.memoryManager.lock(user, p);
+            //p.init();
+        }
+        return p;
     }
 
     /**
@@ -325,6 +360,53 @@ public class PageTree extends Dictionary {
             return p.getPObjectReference();
         }
         return null;
+    }
+
+    /**
+     * Release the Page that was locked by <code>getPage</code>
+     * for user.
+     * <p/>
+     * ICEpdf uses a caching and memory management mechanism
+     * to reduce the CPU, I/O, and time to access a Page,
+     * which requires a locking and releasing protocol.
+     * Calls to the <code>getPage</code> must be matched with
+     * corresponding calls to <code>releasePage</code>.
+     * Calls cannot be nested, meaning that <code>releasePage</code>
+     * must be called before a subsequent invocation of
+     * <code>getPage</code> for the same <code>pageIndex</code>.
+     *
+     * @param page The Page that was locked
+     * @param user The entity for whom the page was locked.
+     * @see #getPage
+     */
+    public void releasePage(Page page, Object user) {
+        // Release lock, allowing it to be disposed
+        if (library != null && library.memoryManager != null)
+            library.memoryManager.release(user, page);
+    }
+
+    /**
+     * Release the Page that was locked by <code>getPage</code>
+     * for user.
+     * <p/>
+     * ICEpdf uses a caching and memory management mechanism
+     * to reduce the CPU, I/O, and time to access a Page,
+     * which requires a locking and releasing protocol.
+     * Calls to the <code>getPage</code> must be matched with
+     * corresponding calls to <code>releasePage</code>.
+     * Calls cannot be nested, meaning that <code>releasePage</code>
+     * must be called before a subsequent invocation of
+     * <code>getPage</code> for the same <code>pageIndex</code>.
+     *
+     * @param pageNumber The page number of the Page that was locked.
+     * @param user       The entity for whom the page was locked.
+     * @see #getPage
+     */
+    public void releasePage(int pageNumber, Object user) {
+        Page page = getPagePotentiallyNotInitedByRecursiveIndex(pageNumber);
+
+        // Release lock, allowing it to be disposed
+        library.memoryManager.release(user, page);
     }
 
     /**

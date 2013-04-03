@@ -1,34 +1,33 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.pobjects.annotations;
 
-import org.icepdf.core.pobjects.Dictionary;
 import org.icepdf.core.pobjects.*;
 import org.icepdf.core.pobjects.actions.Action;
 import org.icepdf.core.pobjects.graphics.Shapes;
-import org.icepdf.core.pobjects.security.SecurityManager;
+import org.icepdf.core.util.ContentParser;
+import org.icepdf.core.util.Defs;
 import org.icepdf.core.util.GraphicsRenderingHints;
 import org.icepdf.core.util.Library;
-import org.icepdf.core.util.content.ContentParser;
-import org.icepdf.core.util.content.ContentParserFactory;
 
 import java.awt.*;
 import java.awt.geom.*;
-import java.util.*;
-import java.util.List;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Hashtable;
+import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -326,15 +325,10 @@ import java.util.logging.Logger;
  * @since 2.5
  */
 
-public abstract class Annotation extends Dictionary {
+public class Annotation extends Dictionary {
 
     private static final Logger logger =
             Logger.getLogger(Annotation.class.toString());
-
-    public static final Name TYPE = new Name("Annot");
-    public static final Name RESOURCES_VALUE = new Name("Resources");
-    public static final Name BBOX_VALUE = new Name("BBox");
-    public static final Name PARENT_KEY = new Name("Parent");
 
     /**
      * Dictionary constants for Annotations.
@@ -350,13 +344,8 @@ public abstract class Annotation extends Dictionary {
     public static final Name SUBTYPE_SQUARE = new Name("Square");
     public static final Name SUBTYPE_CIRCLE = new Name("Circle");
     public static final Name SUBTYPE_POLYGON = new Name("Polygon");
-    public static final Name SUBTYPE_POLYLINE = new Name("PolyLine");
+    public static final Name SUBTYPE_POLYLINE = new Name("Polyline");
     public static final Name SUBTYPE_HIGHLIGHT = new Name("Highlight");
-    public static final Name SUBTYPE_POPUP = new Name("Popup");
-    public static final Name SUBTYPE_WIDGET = new Name("Widget");
-    public static final Name SUBTYPE_INK = new Name("Ink");
-    public static final Name SUBTYPE_FREE_TEXT = new Name("FreeText");
-    public static final Name SUBTYPE_TEXT = new Name("Text");
 
     /**
      * Border style
@@ -424,36 +413,6 @@ public abstract class Annotation extends Dictionary {
     public static final Name APPEARANCE_STREAM_DOWN_KEY = new Name("d");
 
     /**
-     * (Optional) Text that shall be displayed for the annotation or, if this
-     * type of annotation does not display text, an alternate description of the
-     * annotation’s contents in human-readable form. In either case, this text
-     * is useful when extracting the document’s contents in support of accessibility
-     * to users with disabilities or for other purposes (see 14.9.3,
-     * “Alternate Descriptions”). See 12.5.6, “Annotation Types” for more details
-     * on the meaning of this entry for each annotation type.
-     */
-    public static final Name CONTENTS_KEY = new Name("Contents");
-
-    /**
-     * The date and time when the annotation was most recently modified. The
-     * format should be a date string as described in 7.9.4, “Dates,” but
-     * conforming readers shall accept and display a string in any format.
-     */
-    public static final Name M_KEY = new Name("M");
-
-    /**
-     * (Optional; PDF 1.4) The annotation name, a text string uniquely
-     * identifying it among all the annotations on its page.
-     */
-    public static final Name NM_KEY = new Name("NM");
-
-    /**
-     * Debug flag to turn off appearance stream compression for easier
-     * human file reading.
-     */
-    protected static boolean compressAppearanceStream = true;
-
-    /**
      * Border property indexes for the border vector,  only applicable
      * if the border style has not been set.
      */
@@ -468,27 +427,12 @@ public abstract class Annotation extends Dictionary {
     public static final int VISIBLE_RECTANGLE = 1;
     public static final int INVISIBLE_RECTANGLE = 0;
 
-    // shapes form apparenece stream
-    protected Shapes shapes;
-    //
-    protected AffineTransform matrix = new AffineTransform();
-    protected Rectangle2D bbox = null;
-
-    // modified date.
-    protected PDate modifiedDate;
-    protected boolean hasBlendingMode;
-
-    // security manager need for decrypting strings.
-    protected SecurityManager securityManager;
-
     // type of annotation
     protected Name subtype;
-    // content flag
-    protected String content;
     // borders style of the annotation, can be null
     protected BorderStyle borderStyle;
     // border defined by vector
-    protected List border;
+    protected Vector<Number> border;
     // border color of annotation.
     protected Color color;
     // annotation bounding rectangle in user space.
@@ -500,42 +444,19 @@ public abstract class Annotation extends Dictionary {
      * Should only be called from Parser,  Use AnnotationFactory if you
      * creating a new annotation.
      *
-     * @param library document library
-     * @param hashMap annotation properties.
+     * @param library   document library
+     * @param hashTable annotation properties.
      * @return annotation instance.
      */
-    public static Annotation buildAnnotation(Library library, HashMap hashMap) {
+    public static Annotation buildAnnotation(Library library, Hashtable hashTable) {
         Annotation annot = null;
-        Name subType = (Name) hashMap.get(SUBTYPE_KEY);
-        if (subType != null) {
-            if (subType.equals(Annotation.SUBTYPE_LINK)) {
-                annot = new LinkAnnotation(library, hashMap);
-            }
-            // highlight version of a TextMarkup annotation.
-            else if (subType.equals(TextMarkupAnnotation.SUBTYPE_HIGHLIGHT) ||
-                    subType.equals(TextMarkupAnnotation.SUBTYPE_STRIKE_OUT) ||
-                    subType.equals(TextMarkupAnnotation.SUBTYPE_UNDERLINE)) {
-                annot = new TextMarkupAnnotation(library, hashMap);
-            } else if (subType.equals(Annotation.SUBTYPE_LINE)) {
-                annot = new LineAnnotation(library, hashMap);
-            } else if (subType.equals(Annotation.SUBTYPE_SQUARE)) {
-                annot = new SquareAnnotation(library, hashMap);
-            } else if (subType.equals(Annotation.SUBTYPE_CIRCLE)) {
-                annot = new CircleAnnotation(library, hashMap);
-            } else if (subType.equals(Annotation.SUBTYPE_INK)) {
-                annot = new InkAnnotation(library, hashMap);
-            } else if (subType.equals(Annotation.SUBTYPE_FREE_TEXT)) {
-                annot = new FreeTextAnnotation(library, hashMap);
-            } else if (subType.equals(Annotation.SUBTYPE_TEXT)) {
-                annot = new TextAnnotation(library, hashMap);
-            } else if (subType.equals(Annotation.SUBTYPE_POPUP)) {
-                annot = new PopupAnnotation(library, hashMap);
-            } else if (subType.equals(Annotation.SUBTYPE_WIDGET)) {
-                annot = new WidgetAnnotation(library, hashMap);
-            }
+        Name subtype = (Name) hashTable.get(SUBTYPE_KEY);
+        if (subtype != null) {
+            if (subtype.equals(SUBTYPE_LINK))
+                annot = new LinkAnnotation(library, hashTable);
         }
         if (annot == null) {
-            annot = new GenericAnnotation(library, hashMap);
+            annot = new Annotation(library, hashTable);
         }
         return annot;
     }
@@ -546,59 +467,33 @@ public abstract class Annotation extends Dictionary {
      * @param l document library.
      * @param h dictionary entries.
      */
-    public Annotation(Library l, HashMap h) {
+    public Annotation(Library l, Hashtable h) {
         super(l, h);
         // type of Annotation
         subtype = (Name) getObject(SUBTYPE_KEY);
 
-        securityManager = library.getSecurityManager();
-
-        content = library.getString(entries, CONTENTS_KEY);
-
-        // no borders for the following types,  not really in the
+        // no borders for the followING types,  not really in the
         // spec for some reason, Acrobat doesn't render them.
-        // todo add other annotations types.
-        canDrawBorder = !(
-                SUBTYPE_LINE.equals(subtype) ||
-                        SUBTYPE_CIRCLE.equals(subtype) ||
-                        SUBTYPE_SQUARE.equals(subtype) ||
-                        SUBTYPE_POLYGON.equals(subtype) ||
-                        SUBTYPE_POLYLINE.equals(subtype));
+        canDrawBorder = !(SUBTYPE_LINE.equals(subtype) ||
+                SUBTYPE_CIRCLE.equals(subtype) ||
+                SUBTYPE_SQUARE.equals(subtype) ||
+                SUBTYPE_POLYGON.equals(subtype) ||
+                SUBTYPE_POLYLINE.equals(subtype));
 
         // parse out border style if available
-        HashMap BS = (HashMap) getObject(BORDER_STYLE_KEY);
+        Hashtable BS = (Hashtable) getObject(BORDER_STYLE_KEY);
         if (BS != null) {
             borderStyle = new BorderStyle(library, BS);
         }
-        // else build out a border style from the old B entry or create
-        // a default invisible border.
-        else {
-            HashMap borderMap = new HashMap();
-            // get old school border
-            Object borderObject = getObject(BORDER_KEY);
-            if (borderObject != null && borderObject instanceof List) {
-                border = (List) borderObject;
-                // copy over the properties to border style.
-                if (border.size() == 3) {
-                    borderMap.put(BorderStyle.BORDER_STYLE_KEY, BorderStyle.BORDER_STYLE_SOLID);
-                    borderMap.put(BorderStyle.BORDER_WIDTH_KEY, border.get(2));
-                } else if (border.size() == 4) {
-                    borderMap.put(BorderStyle.BORDER_STYLE_KEY, BorderStyle.BORDER_STYLE_DASHED);
-                    borderMap.put(BorderStyle.BORDER_WIDTH_KEY, border.get(2));
-                    borderMap.put(BorderStyle.BORDER_DASH_KEY, Arrays.asList(3f));
-                }
-            } else {
-                // default to invisible border
-                borderMap.put(BorderStyle.BORDER_STYLE_KEY, BorderStyle.BORDER_STYLE_SOLID);
-                borderMap.put(BorderStyle.BORDER_WIDTH_KEY, 0f);
-            }
-            borderStyle = new BorderStyle(library, borderMap);
-            entries.put(BORDER_STYLE_KEY, borderStyle);
+        // get old school border
+        Object borderObject = getObject(BORDER_KEY);
+        if (borderObject != null && borderObject instanceof Vector) {
+            border = (Vector<Number>) borderObject;
         }
 
         // parse out border colour, specific to link annotations.
         color = Color.black; // we default to black but probably should be null
-        List C = (List) getObject(COLOR_KEY);
+        Vector C = (Vector) getObject(COLOR_KEY);
         // parse thought rgb colour.
         if (C != null && C.size() >= 3) {
             float red = ((Number) C.get(0)).floatValue();
@@ -609,49 +504,6 @@ public abstract class Annotation extends Dictionary {
             blue = Math.max(0.0f, Math.min(1.0f, blue));
             color = new Color(red, green, blue);
         }
-
-        // if no creation date check for M or modified.
-        Object value = library.getObject(entries, M_KEY);
-        if (value != null && value instanceof StringObject) {
-            StringObject text = (StringObject) value;
-            modifiedDate = new PDate(securityManager,
-                    text.getDecryptedLiteralString(securityManager));
-        }
-
-        // process the streams if available.
-        Object AP = getObject(APPEARANCE_STREAM_KEY);
-        if (AP instanceof HashMap) {
-            Object N = library.getObject(
-                    (HashMap) AP, APPEARANCE_STREAM_NORMAL_KEY);
-            if (N instanceof HashMap) {
-                Object AS = getObject(APPEARANCE_STATE_KEY);
-                if (AS != null && AS instanceof Name)
-                    N = library.getObject((HashMap) N, (Name) AS);
-            }
-            // n should be a Form but we have a few cases of Stream
-            if (N instanceof Form) {
-                Form form = (Form) N;
-                form.init();
-                shapes = form.getShapes();
-                matrix = form.getMatrix();
-                bbox = form.getBBox();
-            } else if (N instanceof Stream) {
-
-                Stream stream = (Stream) N;
-                Resources res = library.getResources(stream.getEntries(), RESOURCES_VALUE);
-                bbox = library.getRectangle(stream.getEntries(), BBOX_VALUE);
-                matrix = new AffineTransform();
-                try {
-                    ContentParser cp = ContentParserFactory.getInstance()
-                            .getContentParser(library, res);
-                    shapes = cp.parse(new byte[][]{stream.getDecodedStreamBytes()}).getShapes();
-                } catch (Exception e) {
-                    shapes = new Shapes();
-                    logger.log(Level.FINE, "Error initializing Page.", e);
-                    e.printStackTrace();
-                }
-            }
-        }
     }
 
     /**
@@ -660,15 +512,9 @@ public abstract class Annotation extends Dictionary {
      *
      * @return subtype of annotation
      */
-    public Name getSubType() {
-        return library.getName(entries, SUBTYPE_KEY);
+    public String getSubType() {
+        return library.getName(entries, SUBTYPE_KEY.getName());
     }
-
-    public void setSubtype(Name subtype) {
-        entries.put(SUBTYPE_KEY, subtype);
-        this.subtype = subtype;
-    }
-
 
     /**
      * Gets the annotation rectangle, and defines the location of the annotation on
@@ -680,38 +526,18 @@ public abstract class Annotation extends Dictionary {
     public Rectangle2D.Float getUserSpaceRectangle() {
         if (userSpaceRectangle == null) {
             Object tmp = getObject(RECTANGLE_KEY);
-            if (tmp instanceof List) {
-                userSpaceRectangle = library.getRectangle(entries, RECTANGLE_KEY);
+            if (tmp instanceof Vector) {
+                userSpaceRectangle = library.getRectangle(entries, RECTANGLE_KEY.getName());
             }
         }
         return userSpaceRectangle;
     }
 
-    public void setBBox(Rectangle bbox) {
-        this.bbox = bbox;
-    }
-
-    /**
-     * Creates a Java2D strok from the propties tht make up the BorderStyle object.
-     *
-     * @return dashed or solid stoke.
-     */
-    public Stroke getBorderStyleStroke() {
-        if (borderStyle.isStyleDashed()) {
-            return new BasicStroke(
-                    borderStyle.getStrokeWidth(), BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER,
-                    borderStyle.getStrokeWidth() * 2.0f, borderStyle.getDashArray(), 0.0f);
-        } else {
-            return new BasicStroke(borderStyle.getStrokeWidth());
-        }
-    }
-
-
     /**
      * Sets the users page rectangle for this annotation action instance
      */
     public void setUserSpaceRectangle(Rectangle2D.Float rect) {
-        if (userSpaceRectangle != null && rect != null) {
+        if (userSpaceRectangle != null) {
             userSpaceRectangle = new Rectangle2D.Float(rect.x, rect.y,
                     rect.width, rect.height);
             getEntries().put(Annotation.RECTANGLE_KEY,
@@ -726,18 +552,18 @@ public abstract class Annotation extends Dictionary {
      * @return action to be activated, if no action, null is returned.
      */
     public org.icepdf.core.pobjects.actions.Action getAction() {
-        Object tmp = library.getDictionary(entries, ACTION_KEY);
+        Object tmp = library.getDictionary(entries, ACTION_KEY.getName());
         // initial parse will likely have the action as a dictionary, so we
         // create the new action object on the fly.  However it is also possible
         // that we are parsing an action that has no type specification and 
         // thus we can't use the parser to create the new action.
-        if (tmp != null && tmp instanceof HashMap) {
-            Action action = Action.buildAction(library, (HashMap) tmp);
+        if (tmp != null && tmp instanceof Hashtable) {
+            Action action = Action.buildAction(library, (Hashtable) tmp);
             // assign reference if applicable
             if (action != null &&
-                    library.isReference(entries, ACTION_KEY)) {
+                    library.isReference(entries, ACTION_KEY.getName())) {
                 action.setPObjectReference(
-                        library.getReference(entries, ACTION_KEY));
+                        library.getReference(entries, ACTION_KEY.getName()));
             }
             return action;
         }
@@ -751,7 +577,7 @@ public abstract class Annotation extends Dictionary {
     }
 
     /**
-     * Adds the specified action to this annotation instance.  If the annotation
+     * Adds the specified action to this annotation isnstance.  If the annotation
      * instance already has an action then this action replaces it.
      * <p/>
      * todo: future enhancment add support of next/muliple action chains.
@@ -783,7 +609,7 @@ public abstract class Annotation extends Dictionary {
             // if found we will add the new action at the beginning of the
             // next chain.
             boolean isReference = library.isReference(getEntries(),
-                    ACTION_KEY);
+                    ACTION_KEY.toString());
             // we have a next action that is an object, mark it for delete.
             // Because its a reference no need to flag the annotation as changed.
             if (isReference) {
@@ -886,17 +712,25 @@ public abstract class Annotation extends Dictionary {
     }
 
     public boolean allowScreenNormalMode() {
-        return allowScreenOrPrintRenderingOrInteraction() && !getFlagNoView();
+        if (!allowScreenOrPrintRenderingOrInteraction())
+            return false;
+        return !getFlagNoView();
     }
 
     public boolean allowScreenRolloverMode() {
-        return allowScreenOrPrintRenderingOrInteraction() && !(getFlagNoView()
-                && !getFlagToggleNoView()) && !getFlagReadOnly();
+        if (!allowScreenOrPrintRenderingOrInteraction())
+            return false;
+        if (getFlagNoView() && !getFlagToggleNoView())
+            return false;
+        return !getFlagReadOnly();
     }
 
     public boolean allowScreenDownMode() {
-        return allowScreenOrPrintRenderingOrInteraction() && !(getFlagNoView() &&
-                !getFlagToggleNoView()) && !getFlagReadOnly();
+        if (!allowScreenOrPrintRenderingOrInteraction())
+            return false;
+        if (getFlagNoView() && !getFlagToggleNoView())
+            return false;
+        return !getFlagReadOnly();
     }
 
     public boolean allowPrintNormalMode() {
@@ -916,20 +750,20 @@ public abstract class Annotation extends Dictionary {
         return borderStyle;
     }
 
-    public List<Number> getBorder() {
+    public Vector<Number> getBorder() {
         return border;
     }
 
     public Annotation getParentAnnotation() {
         Annotation parent = null;
 
-        Object ob = getObject(PARENT_KEY);
+        Object ob = getObject("Parent");
         if (ob instanceof Reference)
             ob = library.getObject((Reference) ob);
         if (ob instanceof Annotation)
             parent = (Annotation) ob;
-        else if (ob instanceof HashMap)
-            parent = Annotation.buildAnnotation(library, (HashMap) ob);
+        else if (ob instanceof Hashtable)
+            parent = Annotation.buildAnnotation(library, (Hashtable) ob);
 
         return parent;
     }
@@ -952,7 +786,7 @@ public abstract class Annotation extends Dictionary {
      * @return VISIBLE_RECTANGLE if the annotation has a visible borde, otherwise
      *         INVISIBLE_RECTANGLE
      */
-    public int getBorderType() {
+    public int getLinkType() {
         // border style has W value for border with
         if (borderStyle != null) {
             if (borderStyle.getStrokeWidth() > 0) {
@@ -961,7 +795,7 @@ public abstract class Annotation extends Dictionary {
         }
         // look for a border, 0,0,1 has one, 0,0,0 doesn't
         else if (border != null) {
-            if (border.size() >= 3 && ((Number) border.get(2)).floatValue() > 0) {
+            if (border.size() >= 3 && border.get(2).floatValue() > 0) {
                 return VISIBLE_RECTANGLE;
             }
         }
@@ -977,7 +811,7 @@ public abstract class Annotation extends Dictionary {
      *
      * @return BorderSTyle line constants.
      */
-    public Name getLineStyle() {
+    public String getLineStyle() {
         // check for border style
         if (borderStyle != null) {
             return borderStyle.getBorderStyle();
@@ -986,7 +820,7 @@ public abstract class Annotation extends Dictionary {
         else if (border != null) {
             if (border.size() > 3) {
                 return BorderStyle.BORDER_STYLE_DASHED;
-            } else if (((Number) border.get(2)).floatValue() > 1) {
+            } else if (border.get(2).floatValue() > 1) {
                 return BorderStyle.BORDER_STYLE_SOLID;
             }
         }
@@ -1007,7 +841,7 @@ public abstract class Annotation extends Dictionary {
         // check the border entry, will be solid or dashed
         else if (border != null) {
             if (border.size() >= 3) {
-                return ((Number) border.get(2)).floatValue();
+                return border.get(2).floatValue();
             }
         }
         return 0;
@@ -1021,14 +855,13 @@ public abstract class Annotation extends Dictionary {
     public boolean isBorder() {
         boolean borderWidth = false;
         Object border = getObject(BORDER_KEY);
-        if (border != null && border instanceof List) {
-            List borderProps = (List) border;
+        if (border != null && border instanceof Vector) {
+            Vector borderProps = (Vector) border;
             if (borderProps.size() == 3) {
                 borderWidth = ((Number) borderProps.get(2)).floatValue() > 0;
             }
         }
-        return (getBorderStyle() != null &&
-                getBorderStyle().getStrokeWidth() > 0) || borderWidth;
+        return getBorderStyle() != null || borderWidth;
     }
 
     public void render(Graphics2D origG, int renderHintType,
@@ -1062,8 +895,6 @@ public abstract class Annotation extends Dictionary {
         ////Graphics2D g = (Graphics2D) origG.create();
 
         AffineTransform at = new AffineTransform(oldAT);
-
-        // move canvas to paint annotation for page rendering only.
         at.translate(rect.getMinX(), rect.getMinY());
 
         boolean noRotate = getFlagNoRotate();
@@ -1129,35 +960,99 @@ public abstract class Annotation extends Dictionary {
 //origG.fill( topLeft );
     }
 
+    // TODO add support for rollover and down states..
     protected void renderAppearanceStream(Graphics2D g) {
+        Object AP = getObject(APPEARANCE_STREAM_KEY);
+        if (AP instanceof Hashtable) {
+            Object N = library.getObject(
+                    (Hashtable) AP, APPEARANCE_STREAM_NORMAL_KEY.getName());
+            if (N instanceof Hashtable) {
+                Object AS = getObject(APPEARANCE_STATE_KEY);
+                if (AS != null)
+                    N = library.getObject((Hashtable) N, AS.toString());
+            }
 
-        if (shapes != null) {
+            Shapes shapes = null;
+            AffineTransform matrix = null;
+            Rectangle2D bbox = null;
+            // n should be a Form but we have a few cases of Stream
+            if (N instanceof Form) {
+                Form form = (Form) N;
+                form.init();
+                shapes = form.getShapes();
+                matrix = form.getMatrix();
+                bbox = form.getBBox();
+            } else if (N instanceof Stream) {
 
-//            g.setColor( Color.blue );
-//            Rectangle2D.Float newRect = deriveDrawingRectangle();
-//            g.draw( newRect );
+                Stream stream = (Stream) N;
+                Resources res = library.getResources(stream.getEntries(), "Resources");
+                bbox = library.getRectangle(stream.getEntries(), "BBox");
+                matrix = new AffineTransform();
+                InputStream sis = stream.getInputStreamForDecodedStreamBytes();
+                try {
+                    ContentParser cp = new ContentParser(library, res);
+                    shapes = cp.parse(sis);
+                } catch (Exception e) {
+                    shapes = new Shapes();
+                    logger.log(Level.FINE, "Error initializing Page.", e);
+                } finally {
+                    try {
+                        sis.close();
+                    } catch (IOException e) {
+                        logger.log(Level.FINE, "Error closing page stream.", e);
+                    }
+                }
+            }
+            if (shapes != null) {
+//g.setColor( Color.blue );
+//Rectangle2D.Double newRect = deriveDrawingRectangle();
+//g.draw( newRect );
 
-            // step 1. appearance bounding box (BBox) is transformed, using
-            // Matrix, to produce a quadrilateral with arbitrary orientation.
-            Rectangle2D tBbox = matrix.createTransformedShape(bbox).getBounds2D();
 
-            // Step 2. matrix a is computed that scales and translates the
-            // transformed appearance box (tBbox) to align with the edges of
-            // the annotation's rectangle (Ret).
-            Rectangle2D rect = getUserSpaceRectangle();
-            AffineTransform tAs = AffineTransform.getScaleInstance(
-                    (rect.getWidth() / tBbox.getWidth()),
-                    (rect.getHeight() / tBbox.getHeight()));
-            // Step 3. matrix is concatenated with A to form a matrix AA
-            // that maps from the appearance's coordinate system to the
-            // annotation's rectangle in default user space.
-            tAs.concatenate(matrix);
-            g.transform(tAs);
+                // step 1. appearance bounding box (BBox) is transformed, using
+                // Matrix, to produce a quadrilateral with arbitrary orientation.
+                Rectangle2D tBbox = matrix.createTransformedShape(bbox).getBounds2D();
 
-            // regular paint
-            shapes.paint(g);
+                // Step 2. matrix a is computed that scales and translates the
+                // transformed appearance box (tBbox) to align with the edges of
+                // the annotation's rectangle (Ret).
+                Rectangle2D rect = getUserSpaceRectangle();
+                AffineTransform tAs = AffineTransform.getScaleInstance(
+                        (rect.getWidth() / tBbox.getWidth()),
+                        (rect.getHeight() / tBbox.getHeight()));
+                // something not quite right here.
+//                AffineTransform tAt = AffineTransform.getTranslateInstance(
+//                        (tBbox.getX() - rect.getX()),
+//                        (tBbox.getY() - rect.getY()));
+//                tAs.concatenate(tAt);
+                // Step 3. matrix is concatenated with A to form a matrix AA
+                // that maps from the appearance's coordinate system to the
+                // annotation's rectangle in default user space.
+                tAs.concatenate(matrix);
+                g.transform(tAs);
+
+//System.out.println("Form: " + form.getEntries());
+//String str = new String( form.getBytes() );
+//System.out.println( str );
+//System.out.println("Shapes: " + shapes + "  count: " + shapes.getShapesCount());
+                // check to see if we are painting highlight annotations.
+                // if so we add some transparency to the context.
+                boolean isTransparency = Defs.sysPropertyBoolean("org.icepdf.core.paint.disableAlpha");
+                if (subtype != null && SUBTYPE_HIGHLIGHT.equals(subtype)) {
+                    g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, .30f));
+                    // remove other alpha defs from parsing
+                    Defs.setSystemProperty("org.icepdf.core.paint.disableAlpha", "true");
+                }
+                // regular paint
+                shapes.paint(g);
+                // switch transparency back to the default value
+                if (subtype != null && SUBTYPE_HIGHLIGHT.equals(subtype)) {
+                    // remove other alpha defs from parsing
+                    Defs.setSystemProperty("org.icepdf.core.paint.disableAlpha",
+                            String.valueOf(isTransparency));
+                }
+            }
         }
-
     }
 
     protected void renderBorder(Graphics2D g) {
@@ -1169,13 +1064,6 @@ public abstract class Annotation extends Dictionary {
 //            g.draw( jrect );
 //            return;
 //        }
-        // we don't paint some borders as the BS has a different meanings.
-        if (this instanceof SquareAnnotation ||
-                this instanceof CircleAnnotation ||
-                this instanceof LineAnnotation ||
-                this instanceof InkAnnotation) {
-            return;
-        }
 
         Color borderColor = getColor();
         if (borderColor != null) {
@@ -1194,7 +1082,7 @@ public abstract class Annotation extends Dictionary {
                 } else if (bs.isStyleDashed()) {
                     BasicStroke stroke = new BasicStroke(
                             width, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER,
-                            width * 2.0f, bs.getDashArray(), 0.0f);
+                            10.0f, bs.getDashArray(), 0.0f);
                     g.setStroke(stroke);
                     g.draw(jrect);
                 } else if (bs.isStyleBeveled()) {
@@ -1287,7 +1175,7 @@ public abstract class Annotation extends Dictionary {
                 }
             }
         } else {
-            List borderVector = (List) getObject(BORDER_KEY);
+            Vector borderVector = (Vector) getObject(BORDER_KEY);
             if (borderVector != null) {
                 if (borderColor != null) {
                     float horizRadius = 0.0f;
@@ -1314,8 +1202,8 @@ public abstract class Annotation extends Dictionary {
                         if (dashObj instanceof Number) {
                             // Disable border drawing
                             width = 0.0f;
-                        } else if (dashObj instanceof List) {
-                            List dashVector = (List) borderVector.get(3);
+                        } else if (dashObj instanceof Vector) {
+                            Vector dashVector = (Vector) borderVector.get(3);
                             int sz = dashVector.size();
                             dashArray = new float[sz];
                             for (int i = 0; i < sz; i++) {
@@ -1385,14 +1273,14 @@ public abstract class Annotation extends Dictionary {
         // put colour back in to the dictionary
         float[] compArray = new float[3];
         this.color.getColorComponents(compArray);
-        List<Float> colorValues = new ArrayList<Float>(compArray.length);
-        for (float comp : compArray) {
-            colorValues.add(comp);
-        }
+        Vector<Number> colorValues = new Vector<Number>(3);
+        colorValues.add(compArray[0]);
+        colorValues.add(compArray[1]);
+        colorValues.add(compArray[2]);
         entries.put(Annotation.COLOR_KEY, colorValues);
     }
 
-    protected Rectangle2D.Float deriveDrawingRectangle() {
+    private Rectangle2D.Float deriveDrawingRectangle() {
         Rectangle2D.Float origRect = getUserSpaceRectangle();
         Rectangle2D.Float jrect = new Rectangle2D.Float(origRect.x, origRect.y,
                 origRect.width, origRect.height);
@@ -1441,69 +1329,32 @@ public abstract class Annotation extends Dictionary {
     }
 
     public boolean getFlagInvisible() {
-        return ((getInt(FLAG_KEY) & 0x0001) != 0);
+        return ((getInt(FLAG_KEY.getName()) & 0x0001) != 0);
     }
 
     public boolean getFlagHidden() {
-        return ((getInt(FLAG_KEY) & 0x0002) != 0);
+        return ((getInt(FLAG_KEY.getName()) & 0x0002) != 0);
     }
 
     public boolean getFlagPrint() {
-        return ((getInt(FLAG_KEY) & 0x0004) != 0);
+        return ((getInt(FLAG_KEY.getName()) & 0x0004) != 0);
     }
 
     public boolean getFlagNoZoom() {
-        return ((getInt(FLAG_KEY) & 0x0008) != 0);
+        return ((getInt(FLAG_KEY.getName()) & 0x0008) != 0);
     }
 
     public boolean getFlagNoRotate() {
-        return ((getInt(FLAG_KEY) & 0x0010) != 0);
+        return ((getInt(FLAG_KEY.getName()) & 0x0010) != 0);
     }
 
     public boolean getFlagNoView() {
-        return ((getInt(FLAG_KEY) & 0x0020) != 0);
+        return ((getInt(FLAG_KEY.getName()) & 0x0020) != 0);
     }
 
     public boolean getFlagReadOnly() {
-        return ((getInt(FLAG_KEY) & 0x0040) != 0);
+        return ((getInt(FLAG_KEY.getName()) & 0x0040) != 0);
     }
-
-    public void setFlag(int flag) {
-        entries.put(FLAG_KEY, flag);
-    }
-
-    public void setModifiedDate(String modifiedDate) {
-        entries.put(M_KEY, new LiteralStringObject(modifiedDate));
-        this.modifiedDate = new PDate(securityManager, modifiedDate);
-    }
-
-    public boolean hasAppearanceStream() {
-        return library.getObject(entries, APPEARANCE_STREAM_KEY) != null;
-    }
-
-    /**
-     * Returns the appearance stream as defined by the AP dictionary key N
-     *
-     * @return N appearance stream or null.
-     */
-    public Stream getAppearanceStream() {
-        Object AP = getObject(APPEARANCE_STREAM_KEY);
-        if (AP instanceof HashMap) {
-            Object N = library.getObject(
-                    (HashMap) AP, APPEARANCE_STREAM_NORMAL_KEY);
-            if (N instanceof HashMap) {
-                Object AS = getObject(APPEARANCE_STATE_KEY);
-                if (AS != null && AS instanceof Name)
-                    N = library.getObject((HashMap) N, (Name) AS);
-            }
-            // n should be a Form but we have a few cases of Stream
-            if (N instanceof Stream) {
-                return (Form) N;
-            }
-        }
-        return null;
-    }
-
 
     /**
      * A locked annotation can not be deleted or its properties  such
@@ -1513,27 +1364,19 @@ public abstract class Annotation extends Dictionary {
      * @return true if locked, false otherwise.
      */
     public boolean getFlagLocked() {
-        return ((getInt(FLAG_KEY) & 0x0080) != 0);
+        return ((getInt(FLAG_KEY.getName()) & 0x0080) != 0);
     }
 
     public boolean getFlagToggleNoView() {
-        return ((getInt(FLAG_KEY) & 0x0100) != 0);
-    }
-
-    public String getContents() {
-        return content;
-    }
-
-    public void setContents(String content) {
-        this.content = content;
-        entries.put(CONTENTS_KEY, new LiteralStringObject(content));
+        return ((getInt(FLAG_KEY.getName()) & 0x0100) != 0);
     }
 
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("ANNOTATION= {");
-        Set keys = entries.keySet();
-        for (Object key : keys) {
+        java.util.Enumeration keys = entries.keys();
+        while (keys.hasMoreElements()) {
+            Object key = keys.nextElement();
             Object value = entries.get(key);
             sb.append(key.toString());
             sb.append('=');
@@ -1555,27 +1398,5 @@ public abstract class Annotation extends Dictionary {
                 sb.deleteCharAt(i);
         }
         return sb.toString();
-    }
-
-    public void syncBBoxToUserSpaceRectangle(Rectangle2D bbox) {
-        this.bbox = bbox;
-        Rectangle2D tBbox = matrix.createTransformedShape(bbox).getBounds2D();
-        setUserSpaceRectangle(new Rectangle2D.Float(
-                (float) tBbox.getX(), (float) tBbox.getY(),
-                (float) tBbox.getWidth(), (float) tBbox.getHeight()));
-    }
-
-    public abstract void resetAppearanceStream(double dx, double dy, AffineTransform pageSpace);
-
-    public void resetAppearanceStream(AffineTransform pageSpace) {
-        resetAppearanceStream(0, 0, pageSpace);
-    }
-
-    public Shapes getShapes() {
-        return shapes;
-    }
-
-    public static void setCompressAppearanceStream(boolean compressAppearanceStream) {
-        Annotation.compressAppearanceStream = compressAppearanceStream;
     }
 }

@@ -1,23 +1,22 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.pobjects;
 
 import org.icepdf.core.util.Library;
 
-import java.util.HashMap;
+import java.util.Hashtable;
 
 /**
  * <p>The <code>NameTree</code> class is similar to the <code>Dictionary</code> class in that
@@ -42,7 +41,7 @@ public class NameTree extends Dictionary {
      * @param l document library.
      * @param h NameTree dictionary entries.
      */
-    public NameTree(Library l, HashMap h) {
+    public NameTree(Library l, Hashtable h) {
         super(l, h);
     }
 
@@ -55,6 +54,13 @@ public class NameTree extends Dictionary {
         }
         root = new NameNode(library, entries);
         inited = true;
+    }
+
+    /**
+     * Dispose the NameTree.
+     */
+    public void dispose() {
+        root.dispose();
     }
 
     /**

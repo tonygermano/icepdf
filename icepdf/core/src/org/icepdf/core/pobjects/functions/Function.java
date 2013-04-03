@@ -1,27 +1,25 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.pobjects.functions;
 
 import org.icepdf.core.pobjects.Dictionary;
-import org.icepdf.core.pobjects.Name;
 import org.icepdf.core.pobjects.Reference;
 import org.icepdf.core.util.Library;
 
-import java.util.HashMap;
-import java.util.List;
+import java.util.Hashtable;
+import java.util.Vector;
 import java.util.logging.Logger;
 
 /**
@@ -64,10 +62,6 @@ public abstract class Function {
     private static final Logger logger =
             Logger.getLogger(Function.class.toString());
 
-    public static final Name FUNCTIONTYPE_NAME = new Name("FunctionType");
-    public static final Name DOMAIN_NAME = new Name("Domain");
-    public static final Name RANGE_NAME = new Name("Range");
-
     /**
      * An array of 2 x m numbers, where m is the number of input values.  Input
      * values outside the declared domain are clipped to the nearest boundary value.
@@ -95,7 +89,7 @@ public abstract class Function {
      * </ul>
      *
      * @param l document library.
-     * @param o dictionary or Hashmap containing Function type entries.
+     * @param o dictionary or Hashtable containing Function type entries.
      * @return Function object for the specified function type, null if the
      *         function type is not available or not defined.
      */
@@ -109,14 +103,14 @@ public abstract class Function {
         // create a dictionary out of the object if possible
         if (o instanceof Dictionary) {
             d = (Dictionary) o;
-        } else if (o instanceof HashMap) {
-            d = new Dictionary(l, (HashMap) o);
+        } else if (o instanceof Hashtable) {
+            d = new Dictionary(l, (Hashtable) o);
         }
 
         if (d != null) {
             // find out what time of function type and create the appropriate
             // function object.
-            int fType = d.getInt(FUNCTIONTYPE_NAME);
+            int fType = d.getInt("FunctionType");
             switch (fType) {
                 // sampled function
                 case 0:
@@ -141,16 +135,16 @@ public abstract class Function {
      * @param d dictionary containing a vaild function dictionary.
      */
     protected Function(Dictionary d) {
-        List dom = (List) d.getObject(DOMAIN_NAME);
+        Vector dom = (Vector) d.getObject("Domain");
         domain = new float[dom.size()];
         for (int i = 0; i < dom.size(); i++) {
-            domain[i] = ((Number) dom.get(i)).floatValue();
+            domain[i] = ((Number) dom.elementAt(i)).floatValue();
         }
-        List r = (List) d.getObject(RANGE_NAME);
+        Vector r = (Vector) d.getObject("Range");
         if (r != null) {
             range = new float[r.size()];
             for (int i = 0; i < r.size(); i++) {
-                range[i] = ((Number) r.get(i)).floatValue();
+                range[i] = ((Number) r.elementAt(i)).floatValue();
             }
         }
     }

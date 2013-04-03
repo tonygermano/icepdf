@@ -1,16 +1,15 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.pobjects.actions;
@@ -19,7 +18,7 @@ import org.icepdf.core.pobjects.Dictionary;
 import org.icepdf.core.pobjects.Name;
 import org.icepdf.core.util.Library;
 
-import java.util.HashMap;
+import java.util.Hashtable;
 
 
 /**
@@ -45,11 +44,11 @@ public class Action extends Dictionary {
 
     public static final Name ACTION_TYPE_GOTO = new Name("GoTo");
 
-    public static final Name ACTION_TYPE_GOTO_REMOTE = new Name("GoToR");
+    public static final Name ACTION_TYPE_GOTO_REMOTE =  new Name("GoToR");
 
-    public static final Name ACTION_TYPE_LAUNCH = new Name("Launch");
+    public static final Name ACTION_TYPE_LAUNCH =  new Name("Launch");
 
-    public static final Name ACTION_TYPE_URI = new Name("URI");
+    public static final Name ACTION_TYPE_URI =  new Name("URI");
 
     // type of annotation
     private String type;
@@ -63,25 +62,25 @@ public class Action extends Dictionary {
      * @param l document library.
      * @param h Action dictionary entries.
      */
-    public Action(Library l, HashMap h) {
+    public Action(Library l, Hashtable h) {
         super(l, h);
         type = getObject(ACTION_TYPE_KEY).toString();
     }
 
-    public static Action buildAction(Library library, HashMap hashMap) {
-        Name actionType = (Name) hashMap.get(Action.ACTION_TYPE_KEY);
+     public static Action buildAction(Library library, Hashtable hashTable) {
+        Name actionType = (Name) hashTable.get(Action.ACTION_TYPE_KEY);
         if (actionType != null) {
             if (actionType.equals(Action.ACTION_TYPE_GOTO)) {
-                return new GoToAction(library, hashMap);
+                return new GoToAction(library, hashTable);
             } else if (actionType.equals(Action.ACTION_TYPE_GOTO_REMOTE)) {
-                return new GoToRAction(library, hashMap);
+                return new GoToRAction(library, hashTable);
             } else if (actionType.equals(Action.ACTION_TYPE_LAUNCH)) {
-                return new LaunchAction(library, hashMap);
+                return new LaunchAction(library, hashTable);
             } else if (actionType.equals(Action.ACTION_TYPE_URI)) {
-                return new URIAction(library, hashMap);
+                return new URIAction(library, hashTable);
             }
         }
-        return new Action(library, hashMap);
+        return new Action(library, hashTable);
     }
 
     /**
@@ -96,12 +95,12 @@ public class Action extends Dictionary {
         return type;
     }
 
-    public boolean similar(Action obj) {
+    public boolean similar(Action obj){
         // check if object references can be compared
         if (this.getPObjectReference() != null &&
-                obj.getPObjectReference() != null) {
+                obj.getPObjectReference() != null){
             return getPObjectReference().equals(obj.getPObjectReference());
-        } else {
+        }else{
             // compare type
             return getType().equals(obj.getType());
         }

@@ -1,25 +1,24 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.pobjects.graphics;
 
-import org.icepdf.core.pobjects.Name;
+import org.icepdf.core.util.Defs;
 import org.icepdf.core.util.Library;
 
 import java.awt.*;
-import java.util.HashMap;
+import java.util.Hashtable;
 
 /**
  * Device CMYK colour space definitions. The primary purpose of this colour
@@ -28,13 +27,18 @@ import java.util.HashMap;
  */
 public class DeviceCMYK extends PColorSpace {
 
-    public static final Name DEVICECMYK_KEY = new Name("DeviceCMYK");
-    public static final Name CMYK_KEY = new Name("CMYK");
+    public static double cmykBlackRatio;
 
-    DeviceCMYK(Library l, HashMap h) {
-        super(l, h);
+    static {
+        // decide if large images will be scaled
+        cmykBlackRatio =
+                Defs.sysPropertyDouble("org.icepdf.core.color.cmyk.black",
+                        3.0f);
     }
 
+    DeviceCMYK(Library l, Hashtable h) {
+        super(l, h);
+    }
 
     public int getNumComponents() {
         return 4;
@@ -58,9 +62,7 @@ public class DeviceCMYK extends PColorSpace {
      */
 
     /**
-     * Adobe photo shop algorithm or so they say.  K is assumed to be f[0]
-     *
-     * @param f 4 component values of the cmyk, assumes comopents between
+     * @param f 4 component values of the cmyk, assumes compoents between
      *          0.0 and 1.0
      * @return valid rgb colour object.
      */
@@ -150,6 +152,40 @@ public class DeviceCMYK extends PColorSpace {
     }
 
     /**
+     * Adobe photo shop algorithm or so they say.
+     * <p/>
+     * cyan = Math.min(255, cyan + black); //black is from K
+     * magenta = Math.min(255, magenta + black);
+     * yellow = Math.min(255, yellow + black);
+     * rgb[0] = 255 - cyan;
+     * rgb[1] = 255 - magenta;
+     * rgb[2] = 255 - yellow;
+     *
+     * @param f 4 component values of the cmyk, assumes compoents between
+     *          0.0 and 1.0
+     * @return valid rgb colour object.
+     */
+    private static Color getAdobeColor(float[] f) {
+
+        int cyan = (int) (f[3] * 255);
+        int magenta = (int) (f[2] * 255);
+        int yellow = (int) (f[1] * 255);
+        int black = (int) (f[0] * 255);
+
+        cyan = Math.min(255, cyan + black); //black is from K
+        magenta = Math.min(255, magenta + black);
+        yellow = Math.min(255, yellow + black);
+
+        int[] rgb = new int[3];
+        rgb[0] = 255 - cyan;
+        rgb[1] = 255 - magenta;
+        rgb[2] = 255 - yellow;
+
+        return new Color(rgb[0], rgb[1], rgb[2]);
+    }
+
+
+    /**
      * Current runner for conversion that looks closest to acrobat.
      * The algorithm is a little expensive but it does the best approximation.
      *
@@ -164,8 +200,8 @@ public class DeviceCMYK extends PColorSpace {
         float inBlack = f[0];
 
         // soften the amount of black, but exclude explicit black colorant.
-        if (inCyan != 0 && inMagenta != 0 && inYellow != 0) {
-            inBlack = f[0] / 100;
+        if (inCyan != 0 && inMagenta != 0 && inYellow != 0){
+            inBlack /= cmykBlackRatio;
         }
 
         double c, m, y, aw, ac, am, ay, ar, ag, ab;
@@ -189,17 +225,16 @@ public class DeviceCMYK extends PColorSpace {
 
     /**
      * Clips the value according to the specified floor and ceiling.
-     *
-     * @param floor   floor value of clip
+     * @param floor floor value of clip
      * @param ceiling ceiling value of clip
-     * @param value   value to clip.
+     * @param value value to clip.
      * @return clipped value.
      */
     private static double clip(double floor, double ceiling, double value) {
-        if (value < floor) {
+        if (value < floor){
             value = floor;
         }
-        if (value > ceiling) {
+        if (value > ceiling){
             value = ceiling;
         }
         return value;

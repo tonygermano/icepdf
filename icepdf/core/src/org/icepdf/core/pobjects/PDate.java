@@ -1,24 +1,22 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.pobjects;
 
 import org.icepdf.core.pobjects.security.SecurityManager;
 
-import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.StringTokenizer;
 
 /**
  * <p>This class defines a standard PDF date.  The class will try its best
@@ -59,13 +57,6 @@ import java.util.*;
  * @since 1.1
  */
 public class PDate {
-
-    protected static final SimpleDateFormat DATE_FORMAT;
-
-    static {
-        DATE_FORMAT = new SimpleDateFormat("'D:'yyyyMMddHHmmss");
-        DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("GMT"));
-    }
 
     // offset value for year, YYYY
     private static final int OFFSET_YYYY = 4;
@@ -413,67 +404,6 @@ public class PDate {
         }
 
         return monthNames[monthIndex];
-    }
-
-    /**
-     * Formats a date/time according to the PDF specification
-     * (D:YYYYMMDDHHmmSSOHH'mm').
-     *
-     * @param time date/time value to format
-     * @param tz   the time zone
-     * @return the requested String representation
-     */
-    public static String formatDateTime(Date time, TimeZone tz) {
-        Calendar cal = Calendar.getInstance(tz, Locale.ENGLISH);
-        cal.setTime(time);
-
-        int offset = cal.get(Calendar.ZONE_OFFSET);
-        offset += cal.get(Calendar.DST_OFFSET);
-
-        //DateFormat is operating on GMT so adjust for time zone offset
-        Date dt1 = new Date(time.getTime() + offset);
-        StringBuffer sb = new StringBuffer();
-        sb.append(DATE_FORMAT.format(dt1));
-
-        offset /= (1000 * 60); //Convert to minutes
-
-        if (offset == 0) {
-            sb.append('Z');
-        } else {
-            if (offset > 0) {
-                sb.append('+');
-            } else {
-                sb.append('-');
-            }
-            int offsetHour = Math.abs(offset / 60);
-            int offsetMinutes = Math.abs(offset % 60);
-            if (offsetHour < 10) {
-                sb.append('0');
-            }
-            sb.append(Integer.toString(offsetHour));
-            sb.append('\'');
-            if (offsetMinutes < 10) {
-                sb.append('0');
-            }
-            sb.append(Integer.toString(offsetMinutes));
-            sb.append('\'');
-        }
-        return sb.toString();
-    }
-
-    /**
-     * Formats a date/time according to the PDF specification.
-     * (D:YYYYMMDDHHmmSSOHH'mm').
-     *
-     * @param time date/time value to format
-     * @return the requested String representation
-     */
-    public static String formatDateTime(Date time) {
-        return formatDateTime(time, TimeZone.getDefault());
-    }
-
-    public static PDate createDate(Date date) {
-        return new PDate(null, formatDateTime(date));
     }
 
 }

@@ -1,16 +1,15 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 
@@ -21,18 +20,18 @@ import org.icepdf.core.pobjects.Reference;
 import org.icepdf.core.pobjects.actions.ActionFactory;
 import org.icepdf.core.pobjects.actions.GoToAction;
 import org.icepdf.core.pobjects.actions.URIAction;
-import org.icepdf.core.pobjects.annotations.Annotation;
-import org.icepdf.core.pobjects.annotations.AnnotationFactory;
-import org.icepdf.core.pobjects.annotations.LinkAnnotation;
+import org.icepdf.core.pobjects.annotations.*;
 import org.icepdf.core.pobjects.graphics.text.WordText;
 import org.icepdf.core.search.DocumentSearchController;
 import org.icepdf.core.util.Library;
+import org.icepdf.core.views.swing.AbstractPageViewComponent;
 import org.icepdf.ri.common.SwingController;
 import org.icepdf.ri.common.SwingViewBuilder;
 
 import javax.swing.*;
+import java.awt.*;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Vector;
 
 /**
  * The <code>NewAnnotationPostPageLoad</code> class is an example of how to use
@@ -53,7 +52,7 @@ import java.util.List;
  * <p/>
  * The annotation are created before the Document view is created so we
  * have to create new annotation slightly differently then if we where adding
- * them after the view was created.
+ * them after the view was created. 
  *
  * @since 4.0
  */
@@ -82,7 +81,7 @@ public class NewAnnotationPrePageLoad {
         SwingViewBuilder factory = new SwingViewBuilder(controller);
         JPanel viewerComponentPanel = factory.buildViewerPanel();
         JFrame applicationFrame = new JFrame();
-        applicationFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        applicationFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         applicationFrame.getContentPane().add(viewerComponentPanel);
 
         // add interactive mouse link annotation support via callback
@@ -117,6 +116,12 @@ public class NewAnnotationPrePageLoad {
          * Apply the search -> annotation results before the gui is build
          */
 
+        // new annotation look and feel
+        AnnotationState annotationState =
+                new AnnotationState(Annotation.VISIBLE_RECTANGLE,
+                        LinkAnnotation.HIGHLIGHT_INVERT, 1f,
+                        BorderStyle.BORDER_STYLE_SOLID, Color.GRAY);
+
         // list of founds words to print out
         ArrayList<WordText> foundWords;
         for (int pageIndex = 0; pageIndex < pageCount; pageIndex++) {
@@ -124,19 +129,19 @@ public class NewAnnotationPrePageLoad {
             foundWords = searchController.searchPage(pageIndex);
             if (foundWords != null) {
                 // get the current page lock and start adding the annotations
-                Page page = document.getPageTree().getPage(pageIndex);
-
+                Page page = document.getPageTree().getPage(pageIndex, foundWords);
                 for (WordText wordText : foundWords) {
                     // create a  new link annotation
                     LinkAnnotation linkAnnotation = (LinkAnnotation)
                             AnnotationFactory.buildAnnotation(
                                     document.getPageTree().getLibrary(),
-                                    Annotation.SUBTYPE_LINK,
-                                    wordText.getBounds().getBounds());
+                                    AnnotationFactory.LINK_ANNOTATION,
+                                    wordText.getBounds().getBounds(),
+                                    annotationState);
                     // create a new URI action
                     org.icepdf.core.pobjects.actions.Action action =
                             createURIAction(document.getPageTree().getLibrary(),
-                                    "http://www.icepdf.org");
+                                "http://www.icepdf.org");
                     // or create a new goTo Annotation that links to the page
                     // number represented by pageCount.  
 //                    org.icepdf.core.pobjects.actions.Action action =
@@ -148,6 +153,8 @@ public class NewAnnotationPrePageLoad {
                     // add it to the page.
                     page.addAnnotation(linkAnnotation);
                 }
+                // release the page lock
+                document.getPageTree().releasePage(page, foundWords);
             }
             // removed the search highlighting
             searchController.clearSearchHighlight(pageIndex);
@@ -193,9 +200,9 @@ public class NewAnnotationPrePageLoad {
                         ActionFactory.GOTO_ACTION);
         Reference pageReference = document.getPageTree()
                 .getPageReference(pageIndex);
-        List destArray = Destination.destinationSyntax(pageReference,
+        Vector destVector = Destination.destinationSyntax(pageReference,
                 Destination.TYPE_FIT);
-        action.setDestination(new Destination(library, destArray));
+        action.setDestination(new Destination(library, destVector));
         return action;
     }
 }

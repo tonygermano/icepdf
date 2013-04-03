@@ -1,27 +1,26 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.tag.query;
 
 import org.icepdf.core.tag.TagState;
-import org.icepdf.core.tag.TaggedDocument;
 import org.icepdf.core.tag.TaggedImage;
+import org.icepdf.core.tag.TaggedDocument;
 
+import java.util.List;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 
 /**
  * @author mcollette
@@ -37,23 +36,28 @@ public class Querior {
                 Operator op = new And();
                 op.setScope(Operator.SCOPE_IMAGE);
                 parsedQuery[i] = op;
-            } else if (unparsedQuery[i].equals("tag:and")) {
+            }
+            else if (unparsedQuery[i].equals("tag:and")) {
                 Operator op = new And();
                 op.setScope(Operator.SCOPE_TAG);
                 parsedQuery[i] = op;
-            } else if (unparsedQuery[i].equals("img:or")) {
+            }
+            else if (unparsedQuery[i].equals("img:or")) {
                 Operator op = new Or();
                 op.setScope(Operator.SCOPE_IMAGE);
                 parsedQuery[i] = op;
-            } else if (unparsedQuery[i].equals("tag:or")) {
+            }
+            else if (unparsedQuery[i].equals("tag:or")) {
                 Operator op = new Or();
                 op.setScope(Operator.SCOPE_TAG);
                 parsedQuery[i] = op;
-            } else if (unparsedQuery[i].equals("img:not")) {
+            }
+            else if (unparsedQuery[i].equals("img:not")) {
                 Operator op = new Not();
                 op.setScope(Operator.SCOPE_IMAGE);
                 parsedQuery[i] = op;
-            } else if (unparsedQuery[i].equals("tag:not")) {
+            }
+            else if (unparsedQuery[i].equals("tag:not")) {
                 Operator op = new Not();
                 op.setScope(Operator.SCOPE_TAG);
                 parsedQuery[i] = op;
@@ -61,15 +65,15 @@ public class Querior {
             // Functions
             else if (unparsedQuery[i].equals("substring"))
                 parsedQuery[i] = new Substring();
-                // Literal argument
+            // Literal argument
             else
                 parsedQuery[i] = unparsedQuery[i];
         }
         int numTokensParsed = rpnParse(parsedQuery, 0);
         if (numTokensParsed != parsedQuery.length)
             throw new ParseException("Number of tokens given: " + parsedQuery.length + ", number of tokens parsed: " + numTokensParsed);
-        String desc = ((Expression) parsedQuery[0]).describe(0);
-        System.out.println(desc);
+String desc = ((Expression) parsedQuery[0]).describe(0);
+System.out.println(desc);
         return (Expression) parsedQuery[0];
     }
 
@@ -92,7 +96,7 @@ Function
             for (int a = 0; a < numArgs; a++) {
                 int currArgIndex = position + tokens;
                 if ((currArgIndex) >= parsedQuery.length) {
-                    throw new ParseException("Token at position " + position + " has argument " + (a + 1) + " of " + numArgs + " which is calculated to be at position " + currArgIndex + ", which beyond the parsed list of query tokens");
+                    throw new ParseException("Token at position " + position + " has argument " + (a+1) + " of " + numArgs + " which is calculated to be at position " + currArgIndex + ", which beyond the parsed list of query tokens");
                 }
                 tokens += rpnParse(parsedQuery, currArgIndex);
                 args.add(new Integer(currArgIndex));
@@ -100,22 +104,23 @@ Function
             if (curr instanceof Operator) {
                 Operator op = (Operator) curr;
                 Expression[] eargs = new Expression[numArgs];
-                for (int a = 0; a < numArgs; a++) {
+                for(int a = 0; a < numArgs; a++) {
                     Integer index = (Integer) args.get(a);
                     Object arg = parsedQuery[index.intValue()];
                     if (!(arg instanceof Expression))
-                        throw new ParseException("Token at position " + position + " has argument " + (a + 1) + " of " + numArgs + ", calculated to be at position " + index + ", which is expected to be an expression token, but is instead a literal string: " + arg);
+                        throw new ParseException("Token at position " + position + " has argument " + (a+1) + " of " + numArgs + ", calculated to be at position " + index + ", which is expected to be an expression token, but is instead a literal string: " + arg);
                     eargs[a] = (Expression) arg;
                 }
                 op.setChildExpressions(eargs);
-            } else if (curr instanceof Function) {
+            }
+            else if (curr instanceof Function) {
                 Function func = (Function) curr;
                 String[] sargs = new String[numArgs];
-                for (int a = 0; a < numArgs; a++) {
+                for(int a = 0; a < numArgs; a++) {
                     Integer index = (Integer) args.get(a);
                     Object arg = parsedQuery[index.intValue()];
                     if (arg instanceof Expression)
-                        throw new ParseException("Token at position " + position + " has argument " + (a + 1) + " of " + numArgs + ", calculated to be at position " + index + ", which is expected to be literal string, but is instead an expression token: " + arg);
+                        throw new ParseException("Token at position " + position + " has argument " + (a+1) + " of " + numArgs + ", calculated to be at position " + index + ", which is expected to be literal string, but is instead an expression token: " + arg);
                     sargs[a] = arg.toString();
                 }
                 func.setArguments(sargs);
@@ -132,19 +137,19 @@ Function
         List results = new ArrayList(32);
 
         List docs = state.getDocuments();
-        for (Iterator docIt = docs.iterator(); docIt.hasNext(); ) {
+        for (Iterator docIt = docs.iterator(); docIt.hasNext();) {
             docCount++;
             DocumentResult docRes = null;
 
             TaggedDocument td = (TaggedDocument) docIt.next();
             List images = td.getImages();
-            for (Iterator imIt = images.iterator(); imIt.hasNext(); ) {
+            for (Iterator imIt = images.iterator(); imIt.hasNext();) {
                 imgCount++;
                 boolean imageInResults = false;
 
                 TaggedImage ti = (TaggedImage) imIt.next();
                 List tags = ti.getTags();
-                for (Iterator tagIt = tags.iterator(); tagIt.hasNext(); ) {
+                for (Iterator tagIt = tags.iterator(); tagIt.hasNext();) {
                     tagCount++;
                     String tag = (String) tagIt.next();
                     if (queryRoot.matches(td, ti, tag)) {
@@ -152,7 +157,8 @@ Function
                             docRes = new DocumentResult(td, ti);
                             imageInResults = true;
                             results.add(docRes);
-                        } else if (!imageInResults) {
+                        }
+                        else if (!imageInResults) {
                             docRes.addImage(ti);
                             imageInResults = true;
                         }
@@ -160,7 +166,7 @@ Function
                 }
             }
         }
-        System.out.println("Searched " + docCount + " documents, " + imgCount + " images, " + tagCount + " tags.  Found " + results.size() + " matching documents.");
+System.out.println("Searched " + docCount + " documents, " + imgCount + " images, " + tagCount + " tags.  Found " + results.size() + " matching documents.");
         return results;
     }
 }

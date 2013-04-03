@@ -1,16 +1,15 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 
@@ -58,13 +57,10 @@ public class PageTextExtraction {
 
             // Get text from the first page of the document, assuming that there
             // is text to extract.
-            for (int pageNumber = 0, max = document.getNumberOfPages();
-                 pageNumber < max; pageNumber++) {
-                PageText pageText = document.getPageText(pageNumber);
-                System.out.println("Extracting page text: " + pageNumber);
-                if (pageText != null && pageText.getPageLines() != null) {
-                    fileWriter.write(pageText.toString());
-                }
+            int pagNumber = 0;
+            PageText pageText = document.getPageText(pagNumber);
+            if (pageText != null && pageText.getPageLines() != null) {
+                fileWriter.write(pageText.toString());
             }
 
             // close the writer
@@ -72,8 +68,6 @@ public class PageTextExtraction {
 
         } catch (IOException ex) {
             System.out.println("Error writing to file " + ex);
-        } catch (InterruptedException ex) {
-            System.out.println("Error paring page " + ex);
         }
 
         // clean up resources

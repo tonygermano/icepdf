@@ -1,21 +1,19 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.util;
 
-import java.awt.*;
 import java.util.HashMap;
 
 /**
@@ -202,36 +200,23 @@ public class ColorUtil {
     }
 
     /**
-     * Converts a colour to hex rgb notation.  For example black is
-     * converted to #000000 and white to #FFFFFF.
-     *
-     * @param color know colour to be converted
-     * @return name of converted string, the same name is returned if their was
-     *         a conversion failure.
-     */
-    public static final String convertColorToRGB(Color color) {
-        int c = color.getRGB();
-        return String.format("#%06X", (0xFFFFFF & c));
-    }
-
-    /**
      * Converts the colour to an integer value.
-     *
      * @param name colour value in either hex or string format.
+     *
      * @return valid int colour value or -1 if no colour could be resolved
      */
-    public static int convertColor(String name) {
-        try {
+    public static int convertColor(String name){
+        try{
             // see if string starts with #
-            if (name.startsWith("#")) {
+            if (name.startsWith("#")){
                 name = name.substring(1);
             }
-            return Integer.parseInt(name, 16);
-        } catch (NumberFormatException e) {
+            return Integer.parseInt(name, 16 );
+        }catch(NumberFormatException e){
             // intentionally left empty
         }
         // otherwise try and pare the colour name.
-        return convertNamedColor(name);
+        return convertNamedColor (name);
     }
 
 

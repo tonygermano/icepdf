@@ -1,16 +1,15 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 
@@ -32,7 +31,7 @@ import java.util.ArrayList;
  * of search terms can be specefied after the file name.
  * <p/>
  * Example:
- * SearchHighlight "c:\DevelopersGuide.pdf" "PDF" "ICEsoft" "ICEfaces" "ICEsoft technologies"
+ *   SearchHighlight "c:\DevelopersGuide.pdf" "PDF" "ICEsoft" "ICEfaces" "ICEsoft technologies"
  *
  * @since 4.0
  */
@@ -62,7 +61,7 @@ public class SearchController {
         JPanel viewerComponentPanel = factory.buildViewerPanel();
 
         JFrame applicationFrame = new JFrame();
-        applicationFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        applicationFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         applicationFrame.getContentPane().add(viewerComponentPanel);
 
         // Now that the GUI is all in place, we can try opening the PDF
@@ -90,8 +89,8 @@ public class SearchController {
              pageIndex++) {
             foundWords = searchController.searchPage(pageIndex);
             System.out.println("Page " + pageIndex);
-            if (foundWords != null) {
-                for (WordText wordText : foundWords) {
+            if (foundWords != null){
+                for (WordText wordText : foundWords){
                     System.out.println("    found hit: " + wordText.toString());
                 }
             }

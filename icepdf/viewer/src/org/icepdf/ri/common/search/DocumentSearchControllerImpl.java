@@ -1,16 +1,15 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.ri.common.search;
@@ -25,8 +24,8 @@ import org.icepdf.ri.common.SwingController;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * Document search controller used to manage document searches.  This class
@@ -83,9 +82,9 @@ public class DocumentSearchControllerImpl implements DocumentSearchController {
     /**
      * Searches the given page using the specified term and properties.  The
      * search model is updated to store the pages Page text as a weak reference
-     * which can be queried using isSearchHighlightNeeded to efficiently make
-     * sure that a pages text is highlighted even after a dispose/init cycle.
-     * If the text state is no longer present then the search should be executed
+     * which can be queried using isSearchHighlightNeeded to effiecently make
+     * sure that a pages text is highlighted even after a despose/init cycle.
+     * If the text state is no longer preseent then the search should be executed
      * again.
      * <p/>
      * This method cleasr the serach results for the page before it searches. If
@@ -132,18 +131,14 @@ public class DocumentSearchControllerImpl implements DocumentSearchController {
 
         // get our our page text reference
         PageText pageText = null;
-        if (viewerController != null) {
-            try {
-                pageText = viewerController.getDocument().getPageText(pageIndex);
-            } catch (InterruptedException e) {
-                logger.log(Level.SEVERE, "Page text extraction thread interrupted.", e);
-            }
-        } else if (document != null) {
+        if (viewerController != null){
+            pageText = viewerController.getDocument().getPageText(pageIndex);
+        }else if (document != null){
             pageText = document.getPageViewText(pageIndex);
         }
 
         // some pages just don't have any text. 
-        if (pageText == null) {
+        if (pageText == null){
             return 0;
         }
 
@@ -230,7 +225,7 @@ public class DocumentSearchControllerImpl implements DocumentSearchController {
         // if we have a hit we'll add it to the model cache
         if (hitCount > 0) {
             searchModel.addPageSearchHit(pageIndex, pageText);
-            if (logger.isLoggable(Level.FINE)) {
+            if (logger.isLoggable(Level.FINE)){
                 logger.fine("Found search hits on page " + pageIndex +
                         " hit count " + hitCount);
             }
@@ -253,33 +248,29 @@ public class DocumentSearchControllerImpl implements DocumentSearchController {
      * DocumentSearchController implmentation.  This method can be overriden
      * if a different search algorithm or functinality is needed.
      *
-     * @param pageIndex   page index to search
+     * @param pageIndex page index to search
      * @param wordPadding word padding on either side of hit to give context
-     *                    to found woords in the returned LineText
+     * to found woords in the returned LineText
      * @return list of contectual hits for the give page.  If no hits an empty
-     *         list is returned.
-     */
-    public ArrayList<LineText> searchHighlightPage(int pageIndex, int wordPadding) {
+     * list is returned. 
+     */                                                                          
+    public ArrayList<LineText> searchHighlightPage(int pageIndex, int wordPadding){
         // get search terms from model and search for each occurrence.
         Collection<SearchTerm> terms = searchModel.getSearchTerms();
 
         // search hit list
-        ArrayList<LineText> searchHits = new ArrayList<LineText>();
+        ArrayList<LineText>searchHits = new ArrayList<LineText>();
 
         // get our our page text reference
         PageText pageText = null;
-        if (viewerController != null) {
-            try {
-                pageText = viewerController.getDocument().getPageText(pageIndex);
-            } catch (InterruptedException e) {
-                logger.log(Level.SEVERE, "Page text extraction thread interrupted.", e);
-            }
-        } else if (document != null) {
+        if (viewerController != null){
+            pageText = viewerController.getDocument().getPageText(pageIndex);
+        }else if (document != null){
             pageText = document.getPageViewText(pageIndex);
         }
 
         // some pages just don't have any text.
-        if (pageText == null) {
+        if (pageText == null){
             return searchHits;
         }
 
@@ -301,7 +292,7 @@ public class DocumentSearchControllerImpl implements DocumentSearchController {
                 // compare words against search terms.
                 String wordString;
                 WordText word;
-                for (int i = 0, max = lineWords.size(); i < max; i++) {
+                for (int i= 0, max = lineWords.size(); i < max; i++) {
                     word = lineWords.get(i);
 
                     // apply case sensitivity rule.
@@ -346,10 +337,10 @@ public class DocumentSearchControllerImpl implements DocumentSearchController {
                         ArrayList<WordText> hitWords = lineText.getWords();
                         // add pre padding
                         int start = i - searchPhraseHitCount - wordPadding + 1;
-                        start = start < 0 ? 0 : start;
+                        start = start < 0? 0:start;
                         int end = i - searchPhraseHitCount + 1;
-                        end = end < 0 ? 0 : end;
-                        for (int p = start; p < end; p++) {
+                        end = end < 0? 0:end;
+                        for (int p = start; p < end; p++){
                             hitWords.add(lineWords.get(p));
                         }
 
@@ -362,10 +353,10 @@ public class DocumentSearchControllerImpl implements DocumentSearchController {
 
                         // add word padding to front of line
                         start = i + 1;
-                        start = start > lineWordsSize ? lineWordsSize : start;
+                        start = start > lineWordsSize?lineWordsSize:start;
                         end = start + wordPadding;
-                        end = end > lineWordsSize ? lineWordsSize : end;
-                        for (int p = start; p < end; p++) {
+                        end = end > lineWordsSize?lineWordsSize:end;
+                        for (int p = start; p < end; p++){
                             hitWords.add(lineWords.get(p));
                         }
 
@@ -383,7 +374,7 @@ public class DocumentSearchControllerImpl implements DocumentSearchController {
         // if we have a hit we'll add it to the model cache
         if (searchHits.size() > 0) {
             searchModel.addPageSearchHit(pageIndex, pageText);
-            if (logger.isLoggable(Level.FINE)) {
+            if (logger.isLoggable(Level.FINE)){
                 logger.fine("Found search hits on page " + pageIndex +
                         " hit count " + searchHits.size());
             }
@@ -437,7 +428,7 @@ public class DocumentSearchControllerImpl implements DocumentSearchController {
     public SearchTerm addSearchTerm(String term, boolean caseSensitive,
                                     boolean wholeWord) {
         // keep origional copy
-        String origionalTerm = String.valueOf(term);
+        String origionalTerm = new String(term);
 
         // check criteria for case sensitivity.
         if (!caseSensitive) {

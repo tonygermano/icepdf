@@ -1,39 +1,39 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.util;
 
 import org.icepdf.core.exceptions.PDFException;
-import org.icepdf.core.io.*;
+import org.icepdf.core.io.ConservativeSizingByteArrayOutputStream;
+import org.icepdf.core.io.SeekableByteArrayInputStream;
+import org.icepdf.core.io.SeekableInput;
+import org.icepdf.core.io.SeekableInputConstrainedWrapper;
 import org.icepdf.core.pobjects.*;
 import org.icepdf.core.pobjects.annotations.Annotation;
-import org.icepdf.core.pobjects.fonts.CMap;
-import org.icepdf.core.pobjects.fonts.Font;
 import org.icepdf.core.pobjects.fonts.FontDescriptor;
 import org.icepdf.core.pobjects.fonts.FontFactory;
 import org.icepdf.core.pobjects.graphics.TilingPattern;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.Hashtable;
 import java.util.Stack;
-import java.util.logging.Level;
+import java.util.Vector;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * put your documentation comment here
@@ -48,21 +48,16 @@ public class Parser {
 
     // InputStream has to support mark(), reset(), and markSupported()
     // DO NOT close this, since we have two cases: read everything up front, and progressive reads
-//    private BufferedMarkedInputStream reader;
-
     private InputStream reader;
     boolean lastTokenHString = false;
     private Stack<Object> stack = new Stack<Object>();
     private int parseMode;
-    private boolean isTrailer;
-    private int linearTraversalOffset;
 
     public Parser(SeekableInput r) {
         this(r, PARSE_MODE_NORMAL);
     }
 
     public Parser(SeekableInput r, int pm) {
-//        reader = new BufferedMarkedInputStream(r.getInputStream());
         reader = r.getInputStream();
         parseMode = pm;
     }
@@ -72,7 +67,7 @@ public class Parser {
     }
 
     public Parser(InputStream r, int pm) {
-        reader = new BufferedMarkedInputStream(r);
+        reader = new BufferedInputStream(r);
         parseMode = pm;
     }
 
@@ -92,22 +87,22 @@ public class Parser {
         Object nextToken;
         Reference objectReference = null;
         try {
-            reader.mark(1);
-            // capture the byte offset of this object so we can rebuild
-            // the cross reference entries for lazy loading after CG.
-            if (library.isLinearTraversal() && reader instanceof BufferedMarkedInputStream) {
-                linearTraversalOffset = ((BufferedMarkedInputStream) reader).getMarkedPosition();
-            }
             do { //while (!complete);
+
                 // keep track of currently parsed objects reference
+
                 // get the next token inside the object stream
                 try {
                     nextToken = getToken();
+//System.out.println("Parser.getObject()  nextToken: " + nextToken);
                     // commented out for performance reasons
                     //Thread.yield();
-                } catch (IOException e) {
+                }
+                catch (IOException e) {
                     // eat it as it is what is expected
-                    logger.warning("IO reading error.");
+//                    if (Debug.ex){
+//                        Debug.ex(e);
+//                    }
                     return null;
                 }
 
@@ -127,7 +122,7 @@ public class Parser {
                 else if (nextToken.equals("obj")) {
                     // a rare parsing error is that endobj is missing, so we need
                     // to make sure if an object has been parsed that we don't loose it.
-                    if (inObject) {
+                    if(inObject){
                         // pop off the object and ref number
                         stack.pop();
                         stack.pop();
@@ -138,7 +133,7 @@ public class Parser {
                     //  leave straggling "endobj", which would deepnessCount--,
                     //  even though they're done in a separate method invocation
                     // Hence, "obj" does /deepnessCount = 1/ instead of /deepnessCount++/
-                    deepnessCount = 0;
+                    deepnessCount = 1;
                     inObject = true;
                     Number generationNumber = (Number) (stack.pop());
                     Number objectNumber = (Number) (stack.pop());
@@ -146,7 +141,9 @@ public class Parser {
                             generationNumber);
                 }
                 // mark that we have reached the end of the object
-                else if (nextToken.equals("endobj") || nextToken.equals("endobject")) {
+                else if (nextToken.equals("endobj")) {
+                    deepnessCount--;
+//System.out.println("Parser.getObject()  endobj  objectReference: " + objectReference + "  deepnessCount: " + deepnessCount);
                     if (inObject) {
                         // set flag to false, as we are done parsing an Object
                         inObject = false;
@@ -154,9 +151,8 @@ public class Parser {
                         return addPObject(library, objectReference);
                         // else, we ignore as the endStream token also returns a
                         // PObject.
-                    } else {
-//                        return null;
-                    }
+                    } else
+                        return null;
                 }
                 // found endstream object, we will return the PObject containing
                 // the stream as there can be no further tokens.  This addresses
@@ -176,19 +172,30 @@ public class Parser {
                 // of a object so we will always have a dictionary (hash) that
                 // has the length and filter definitions in it
                 else if (nextToken.equals("stream")) {
+//System.out.println("Parser.getObject()  stream");
                     deepnessCount++;
                     // pop dictionary that defines the stream
-                    HashMap streamHash = (HashMap) stack.pop();
+                    Hashtable streamHash = (Hashtable) stack.pop();
+//System.out.println("Parser.getObject()  stream  streamHash: " + streamHash);
                     // find the length of the stream
-                    int streamLength = library.getInt(streamHash, Dictionary.LENGTH_KEY);
+                    int streamLength = library.getInt(streamHash, "Length");
+//System.out.println("Parser.getObject()  stream  streamLength: " + streamLength);
 
                     SeekableInputConstrainedWrapper streamInputWrapper;
                     try {
                         // a stream token's end of line marker can be either:
                         // - a carriage return and a line feed
                         // - just a line feed, and not by a carriage return alone.
+                        /*
+                        reader.mark(5);
+                        byte[] charBuffer = new byte[5];
+                        reader.read(charBuffer);
+                        System.out.println("looking at " + objectReference + " " + streamHash);
+                        System.out.println("Stream bytes " + charBuffer[0] + " " + charBuffer[1] + " " + charBuffer[2] + " " + charBuffer[3] + " " + charBuffer[4]);
+                        reader.reset();
+                        */
 
-                        // check for carriage return and line feed, but reset if
+                        // check for carage return and line feed, but reset if
                         // just a carriage return as it is a valid stream byte
                         reader.mark(2);
 
@@ -209,6 +216,14 @@ public class Parser {
                             reader.reset();
                         }
 
+                        /*
+                        reader.mark(5);
+                        charBuffer = new byte[5];
+                        reader.read(charBuffer);
+                        System.out.println("Stream bytes " + charBuffer[0] + " " + charBuffer[1] + " " + charBuffer[2] +" " + charBuffer[3] + " " + charBuffer[4]);
+                        reader.reset();
+                        */
+
                         if (reader instanceof SeekableInput) {
                             SeekableInput streamDataInput = (SeekableInput) reader;
                             long filePositionOfStreamData = streamDataInput.getAbsolutePosition();
@@ -219,40 +234,47 @@ public class Parser {
                                 lengthOfStreamData = streamLength;
                                 streamDataInput.seekRelative(streamLength);
                                 // Read any extraneous data coming after the length, but before endstream
+//                                long skipped = skipUntilEndstream( null );
                                 lengthOfStreamData += skipUntilEndstream(null);
                             } else {
                                 lengthOfStreamData = captureStreamData(null);
                             }
                             streamInputWrapper = new SeekableInputConstrainedWrapper(
-                                    streamDataInput, filePositionOfStreamData, lengthOfStreamData);
+                                    streamDataInput, filePositionOfStreamData, lengthOfStreamData, false);
                         } else { // reader is just regular InputStream (BufferedInputStream)
-                            // stream  NOT SeekableInput
+//System.out.println("Parser.getObject()  stream  NOT SeekableInput");
                             ConservativeSizingByteArrayOutputStream out;
                             // If the stream in from a regular InputStream,
                             //  then the PDF was probably linearly traversed,
                             //  in which case it doesn't matter if they have
                             //  specified the stream length, because we can't
                             //  trust that anyway
+//System.out.println("Parser.getObject()  stream  NOT SeekableInput  linear traversal: " + library.isLinearTraversal());
                             if (!library.isLinearTraversal() && streamLength > 0) {
                                 byte[] buffer = new byte[streamLength];
                                 int totalRead = 0;
                                 while (totalRead < buffer.length) {
                                     int currRead = reader.read(buffer, totalRead, buffer.length - totalRead);
+//System.out.println("Parser.getObject()  stream  NOT SeekableInput  currRead: " + currRead);
+//String s = new String(buffer, totalRead, currRead);
+//System.out.println(s);
                                     if (currRead <= 0)
                                         break;
                                     totalRead += currRead;
+//System.out.println("Parser.getObject()  stream  NOT SeekableInput  totalRead: " + totalRead);
                                 }
                                 out = new ConservativeSizingByteArrayOutputStream(
-                                        buffer);
+                                        buffer, library.memoryManager);
                                 // Read any extraneous data coming after the length, but before endstream
+//                                long skipped = skipUntilEndstream( out );
                                 skipUntilEndstream(out);
                             }
                             // if stream doesn't have a length, read the stream
                             // until end stream has been found
                             else {
-                                //  stream  NOT SeekableInput  No trusted streamLength");
+//System.out.println("Parser.getObject()  stream  NOT SeekableInput  No trusted streamLength");
                                 out = new ConservativeSizingByteArrayOutputStream(
-                                        16 * 1024);
+                                        16 * 1024, library.memoryManager);
                                 captureStreamData(out);
                             }
 
@@ -262,59 +284,56 @@ public class Parser {
 
                             SeekableInput streamDataInput = new SeekableByteArrayInputStream(buffer);
                             long filePositionOfStreamData = 0L;
+                            long lengthOfStreamData = size;
                             streamInputWrapper = new SeekableInputConstrainedWrapper(
-                                    streamDataInput, filePositionOfStreamData, size);
+                                    streamDataInput, filePositionOfStreamData, lengthOfStreamData, true);
                         }
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                    }
+                    catch (IOException e) {
                         return null;
                     }
                     PTrailer trailer = null;
                     // set the stream know objects if possible
                     Stream stream = null;
-                    Name type = (Name) library.getObject(streamHash, Dictionary.TYPE_KEY);
-                    Name subtype = (Name) library.getObject(streamHash, Dictionary.SUBTYPE_KEY);
+                    //Hashtable streamHash1 = (Hashtable) stack.pop();
+                    Name type = (Name) library.getObject(streamHash, "Type");
+                    Name subtype = (Name) library.getObject(streamHash, "Subtype");
                     if (type != null) {
                         // new Tiling Pattern Object, will have a stream. 
                         if (type.equals("Pattern")) {
                             stream = new TilingPattern(library, streamHash, streamInputWrapper);
-                        }
-                        // found a xref stream which is made up it's own entry format
-                        // different then an standard xref table, mainly used to
-                        // access cross-reference entries but also to comrpess xref tables.
-                        else if (type.equals("XRef")) {
+                        } else if (type.equals("XRef")) {
                             stream = new Stream(library, streamHash, streamInputWrapper);
                             stream.init();
-                            InputStream in = stream.getDecodedByteArrayInputStream();
+                            InputStream in = stream.getInputStreamForDecodedStreamBytes();
                             CrossReference xrefStream = new CrossReference();
                             if (in != null) {
                                 try {
                                     xrefStream.addXRefStreamEntries(library, streamHash, in);
-                                } finally {
+                                }
+                                finally {
                                     try {
                                         in.close();
-                                    } catch (Throwable e) {
-                                        logger.log(Level.WARNING, "Error appending stream entries.", e);
+                                    }
+                                    catch (IOException e) {
+                                        logger.log(Level.FINE, "Error appending stream entries.", e);
                                     }
                                 }
                             }
+                            stream.dispose(false);
 
                             // XRef dict is both Trailer dict and XRef stream dict.
                             // PTrailer alters its dict, so copy it to keep everything sane
-                            HashMap trailerHash = (HashMap) streamHash.clone();
+                            Hashtable trailerHash = (Hashtable) streamHash.clone();
                             trailer = new PTrailer(library, trailerHash, null, xrefStream);
                         } else if (type.equals("ObjStm")) {
                             stream = new ObjectStream(library, streamHash, streamInputWrapper);
-                        } else if (type.equals("XObject") && "Image".equals(subtype)) {
-                            stream = new ImageStream(library, streamHash, streamInputWrapper);
                         }
                     }
                     if (subtype != null) {
                         // new form object
                         if (subtype.equals("Form") && !"pattern".equals(type)) {
                             stream = new Form(library, streamHash, streamInputWrapper);
-                        } else if (subtype.equals("Image")) {
-                            stream = new ImageStream(library, streamHash, streamInputWrapper);
                         }
                     }
                     if (trailer != null) {
@@ -332,9 +351,9 @@ public class Parser {
 
                 // boolean objects are added to stack
                 else if (nextToken.equals("true")) {
-                    stack.push(true);
+                    stack.push(new Boolean(true));
                 } else if (nextToken.equals("false")) {
-                    stack.push(false);
+                    stack.push(new Boolean(false));
                 }
                 // Indirect Reference object found
                 else if (nextToken.equals("R")) {
@@ -352,99 +371,115 @@ public class Parser {
                     deepnessCount--;
                     final int searchPosition = stack.search("[");
                     final int size = searchPosition - 1;
-                    List v = new ArrayList(size);
-                    Object[] tmp = new Object[size];
+                    Vector v = new Vector(size > 0 ? size : 1);
+                    if (size > 0)
+                        v.setSize(size);
                     if (searchPosition > 0) {
-                        for (int i = size - 1; i >= 0; i--) {
-                            tmp[i] = stack.pop();
-                        }
-                        // we need a mutable array so copy into an arrayList
-                        // so we can't use Arrays.asList().
-                        for (int i = 0; i < size; i++) {
-                            v.add(tmp[i]);
+                        for (int i = size-1; i >= 0; i--) {
+                            Object obj = stack.pop();
+                            v.set(i, obj);
                         }
                         stack.pop(); // "["
-                    } else {
+                    }
+                    else {
                         stack.clear();
                     }
                     stack.push(v);
                 } else if (nextToken.equals("<<")) {
+//System.out.println("Parser.getObject()  <<  deepnessCount: " + deepnessCount + " -> " + (deepnessCount+1));
                     deepnessCount++;
                     stack.push(nextToken);
                 }
                 // Found a Dictionary
                 else if (nextToken.equals(">>")) {
+//System.out.println("Parser.getObject()  >>  deepnessCount: " + deepnessCount + " -> " + (deepnessCount-1));
                     deepnessCount--;
-                    // check for extra >> which we want to ignore
-                    if (!isTrailer && deepnessCount >= 0) {
-                        if (!stack.isEmpty()) {
-                            HashMap hashMap = new HashMap();
-                            Object obj = stack.pop();
-                            // put all of the dictionary definistion into the
-                            // the hashTabl
-                            while (!((obj instanceof String)
-                                    && (obj.equals("<<"))) && !stack.isEmpty()) {
-                                Object key = stack.pop();
-                                hashMap.put(key, obj);
-                                if (!stack.isEmpty()) {
-                                    obj = stack.pop();
-                                } else {
-                                    break;
-                                }
-                            }
-                            obj = hashMap.get(Dictionary.TYPE_KEY);
-                            // Process the know first level dictionaries.
-                            if (obj != null && obj instanceof Name) {
-                                Name n = (Name) obj;
-                                if (n.equals(Catalog.TYPE)) {
-                                    stack.push(new Catalog(library, hashMap));
-                                } else if (n.equals(PageTree.TYPE)) {
-                                    stack.push(new PageTree(library, hashMap));
-                                } else if (n.equals(Page.TYPE)) {
-                                    stack.push(new Page(library, hashMap));
-                                } else if (n.equals(Font.TYPE)) {
-                                    stack.push(FontFactory.getInstance()
-                                            .getFont(library, hashMap));
-                                } else if (n.equals(FontDescriptor.TYPE)) {
-                                    stack.push(new FontDescriptor(library, hashMap));
-                                } else if (n.equals(CMap.TYPE)) {
-                                    stack.push(hashMap);
-                                } else if (n.equals(Annotation.TYPE)) {
-                                    stack.push(Annotation.buildAnnotation(library, hashMap));
-                                } else if (n.equals(OptionalContentGroup.TYPE)) {
-                                    stack.push(new OptionalContentGroup(library, hashMap));
-                                } else if (n.equals(OptionalContentMembership.TYPE)) {
-                                    stack.push(new OptionalContentMembership(library, hashMap));
-                                } else
-                                    stack.push(hashMap);
-                            }
-                            // everything else gets pushed onto the stack
-                            else {
-                                stack.push(hashMap);
-                            }
-                        }
-                    } else if (isTrailer && deepnessCount >= 0) {
-                        // we have an xref entry
-                        HashMap hashMap = new HashMap();
+                    Hashtable hashTable = new Hashtable();
+//System.out.println("Parser.getObject()  >>  stack.empty: " + stack.isEmpty());
+                    if (!stack.isEmpty()) {
                         Object obj = stack.pop();
                         // put all of the dictionary definistion into the
                         // the hashTabl
                         while (!((obj instanceof String)
                                 && (obj.equals("<<"))) && !stack.isEmpty()) {
                             Object key = stack.pop();
-                            hashMap.put(key, obj);
+//System.out.println("Parser.getObject()  >>    key: " + key);
+//System.out.println("Parser.getObject()  >>    value: " + obj);
+                            hashTable.put(key, obj);
                             if (!stack.isEmpty()) {
                                 obj = stack.pop();
                             } else {
                                 break;
                             }
                         }
-                        return hashMap;
+                        obj = hashTable.get("Type");
+//System.out.println("Parser.getObject()  >>  Type: " + obj);
+                        // Process the know first level dictionaries.
+                        if (obj != null && obj instanceof Name) {
+                            Name n = (Name) obj;
+//System.out.println("Parser.getObject()  >>  Name: " + n);
+                            if (n.equals("Catalog")) {
+                                stack.push(new Catalog(library, hashTable));
+                            } else if (n.equals("Pages")) {
+                                stack.push(new PageTree(library, hashTable));
+                            } else if (n.equals("Page")) {
+                                stack.push(new Page(library, hashTable));
+                            } else if (n.equals("Font")) {
+                                stack.push(FontFactory.getInstance()
+                                        .getFont(library, hashTable));
+                            } else if (n.equals("FontDescriptor")) {
+                                stack.push(new FontDescriptor(library, hashTable));
+                            } else if (n.equals("CMap")) {
+                                stack.push(hashTable);
+                            } else if (n.equals("Annot")) {
+                                stack.push(Annotation.buildAnnotation(library, hashTable));
+                            } else
+                                stack.push(hashTable);
+                        }
+                        // everything else gets pushed onto the stack
+                        else {
+//System.out.println("Parser.getObject()  >>  Not Name");
+                            stack.push(hashTable);
+                        }
+
+//System.out.println("Parser.getObject()  >>  deepnessCount: " + deepnessCount);
+                        if (deepnessCount == 0)
+                            return stack.pop();
                     }
                 }
-                // found traditional XrefTable found in all documents.
+                // end of if >> (dictionary
+
+//                    // read encryp information
+//                    if (startxrefDictionary.containsKey("Encrypt")) {
+//
+//                        // read ID information needed for encryption
+//                        Vector fileID = null;
+//                        if (startxrefDictionary.containsKey("ID")){
+//                            // get the files identifier vector
+//                            fileID  = (Vector)startxrefDictionary.get("ID");
+//                        }
+//
+//                        // Try and find encrypt dictionary
+//                        Object encrypt = startxrefDictionary.get("Encrypt");
+//                        System.out.println(encrypt.getClass());
+//                        if (encrypt instanceof Reference ){
+//                            Reference encryptReference = (Reference)encrypt;
+//                            SecurityManager securityManager =
+//                                new SecurityManager (library,
+//                                                     encryptReference,
+//                                                     fileID);
+//                        }
+//                        else if (encrypt instanceof Dictionary){
+//
+//
+//                        }
+//
+//                        // initiate the security manager.
+//                        //org.icepdf.core.pobjects.security.SecurityManager.getInstance();
+//                    }
+
                 else if (nextToken.equals("xref")) {
-                    // parse out hte traditional
+//System.out.println("xref found");
                     CrossReference xrefTable = new CrossReference();
                     xrefTable.addXRefTableEntries(this);
                     stack.push(xrefTable);
@@ -453,9 +488,10 @@ public class Parser {
                     if (stack.peek() instanceof CrossReference)
                         xrefTable = (CrossReference) stack.pop();
                     stack.clear();
-                    isTrailer = true;
-                    HashMap trailerDictionary = (HashMap) getObject(library);
-                    isTrailer = false;
+                    Hashtable trailerDictionary = (Hashtable) getObject(library);
+                    //System.out.println("trailer");
+                    //System.out.println("  trailerDictionary: " + trailerDictionary);
+                    //System.out.println("  xref table: " + xrefTable);
                     return new PTrailer(library, trailerDictionary, xrefTable, null);
                 }
                 // comments
@@ -472,157 +508,24 @@ public class Parser {
                 }
             }
             while (!complete);
-        } catch (Exception e) {
-            logger.log(Level.WARNING, "Fatal error parsing PDF file stream.", e);
-            e.printStackTrace();
+        }
+//        catch (PDFSecurityException e) {
+//            throw e;
+//        }
+        catch (Exception e) {
+            logger.log(Level.FINE, "Fatal error parsing PDF file stream.", e);
             return null;
         }
-        // return the top of the stack
+        // return the top of the statck
         return stack.pop();
     }
-
-    /**
-     * @return
-     * @throws java.io.IOException
-     */
-    public String peek2() throws IOException {
-        reader.mark(2);
-        char c[] = new char[2];
-        c[0] = (char) reader.read();
-        c[1] = (char) reader.read();
-        String s = new String(c);
-        reader.reset();
-        return s;
-    }
-
-    /**
-     * @return true if ate the ending EI delimiter
-     * @throws java.io.IOException
-     */
-    public boolean readLineForInlineImage(OutputStream out) throws IOException {
-        // The encoder might not have put EI on its own line (as it should),
-        //  but might just put it right after the data
-        final int STATE_PRE_E = 0;
-        final int STATE_PRE_I = 1;
-        final int STATE_PRE_WHITESPACE = 2;
-        int state = STATE_PRE_E;
-
-        while (true) {
-            int c = reader.read();
-            if (c < 0)
-                break;
-            if (state == STATE_PRE_E && c == 'E') {
-                state++;
-                continue;
-            } else if (state == STATE_PRE_I && c == 'I') {
-                state++;
-                continue;
-            } else if (state == STATE_PRE_WHITESPACE && isWhitespace((char) (0xFF & c))) {
-                // It's hard to tell if the EI + whitespace is part of the
-                //  image data or not, given that many PDFs are mis-encoded,
-                //  and don't give whitespace when necessary. So, instead of
-                //  assuming the need for whitespace, we're going to assume
-                //  that this is the real EI, and apply a heuristic to prove
-                //  ourselves wrong.
-                boolean imageDataFound = isStillInlineImageData(reader, 32);
-                if (imageDataFound) {
-                    out.write('E');
-                    out.write('I');
-                    out.write(c);
-                    state = STATE_PRE_E;
-
-                    if (c == '\r' || c == '\n') {
-                        break;
-                    }
-                } else
-                    return true;
-            } else {
-                // If we got a fragment of the EI<whitespace> sequence, then we withheld
-                //  what we had so far.  But if we're here, that fragment was incomplete,
-                //  so that was actual embedded data, and not the delimiter, so we have
-                //  to write it out.
-                if (state > STATE_PRE_E)
-                    out.write('E');
-                if (state > STATE_PRE_I)
-                    out.write('I');
-                state = STATE_PRE_E;
-
-                out.write((byte) c);
-                if (c == '\r' || c == '\n') {
-                    break;
-                }
-            }
-        }
-        // If the input ends right after the EI, but with no whitespace,
-        //  then we're still done
-        if (state == STATE_PRE_WHITESPACE)
-            return true;
-        return false;
-    }
-
-    /**
-     * We want to be conservative in deciding that we're still in the inline
-     * image, since we haven't found any of these cases before now.
-     */
-    private static boolean isStillInlineImageData(
-            InputStream reader, int numBytesToCheck)
-            throws IOException {
-        boolean imageDataFound = false;
-        boolean onlyWhitespaceSoFar = true;
-        reader.mark(numBytesToCheck);
-        byte[] toCheck = new byte[numBytesToCheck];
-        int numReadToCheck = reader.read(toCheck);
-        for (int i = 0; i < numReadToCheck; i++) {
-            char charToCheck = (char) (((int) toCheck[i]) & 0xFF);
-
-            // If the very first thing we read is a Q or S token
-            boolean typicalTextTokenInContentStream =
-                    (charToCheck == 'Q' || charToCheck == 'q' ||
-                            charToCheck == 'S' || charToCheck == 's');
-            if (onlyWhitespaceSoFar &&
-                    typicalTextTokenInContentStream &&
-                    (i + 1 < numReadToCheck) &&
-                    isWhitespace((char) (((int) toCheck[i + 1]) & 0xFF))) {
-                break;
-            }
-            if (!isWhitespace(charToCheck))
-                onlyWhitespaceSoFar = false;
-
-            // If we find some binary image data
-            if (!isExpectedInContentStream(charToCheck)) {
-                imageDataFound = true;
-                break;
-            }
-        }
-        reader.reset();
-        return imageDataFound;
-    }
-
-    /**
-     * This is not necessarily an exhaustive list of characters one would
-     * expect in a Content Stream, it's a heuristic for whether the data
-     * might still be part of an inline image, or the lattercontent stream
-     */
-    private static boolean isExpectedInContentStream(char c) {
-        return ((c >= 'a' && c <= 'Z') ||
-                (c >= 'A' && c <= 'Z') ||
-                (c >= '0' && c <= '9') ||
-                isWhitespace(c) ||
-                isDelimiter(c) ||
-                (c == '\\') ||
-                (c == '\'') ||
-                (c == '\"') ||
-                (c == '*') ||
-                (c == '.'));
-    }
-
 
     /**
      * Utility Method for getting a PObject from the stack and adding it to the
      * library.  The retrieved PObject has an ObjectReference added to it for
      * decryption purposes.
      *
-     * @param library         HashMap of all objects in document
+     * @param library         hashtable of all objects in document
      * @param objectReference PObjet indirect reference data
      * @return a valid PObject.
      */
@@ -661,7 +564,7 @@ public class Parser {
         Object o = getToken();
         if (o instanceof String) {
             if (o.equals("<<")) {
-                HashMap h = new HashMap();
+                Hashtable h = new Hashtable();
                 Object o1 = getStreamObject();
                 while (!o1.equals(">>")) {
                     h.put(o1, getStreamObject());
@@ -672,15 +575,17 @@ public class Parser {
             // arrays are only used for CID mappings, the hex decoding is delayed
             // as a result using the CID_STREAM flag
             else if (o.equals("[")) {
-                List v = new ArrayList();
+                Vector v = new Vector();
                 Object o1 = getStreamObject();
                 while (!o1.equals("]")) {
-                    v.add(o1);
+                    v.addElement(o1);
                     o1 = getStreamObject();
                 }
+                v.trimToSize();
                 o = v;
             }
         }
+        //System.err.println("GET=" + o + " - " + o.getClass().getName());
         return o;
     }
 
@@ -703,7 +608,7 @@ public class Parser {
         // strip all white space characters
         do {
             currentByte = reader.read();
-            // input stream interrupted
+            // input stream interupted
             if (currentByte < 0) {
                 throw new IOException();
             }
@@ -774,7 +679,19 @@ public class Parser {
         // store the parsed char in the token buffer.
         StringBuilder stringBuffer = new StringBuilder();
 
-        stringBuffer.append(currentChar);
+        if (!inString){
+            if (currentChar < 128){
+                stringBuffer.append(currentChar);
+            }
+            // parser correction for PDF-411, which is valid for file
+            if (currentChar == 'Q' || currentChar == 'q'){
+                reader.read();
+                return stringBuffer.toString();
+            }
+        }else{
+            stringBuffer.append(currentChar);
+        }
+
 
         /**
          * Finally parse the contents of a complex token
@@ -793,6 +710,17 @@ public class Parser {
                 reader.mark(1);
             }
 
+            // PDF-215, try to sniff out missing space between tokens and numbers
+            // in a content stream.  The fix only addressed a character followed
+            // by a number.  It's legal for a /Name object to have mixed content
+            // so we need to check for / at the start of the string.
+            if ( !(inString || hexString) && currentChar != 'd' &&
+                currentChar > 65  && (nextChar >=48 && nextChar <= 57) &&
+                    stringBuffer.charAt(0) != '/'){
+                reader.reset();
+                break;
+            }
+
             // get the next byte and corresponding char
             currentByte = reader.read();
             // if ther are no more bytes (-1) then we should return previous
@@ -809,6 +737,7 @@ public class Parser {
                 if (hexString) {
                     // found the end of a dictionary
                     if (currentChar == '>') {
+                        complete = true;
                         stringBuffer.append(currentChar);
                         break;
                     }
@@ -819,6 +748,7 @@ public class Parser {
                     }
                     if (currentChar == ')') {
                         if (parenthesisCount == 0) {
+                            complete = true;
                             stringBuffer.append(currentChar);
                             break;
                         } else {
@@ -873,7 +803,8 @@ public class Parser {
                             int charNumber = 0;
                             try {
                                 charNumber = Integer.parseInt(digit.toString(), 8);
-                            } catch (NumberFormatException e) {
+                            }
+                            catch (NumberFormatException e) {
                                 logger.log(Level.FINE, "Integer parse error ", e);
                             }
                             // convert the interger from octal to dec.
@@ -922,6 +853,8 @@ public class Parser {
             // and return the current token, as white spaces or other elements
             // would mean that we are on the next token
             else if (isWhitespace(currentChar)) {
+                // return  stringBuffer.toString();
+
                 // we need to return the CR LR, as it is need by stream parsing
                 if (currentByte == 13 || currentByte == 10) {
                     reader.reset();
@@ -939,12 +872,12 @@ public class Parser {
             }
             // append the current char and keep parsing if needed
             // IgnoreChar is set by the the line split char '\'
-            if (!ignoreChar) {
-                if (inString) {
+            if (!ignoreChar ) {
+                if (inString){
                     stringBuffer.append(currentChar);
                 }
                 // eat any junk characters
-                else if (currentChar < 128) {
+                else if (currentChar < 128){
                     stringBuffer.append(currentChar);
                 }
             }
@@ -976,24 +909,29 @@ public class Parser {
         }
         // if a number try and parse it
         else {
-//            boolean foundDigit = false;
-//            boolean foundDecimal = false;
-//            for (int i = stringBuffer.length() - 1; i >= 0; i--) {
-//                char curr = stringBuffer.charAt(i);
-//                if (curr == '.')
-//                    foundDecimal = true;
-//                else if (curr >= '0' && curr <= '9')
-//                    foundDigit = true;
-//            }
+            boolean foundDigit = false;
+            boolean foundDecimal = false;
+            for (int i = stringBuffer.length() - 1; i >= 0; i--) {
+                char curr = stringBuffer.charAt(i);
+                if (curr == '.')
+                    foundDecimal = true;
+                else if (curr >= '0' && curr <= '9')
+                    foundDigit = true;
+            }
             // Only bother trying to interpret as a number if contains a digit somewhere,
             //   to reduce NumberFormatExceptions
-//            if (foundDigit) {
-            try {
-                return Float.valueOf(stringBuffer.toString());
-            } catch (NumberFormatException ex) {
-                // Debug.trace("Number format exception " + ex);
+            if (foundDigit) {
+                try {
+                    if (foundDecimal)
+                        return Float.valueOf(stringBuffer.toString());
+                    else {
+                        return Integer.valueOf(stringBuffer.toString());
+                    }
+                }
+                catch (NumberFormatException ex) {
+                    // Debug.trace("Number format exception " + ex);
+                }
             }
-//            }
         }
         return stringBuffer.toString();
     }
@@ -1020,9 +958,9 @@ public class Parser {
                 // Had hoped it would be whitespace, so wouldn't have to unread
                 reader.reset();
                 reader.mark(maxLength);
-                for (int j = 0; j < i; j++) {
+                for (int j = 0; j < i; j++)
                     reader.read();
-                }
+
                 readNonWhitespaceYet = true;
                 break;
             } else {
@@ -1044,7 +982,8 @@ public class Parser {
                 else {
                     return Integer.valueOf(sb.toString());
                 }
-            } catch (NumberFormatException ex) {
+            }
+            catch (NumberFormatException ex) {
                 // Debug.trace("Number format exception " + ex);
             }
         }
@@ -1057,7 +996,6 @@ public class Parser {
     public void ungetNumberOrStringWithReset() throws IOException {
         reader.reset();
     }
-
 
     public int getIntSurroundedByWhitespace() {
         int num = 0;
@@ -1080,7 +1018,8 @@ public class Parser {
                     readNonWhitespace = true;
                 }
             }
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             logger.log(Level.FINE, "Error detecting int.", e);
         }
         if (makeNegative)
@@ -1109,16 +1048,13 @@ public class Parser {
                     readNonWhitespace = true;
                 }
             }
-        } catch (IOException e) {
-            logger.log(Level.FINER, "Error detecting long.", e);
+        }
+        catch (IOException e) {
+           logger.log(Level.FINE, "Error detecting long.", e);
         }
         if (makeNegative)
             num = num * -1L;
         return num;
-    }
-
-    public int getLinearTraversalOffset() {
-        return linearTraversalOffset;
     }
 
     public char getCharSurroundedByWhitespace() {
@@ -1134,29 +1070,212 @@ public class Parser {
                     break;
                 }
             }
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             logger.log(Level.FINE, "Error detecting char.", e);
         }
         return alpha;
     }
 
+    int hexToInt(String hex) {
+        hex = hex.substring(1, hex.length() - 1).toUpperCase();
+        return Integer.parseInt(hex, 16 /* radix */);
+    }
+
+    /**
+     * @param hh
+     */
+    String hexToString(String hh) {
+        hh = hh.substring(1, hh.length() - 1).toUpperCase();
+        StringBuilder sb = new StringBuilder();
+        if (hh.charAt(0) == 'F'
+                && hh.charAt(1) == 'E'
+                && hh.charAt(2) == 'F'
+                && hh.charAt(3) == 'F') {
+            byte b[] = new byte[4];
+            for (int i = 1; i < hh.length() / 4; i++) {
+                b[0] = (byte) hh.charAt(i * 4);
+                b[1] = (byte) hh.charAt(i * 4 + 1);
+                b[2] = (byte) hh.charAt(i * 4 + 2);
+                b[3] = (byte) hh.charAt(i * 4 + 3);
+                sb.append((char) Integer.parseInt(new String(b), 16));
+            }
+        } else {
+            byte b[] = new byte[2];
+            for (int i = 0; i < hh.length() / 2; i++) {
+                try {
+                    b[0] = (byte) hh.charAt(i * 2);
+                    b[1] = (byte) hh.charAt(i * 2 + 1);
+                    sb.append((char) Short.parseShort(new String(b), 16));
+                }
+                catch (Exception e) {
+                }
+            }
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * @return true if ate the ending EI delimiter
+     * @throws java.io.IOException
+     */
+    boolean readLineForInlineImage(OutputStream out) throws IOException {
+        // The encoder might not have put EI on its own line (as it should),
+        //  but might just put it right after the data
+        final int STATE_PRE_E = 0;
+        final int STATE_PRE_I = 1;
+        final int STATE_PRE_WHITESPACE = 2;
+        int state = STATE_PRE_E;
+
+        while (true) {
+            int c = reader.read();
+            if (c < 0)
+                break;
+            if (state == STATE_PRE_E && c == 'E') {
+                state++;
+                continue;
+            } else if (state == STATE_PRE_I && c == 'I') {
+                state++;
+                continue;
+            } else if (state == STATE_PRE_WHITESPACE && isWhitespace((char) (0xFF & c))) {
+                // It's hard to tell if the EI + whitespace is part of the
+                //  image data or not, given that many PDFs are mis-encoded,
+                //  and don't give whitespace when necessary. So, instead of
+                //  assuming the need for whitespace, we're going to assume
+                //  that this is the real EI, and apply a heuristic to prove
+                //  ourselves wrong.
+                boolean imageDataFound = isStillInlineImageData(reader, 32);
+                if (imageDataFound) {
+                    out.write('E');
+                    out.write('I');
+                    out.write(c);
+                    state = STATE_PRE_E;
+
+                    if (c == '\r' || c == '\n') {
+                        break;
+                    }
+                } else
+                    return true;
+            } else {
+                // If we got a fragment of the EI<whitespace> sequence, then we withheld
+                //  what we had so far.  But if we're here, that fragment was incomplete,
+                //  so that was actual embedded data, and not the delimiter, so we have
+                //  to write it out.
+                if (state > STATE_PRE_E)
+                    out.write('E');
+                if (state > STATE_PRE_I)
+                    out.write('I');
+                state = STATE_PRE_E;
+
+                out.write((byte) c);
+                if (c == '\r' || c == '\n') {
+                    break;
+                }
+            }
+        }
+        // If the input ends right after the EI, but with no whitespace,
+        //  then we're still done
+        if (state == STATE_PRE_WHITESPACE)
+            return true;
+        return false;
+    }
+
+    /**
+     * @return
+     * @throws java.io.IOException
+     */
+    byte readByte() throws IOException {
+        //return reader.readByte();
+        return (byte) reader.read();
+    }
 
     /**
      * White space characters defined by ' ', '\t', '\r', '\n', '\f'
      *
-     * @param c true if character is white space
+     * @param c
      */
-    public static boolean isWhitespace(char c) {
+    public static final boolean isWhitespace(char c) {
         return ((c == ' ') || (c == '\t') || (c == '\r') ||
                 (c == '\n') || (c == '\f'));
     }
 
-    private static boolean isDelimiter(char c) {
+    private static final boolean isDelimiter(char c) {
         return ((c == '[') || (c == ']') ||
                 (c == '(') || (c == ')') ||
                 (c == '<') || (c == '>') ||
                 (c == '{') || (c == '}') ||
                 (c == '/') || (c == '%'));
+    }
+
+    /**
+     * This is not necessarily an exhaustive list of characters one would
+     * expect in a Content Stream, it's a heuristic for whether the data
+     * might still be part of an inline image, or the lattercontent stream
+     */
+    private static boolean isExpectedInContentStream(char c) {
+        return ((c >= 'a' && c <= 'Z') ||
+                (c >= 'A' && c <= 'Z') ||
+                (c >= '0' && c <= '9') ||
+                isWhitespace(c) ||
+                isDelimiter(c) ||
+                (c == '\\') ||
+                (c == '\'') ||
+                (c == '\"') ||
+                (c == '*') ||
+                (c == '.'));
+    }
+
+    /**
+     * We want to be conservative in deciding that we're still in the inline
+     * image, since we haven't found any of these cases before now.
+     */
+    private static boolean isStillInlineImageData(
+            InputStream reader, int numBytesToCheck)
+            throws IOException {
+        boolean imageDataFound = false;
+        boolean onlyWhitespaceSoFar = true;
+        reader.mark(numBytesToCheck);
+        byte[] toCheck = new byte[numBytesToCheck];
+        int numReadToCheck = reader.read(toCheck);
+        for (int i = 0; i < numReadToCheck; i++) {
+            char charToCheck = (char) (((int) toCheck[i]) & 0xFF);
+
+            // If the very first thing we read is a Q or S token
+            boolean typicalTextTokenInContentStream =
+                    (charToCheck == 'Q' || charToCheck == 'q' ||
+                            charToCheck == 'S' || charToCheck == 's');
+            if (onlyWhitespaceSoFar &&
+                    typicalTextTokenInContentStream &&
+                    (i + 1 < numReadToCheck) &&
+                    isWhitespace((char) (((int) toCheck[i + 1]) & 0xFF))) {
+                break;
+            }
+            if (!isWhitespace(charToCheck))
+                onlyWhitespaceSoFar = false;
+
+            // If we find some binary image data
+            if (!isExpectedInContentStream(charToCheck)) {
+                imageDataFound = true;
+                break;
+            }
+        }
+        reader.reset();
+        return imageDataFound;
+    }
+
+    /**
+     * @return
+     * @throws java.io.IOException
+     */
+    String peek2() throws IOException {
+        reader.mark(2);
+        char c[] = new char[2];
+        c[0] = (char) reader.read();
+        c[1] = (char) reader.read();
+        String s = new String(c);
+        reader.reset();
+        return s;
     }
 
     private long captureStreamData(OutputStream out) throws IOException {
@@ -1217,39 +1336,5 @@ public class Parser {
             skipped++;
         }
         return skipped;
-    }
-
-    private float parseNumber(StringBuilder stringBuilder) {
-        float digit = 0;
-        float divisor = 10;
-        boolean isDigit;
-        boolean isDecimal = false;
-        int startTokenPos = 0;
-        int length = stringBuilder.length();
-        char[] streamBytes = new char[length];
-        stringBuilder.getChars(0, length, streamBytes, 0);
-        boolean singed = streamBytes[startTokenPos] == '-';
-        startTokenPos = singed ? startTokenPos + 1 : startTokenPos;
-        int current;
-        for (int i = startTokenPos; i < length; i++) {
-            current = streamBytes[i] - 48;
-            isDigit = streamBytes[i] >= 48 && streamBytes[i] <= 57;
-            if (!isDecimal && isDigit) {
-                digit = (digit * 10) + current;
-            } else if (isDecimal && isDigit) {
-                digit += (current / divisor);
-                divisor *= 10;
-            } else if (streamBytes[i] == 46) {
-                isDecimal = true;
-            } else {
-                // anything else we can assume malformed and should break.
-                break;
-            }
-        }
-        if (singed) {
-            return -digit;
-        } else {
-            return digit;
-        }
     }
 }

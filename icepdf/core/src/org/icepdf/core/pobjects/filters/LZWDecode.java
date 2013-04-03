@@ -1,38 +1,31 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.pobjects.filters;
 
 import org.icepdf.core.io.BitStream;
-import org.icepdf.core.pobjects.Name;
 import org.icepdf.core.util.Library;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Stack;
+import java.util.Hashtable;
 
 /**
  * @author Mark Collette
  * @since 2.0
  */
 public class LZWDecode extends ChunkingInputStream {
-
-    public static final Name DECODEPARMS_KEY = new Name("DecodeParms");
-    public static final Name EARLYCHANGE_KEY = new Name("EarlyChange");
-
-
     private BitStream inb;
     private int earlyChange;
     private int code;
@@ -44,13 +37,13 @@ public class LZWDecode extends ChunkingInputStream {
     private Code[] codes;
 
 
-    public LZWDecode(BitStream inb, Library library, HashMap entries) {
+    public LZWDecode(BitStream inb, Library library, Hashtable entries) {
         this.inb = inb;
-
+        
         this.earlyChange = 1; // Default value
-        HashMap decodeParmsDictionary = library.getDictionary(entries, DECODEPARMS_KEY);
+        Hashtable decodeParmsDictionary = library.getDictionary(entries, "DecodeParms");
         if (decodeParmsDictionary != null) {
-            Number earlyChangeNumber = library.getNumber(decodeParmsDictionary, EARLYCHANGE_KEY);
+            Number earlyChangeNumber = library.getNumber(decodeParmsDictionary, "EarlyChange");
             if (earlyChangeNumber != null) {
                 this.earlyChange = earlyChangeNumber.intValue();
             }

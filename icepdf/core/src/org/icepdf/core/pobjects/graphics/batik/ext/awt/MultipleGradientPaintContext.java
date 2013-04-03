@@ -1,16 +1,15 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 
@@ -67,7 +66,7 @@ abstract class MultipleGradientPaintContext implements PaintContext {
 
     private static ColorModel graybmodel_NA =
             new ComponentColorModel(ColorSpace.getInstance(
-                    ColorSpace.CS_GRAY), new int[]{1}, false, false,
+                    ColorSpace.CS_GRAY), new int[]{1},false, false,
                     ColorModel.OPAQUE, DataBuffer.TYPE_INT);
 
     /**
@@ -85,7 +84,7 @@ abstract class MultipleGradientPaintContext implements PaintContext {
 
     private static ColorModel graybmodel_A =
             new ComponentColorModel(ColorSpace.getInstance(
-                    ColorSpace.CS_GRAY), new int[]{1, 1}, true, false,
+                    ColorSpace.CS_GRAY), new int[]{1,1},true, false,
                     ColorModel.TRANSLUCENT, DataBuffer.TYPE_INT);
 
     /**
@@ -329,7 +328,7 @@ abstract class MultipleGradientPaintContext implements PaintContext {
         else if (cm.getColorSpace() == srgbmodel_A.getColorSpace())
             dataModel = srgbmodel_A;
         else if (cm.getColorSpace() == graybmodel_A.getColorSpace())
-            dataModel = srgbmodel_A;
+            dataModel = graybmodel_A;
         else
             throw new IllegalArgumentException
                     ("Unsupported ColorSpace for interpolation");
@@ -347,7 +346,7 @@ abstract class MultipleGradientPaintContext implements PaintContext {
      * fractions.
      */
     protected final void calculateGradientFractions
-    (Color[] loColors, Color[] hiColors) {
+            (Color[] loColors, Color[] hiColors) {
 
         //if interpolation should occur in Linear RGB space, convert the
         //colors using the lookup table
@@ -479,7 +478,7 @@ abstract class MultipleGradientPaintContext implements PaintContext {
      * @param Imin the size of the smallest interval
      */
     private void calculateSingleArrayGradient
-    (Color[] loColors, Color[] hiColors, float Imin) {
+            (Color[] loColors, Color[] hiColors, float Imin) {
 
         //set the flag so we know later it is a non-simple lookup
         isSimpleLookup = true;
@@ -582,7 +581,7 @@ abstract class MultipleGradientPaintContext implements PaintContext {
      * time-space tradeoff.
      */
     private void calculateMultipleArrayGradient
-    (Color[] loColors, Color[] hiColors) {
+            (Color[] loColors, Color[] hiColors) {
 
         //set the flag so we know later it is a non-simple lookup
         isSimpleLookup = false;
@@ -1451,7 +1450,7 @@ abstract class MultipleGradientPaintContext implements PaintContext {
      */
     protected static final
     synchronized WritableRaster getCachedRaster
-    (ColorModel cm, int w, int h) {
+            (ColorModel cm, int w, int h) {
         if (cm == cachedModel) {
             if (cached != null) {
                 WritableRaster ras = (WritableRaster) cached.get();

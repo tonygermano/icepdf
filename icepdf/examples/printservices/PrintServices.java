@@ -1,29 +1,30 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 
 import org.icepdf.core.exceptions.PDFException;
 import org.icepdf.core.exceptions.PDFSecurityException;
 import org.icepdf.core.pobjects.Document;
-import org.icepdf.core.util.Defs;
+import org.icepdf.core.views.DocumentViewController;
 import org.icepdf.ri.common.PrintHelper;
 import org.icepdf.ri.common.SwingController;
-import org.icepdf.ri.common.views.DocumentViewController;
 import org.icepdf.ri.common.views.DocumentViewControllerImpl;
 
-import javax.print.*;
+import javax.print.DocFlavor;
+import javax.print.PrintException;
+import javax.print.PrintService;
+import javax.print.PrintServiceLookup;
 import javax.print.attribute.standard.MediaSizeName;
 import javax.print.attribute.standard.PrintQuality;
 import java.io.BufferedReader;
@@ -58,24 +59,6 @@ public class PrintServices {
     private static final Logger logger =
             Logger.getLogger(PrintServices.class.toString());
 
-    static {
-        Defs.setProperty("java.awt.headless", "true");
-        Defs.setProperty("org.icepdf.core.scaleImages", "false");
-        Defs.setProperty("org.icepdf.core.print.disableAlpha", "true");
-
-        // set the graphic rendering hints for speed, we loose quite a bit of quality
-        // when converting to TIFF, so no point painting with the extra quality
-        Defs.setProperty("org.icepdf.core.print.alphaInterpolation", "VALUE_ALPHA_INTERPOLATION_SPEED");
-        Defs.setProperty("org.icepdf.core.print.antiAliasing", "VALUE_ANTIALIAS_ON");
-        Defs.setProperty("org.icepdf.core.print.textAntiAliasing", "VALUE_TEXT_ANTIALIAS_OFF");
-        Defs.setProperty("org.icepdf.core.print.colorRender", "VALUE_COLOR_RENDER_SPEED");
-        Defs.setProperty("org.icepdf.core.print.dither", "VALUE_DITHER_DEFAULT");
-        Defs.setProperty("org.icepdf.core.print.fractionalmetrics", "VALUE_FRACTIONALMETRICS_OFF");
-        Defs.setProperty("org.icepdf.core.print.interpolation", "VALUE_INTERPOLATION_NEAREST_NEIGHBOR");
-        Defs.setProperty("org.icepdf.core.print.render", "VALUE_RENDER_SPEED");
-        Defs.setProperty("org.icepdf.core.print.stroke", "VALUE_STROKE_PURE");
-    }
-
     /**
      * Attempts to Print PDF documents which are specified as application
      * arguments.
@@ -93,14 +76,6 @@ public class PrintServices {
         PrintService[] services =
                 PrintServiceLookup.lookupPrintServices(
                         DocFlavor.SERVICE_FORMATTED.PAGEABLE, null);
-
-        MultiDocPrintService mdps[] =
-                PrintServiceLookup.lookupMultiDocPrintServices(
-                        new DocFlavor[]{DocFlavor.SERVICE_FORMATTED.PAGEABLE}, null);
-
-        MultiDocPrintJob mdpj = mdps[0].createMultiDocPrintJob();
-        System.out.println(mdpj);
-
 
         int selectedPrinter = 0;
         // ask the user which printer they want, only quite when they type
@@ -155,11 +130,11 @@ public class PrintServices {
                         selectedService.getName());
         Class[] supportedAttributes =
                 selectedService.getSupportedAttributeCategories();
-        for (Class supportedAttribute : supportedAttributes) {
-            System.out.println("   " + supportedAttribute.getName() +
+        for (int i = 0, max = supportedAttributes.length; i < max; i++) {
+            System.out.println("   " + supportedAttributes[i].getName() +
                     ":= " +
                     selectedService.getDefaultAttributeValue(
-                            supportedAttribute));
+                            supportedAttributes[i]));
         }
 
         // Open the document, create a PrintHelper and finally print the document
@@ -183,7 +158,7 @@ public class PrintServices {
             PrintHelper printHelper = new PrintHelper(vc, pdf.getPageTree(),
                     MediaSizeName.NA_LEGAL, PrintQuality.DRAFT);
             // try and print pages 1 - 10, 1 copy, scale to fit paper.
-            printHelper.setupPrintService(selectedService, 0, 0, 1, true);
+            printHelper.setupPrintService(selectedService, 0, 9, 1, true);
             // print the document
             printHelper.print();
 

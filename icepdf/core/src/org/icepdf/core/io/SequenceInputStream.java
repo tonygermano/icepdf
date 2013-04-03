@@ -1,27 +1,24 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.io;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
-import java.util.List;
+import java.util.Vector;
 
 /**
  * @author Mark Collette
@@ -31,27 +28,27 @@ public class SequenceInputStream extends InputStream {
     private Iterator<InputStream> m_itInputStreams;
     private InputStream m_isCurrent;
 
-    public SequenceInputStream(InputStream... in) {
-        this(Arrays.asList(in));
-    }
-
-    public SequenceInputStream(List<InputStream> inputStreams) {
-        this(inputStreams, -1);
-    }
-
-    public SequenceInputStream(List<InputStream> inputStreams, int streamSwitchValue) {
-        List<InputStream> in = new ArrayList<InputStream>();
-        for (int i = 0; i < inputStreams.size(); i++) {
-            if (i > 0 && streamSwitchValue != -1) {
-                in.add(new ByteArrayInputStream(new byte[]{(byte) streamSwitchValue}));
-            }
-            in.add(inputStreams.get(i));
-        }
-        m_itInputStreams = in.iterator();
+    public SequenceInputStream(InputStream in1, InputStream in2) {
+        ArrayList<InputStream> lst = new ArrayList<InputStream>(2);
+        lst.add(in1);
+        lst.add(in2);
+        m_itInputStreams = lst.iterator();
 
         try {
             useNextInputStream();
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
+            throw new java.lang.IllegalStateException("Could not use first InputStream in SequenceInputStream(List) : " + e);
+        }
+    }
+
+    public SequenceInputStream(Iterator<InputStream> inputStreams) {
+        m_itInputStreams = inputStreams;
+
+        try {
+            useNextInputStream();
+        }
+        catch (IOException e) {
             throw new java.lang.IllegalStateException("Could not use first InputStream in SequenceInputStream(List) : " + e);
         }
     }
@@ -145,12 +142,25 @@ public class SequenceInputStream extends InputStream {
         } while (getCurrentInputStream() != null);
     }
 
+    public boolean markSupported() {
+        return super.markSupported();
+    }
+
+    public void mark(int readlimit) {
+        super.mark(readlimit);
+    }
+
+    public void reset() throws IOException {
+        super.reset();
+    }
+
+
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append(getClass().getName());
         sb.append(": ");
 
-        List<InputStream> inputStreams = new ArrayList<InputStream>();
+        Vector<InputStream> inputStreams = new Vector<InputStream>();
         while (m_itInputStreams.hasNext()) {
             InputStream in = m_itInputStreams.next();
             sb.append("\n  ");

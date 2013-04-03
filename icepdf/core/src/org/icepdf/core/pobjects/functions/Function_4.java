@@ -1,20 +1,20 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.pobjects.functions;
 
+import org.icepdf.core.io.SeekableInput;
 import org.icepdf.core.pobjects.Dictionary;
 import org.icepdf.core.pobjects.Stream;
 import org.icepdf.core.pobjects.functions.postscript.Lexer;
@@ -48,7 +48,7 @@ public class Function_4 extends Function {
             Logger.getLogger(Function_4.class.toString());
 
     // decoded content that makes up the type 4 functions.
-    private byte[] functionContent;
+    private String functionContent;
 
     // cache for calculated colour values
     private HashMap<Integer, float[]> resultCache;
@@ -58,11 +58,14 @@ public class Function_4 extends Function {
         // decode the stream for parsing.
         if (d instanceof Stream) {
             Stream functionStream = (Stream) d;
-            functionContent = functionStream.getDecodedStreamBytes(0);
-            if (logger.isLoggable(Level.FINER)) {
-                logger.finest("Function 4: " + Utils.convertByteArrayToByteString(functionContent));
+            InputStream input = functionStream.getInputStreamForDecodedStreamBytes();
+            if (input instanceof SeekableInput) {
+                functionContent = Utils.getContentFromSeekableInput((SeekableInput) input, false);
+            } else {
+                InputStream[] inArray = new InputStream[]{input};
+                functionContent = Utils.getContentAndReplaceInputStream(inArray, false);
             }
-
+            logger.finest("Function 4: " + functionContent);
         } else {
             logger.warning("Type 4 function operands could not be found.");
         }
@@ -86,7 +89,7 @@ public class Function_4 extends Function {
         }
 
         // setup the lexer stream
-        InputStream content = new ByteArrayInputStream(functionContent);
+        InputStream content = new ByteArrayInputStream(functionContent.getBytes());
         Lexer lex = new Lexer();
         lex.setInputStream(content);
 
@@ -117,26 +120,25 @@ public class Function_4 extends Function {
 
     /**
      * Utility for creating a comparable colour key for colour components.
-     *
      * @param colours one or more colour values,  usually maxes out at four.
      * @return concatenation of colour values.
      */
-    private Integer calculateColourKey(float[] colours) {
+    private Integer calculateColourKey(float[] colours){
         int length = colours.length;
         // only works for colour vlues 0-255
-        if (!(colours[0] <= 1.0)) {
-            if (length == 1) {
-                return (int) colours[0];
-            } else if (length == 2) {
-                return ((int) colours[1] << 8) | (int) colours[0];
-            } else if (length == 3) {
-                return ((int) colours[2] << 16) |
-                        ((int) colours[1] << 8) | (int) colours[0];
+        if (!(colours[0] <= 1.0)){
+            if (length == 1){
+                return (int)colours[0];
+            }else if (length == 2){
+                return  ((int)colours[1] << 8) | (int)colours[0];
+            }else if (length == 3){
+                return  ((int)colours[2] << 16) |
+                        ((int)colours[1] << 8) | (int)colours[0];
             }
         }
         // otherwise expensive hash generation.
         StringBuilder builder = new StringBuilder();
-        for (float colour : colours) {
+        for (float colour : colours){
             builder.append(colour);
         }
         return builder.toString().hashCode();

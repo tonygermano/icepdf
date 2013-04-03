@@ -1,16 +1,15 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.ri.common;
@@ -19,7 +18,7 @@ import org.icepdf.core.pobjects.PDimension;
 import org.icepdf.core.pobjects.Page;
 import org.icepdf.core.pobjects.PageTree;
 import org.icepdf.core.util.GraphicsRenderingHints;
-import org.icepdf.ri.common.views.DocumentViewController;
+import org.icepdf.core.views.DocumentViewController;
 
 import javax.print.*;
 import javax.print.attribute.HashDocAttributeSet;
@@ -27,8 +26,6 @@ import javax.print.attribute.HashPrintRequestAttributeSet;
 import javax.print.attribute.standard.*;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.geom.AffineTransform;
-import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.awt.print.PageFormat;
 import java.awt.print.Printable;
@@ -60,11 +57,6 @@ public class PrintHelper implements Printable {
     private PrintService printService;
     private HashDocAttributeSet docAttributeSet;
     private HashPrintRequestAttributeSet printRequestAttributeSet;
-
-
-    private static String waterMark;
-    private static Rectangle2D waterMarkBounds;
-    private static BufferedImage waterMarkRaster;
 
     /**
      * Creates a new <code>PrintHelper</code> instance defaulting the
@@ -290,7 +282,7 @@ public class PrintHelper implements Printable {
 
     /**
      * Gets the fit to margin property.  If enabled the page is scaled to fit
-     * the paper size maxing out on the smallest paper dimension.
+     * the paper size maxing out on the smallest paper dimension. 
      *
      * @return true if fit to margin is enabled.
      */
@@ -300,7 +292,6 @@ public class PrintHelper implements Printable {
 
     /**
      * Users rotation specified for the print job.
-     *
      * @return float value representing rotation, 0 is 0 degrees.
      */
     public float getUserRotation() {
@@ -309,7 +300,6 @@ public class PrintHelper implements Printable {
 
     /**
      * Gets the document attributes currently in use.
-     *
      * @return current document attributes.
      */
     public HashDocAttributeSet getDocAttributeSet() {
@@ -318,7 +308,6 @@ public class PrintHelper implements Printable {
 
     /**
      * Gets the print request attribute sets.
-     *
      * @return attribute set
      */
     public HashPrintRequestAttributeSet getPrintRequestAttributeSet() {
@@ -344,7 +333,7 @@ public class PrintHelper implements Printable {
      * @return A status code of Printable.NO_SUCH_PAGE or Printable.PAGE_EXISTS
      */
     public int print(Graphics printGraphics, PageFormat pageFormat, int pageIndex) {
-
+        
         // update the pageCount
         if (printingCurrentPage != pageIndex) {
             printingCurrentPage = pageIndex + 1;
@@ -357,7 +346,7 @@ public class PrintHelper implements Printable {
 
         // Initiate the Page to print, not adding to the pageTree cache purposely,
         // after we finish using it we'll dispose it.
-        Page currentPage = pageTree.getPage(pageIndex);
+        Page currentPage = pageTree.getPage(pageIndex, this);
         PDimension pageDim = currentPage.getSize(userRotation);
 
         // Grab default page width and height
@@ -374,8 +363,8 @@ public class PrintHelper implements Printable {
         float rotation = userRotation;
         boolean isDefaultRotation = true;
         if ((pageWidth > pageHeight &&
-                pageFormat.getOrientation() == PageFormat.PORTRAIT)
-            // auto rotation for landscape.
+                pageFormat.getOrientation() == PageFormat.PORTRAIT )
+              // auto rotation for landscape. 
 //            (pageHeight > pageFormat.getImageableWidth() &&
 //                pageFormat.getOrientation() == PageFormat.LANDSCAPE )
                 ) {
@@ -424,6 +413,8 @@ public class PrintHelper implements Printable {
 //                rotation, zoomFactor);
 //        printGraphics.drawImage(image,0,0,null);
 //        image.flush();
+
+        pageTree.releasePage(currentPage, this);
 
         return Printable.PAGE_EXISTS;
     }
@@ -513,38 +504,6 @@ public class PrintHelper implements Printable {
 
     }
 
-    private void createWatermark(Graphics printGraphics, Page currentPage) {
-        Rectangle2D bounds = currentPage.getBoundingBox(userRotation);
-
-        Graphics2D g2 = (Graphics2D) printGraphics;
-        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
-
-        AffineTransform at2 = currentPage.getPageTransform(
-                Page.BOUNDARY_CROPBOX, userRotation, 1.0f);
-        g2.transform(at2);
-
-        g2.setColor(Color.BLACK);
-        g2.setStroke(new BasicStroke(2.0f));
-
-//        g2.drawImage(waterMarkRaster, (int)bounds.getMinX() + 20, (int)bounds.getMinY() + 20, null);
-//        g2.drawRect(
-//                (int)bounds.getMinX() + 20, (int)bounds.getMinY() + 20,
-//                (int)waterMarkBounds.getWidth(),
-//                (int)waterMarkBounds.getHeight());
-//        g2.drawImage(waterMarkRaster, (int) bounds.getMinX() + 20, (int) bounds.getMaxY() - 20, null);
-//        g2.drawImage(waterMarkRaster, (int) bounds.getMaxX() - 140, (int) bounds.getMaxY() - 20, null);
-//        g2.drawImage(waterMarkRaster, (int) bounds.getMaxX() - 140, (int) bounds.getMinY() + 20, null);
-
-
-        // old way which
-        g2.setFont(new java.awt.Font("SansSerif", java.awt.Font.BOLD, 14));
-        g2.drawString(waterMark, (int) bounds.getMinX() + 20, (int) bounds.getMinY() + 20);
-        g2.drawString(waterMark, (int) bounds.getMinX() + 20, (int) bounds.getMaxY() - 20);
-        g2.drawString(waterMark, (int) bounds.getMaxX() - 140, (int) bounds.getMaxY() - 20);
-        g2.drawString(waterMark, (int) bounds.getMaxX() - 140, (int) bounds.getMinY() + 20);
-    }
-
-
     /**
      * Utility for creating a print setup dialog.
      *
@@ -558,9 +517,6 @@ public class PrintHelper implements Printable {
                 viewController.getViewContainer());
         GraphicsConfiguration graphicsConfiguration =
                 window == null ? null : window.getGraphicsConfiguration();
-        // try and trim the services list.
-//        services = new PrintService[]{services[0]};
-
         return ServiceUI.printDialog(graphicsConfiguration,
                 viewController.getViewContainer().getX() + offset,
                 viewController.getViewContainer().getY() + offset,
@@ -581,11 +537,11 @@ public class PrintHelper implements Printable {
         int start, end;
         for (int[] ranges : pageRanges.getMembers()) {
             start = ranges[0];
-            end = ranges[1];
-            if (start < 1) {
+            end =  ranges[1];
+            if (start < 1){
                 start = 1;
             }
-            if (end > pageTree.getNumberOfPages()) {
+            if (end > pageTree.getNumberOfPages()){
                 end = pageTree.getNumberOfPages();
             }
             totalPagesToPrint += end - start + 1;

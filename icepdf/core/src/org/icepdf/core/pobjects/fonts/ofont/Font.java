@@ -1,16 +1,15 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.pobjects.fonts.ofont;
@@ -24,9 +23,7 @@ import org.icepdf.core.util.FontUtil;
 import org.icepdf.core.util.Library;
 
 import java.awt.*;
-import java.util.HashMap;
-import java.util.List;
-import java.util.StringTokenizer;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -39,21 +36,6 @@ public class Font extends org.icepdf.core.pobjects.fonts.Font {
     private static final Logger logger =
             Logger.getLogger(Font.class.toString());
 
-    public static final Name BASE_ENCODING_KEY = new Name("BaseEncoding");
-    public static final Name ENCODING_KEY = new Name("Encoding");
-    public static final Name TOUNICODE_KEY = new Name("ToUnicode");
-    public static final Name DIFFERENCES_KEY = new Name("Differences");
-    public static final Name WIDTHS_KEY = new Name("Widths");
-    public static final Name FIRST_CHAR_KEY = new Name("FirstChar");
-    public static final Name W_KEY = new Name("W");
-    public static final Name FONT_DESCRIPTOR_KEY = new Name("FontDescriptor");
-    public static final Name DESCENDANT_FONTS_KEY = new Name("DescendantFonts");
-    public static final Name NONE_KEY = new Name("none");
-    public static final Name STANDARD_ENCODING_KEY = new Name("StandardEncoding");
-    public static final Name MACROMAN_ENCODING_KEY = new Name("MacRomanEncoding");
-    public static final Name WINANSI_ENCODING_KEY = new Name("WinAnsiEncoding");
-    public static final Name PDF_DOC_ENCODING_KEY = new Name("PDFDocEncoding");
-
     // A specification of the font's character encoding, if different from its
     // built-in encoding. The value of Encoding may be either the name of a predefined
     // encoding (MacRomanEncoding, MacExpertEncoding, or WinAnsi- Encoding, as
@@ -62,17 +44,17 @@ public class Font extends org.icepdf.core.pobjects.fonts.Font {
     // encoding
     private Encoding encoding;
     // encoding name for debugging reasons;
-    private Name encodingName;
+    private String encodingName;
 
     // An array of (LastChar ? FirstChar + 1) widths, each element being the
     // glyph width for the character code that equals FirstChar plus the array index.
     // For character codes outside the range FirstChar to LastChar, the value
     // of MissingWidth from the FontDescriptor entry for this font is used.
-    private List widths;
+    private Vector widths;
 
-    // widths for cid fonts, substitution specific, font files actually have
+    // widths for cid fonts, substitution specific, font files actully have
     // correct glyph widths.
-    private HashMap<Integer, Float> cidWidths;
+    private Map<Integer, Float> cidWidths;
 
     // Base character mapping of 256 chars
     private char[] cMap;
@@ -181,7 +163,7 @@ public class Font extends org.icepdf.core.pobjects.fonts.Font {
                     "ZapfDingbats", "Dingbats", "Dingbats"}
             };
 
-    public Font(Library library, HashMap entries) {
+    public Font(Library library, Hashtable entries) {
         super(library, entries);
 
         // initialize cMap array with base characters
@@ -217,7 +199,7 @@ public class Font extends org.icepdf.core.pobjects.fonts.Font {
             else {
                 for (String[] aType1Diff : type1Diff) {
                     if (basefont.equals(aType1Diff[0])) {
-                        encodingName = STANDARD_ENCODING_KEY;
+                        encodingName = "standard";
                         encoding = Encoding.getStandard();
                         break;
                     }
@@ -227,7 +209,7 @@ public class Font extends org.icepdf.core.pobjects.fonts.Font {
         // TrueType fonts with a Symbol name get WinAnsi encoding
         if (subtype.equals("TrueType")) {
             if (basefont.equals("Symbol")) {
-                encodingName = WINANSI_ENCODING_KEY;
+                encodingName = "winAnsi";
                 encoding = Encoding.getWinAnsi();
             }
         }
@@ -252,19 +234,19 @@ public class Font extends org.icepdf.core.pobjects.fonts.Font {
         }
 
         // ToUnicode indicates that we now have CMap stream that need to be parsed
-        Object objectUnicode = library.getObject(entries, TOUNICODE_KEY);
+        Object objectUnicode = library.getObject(entries, "ToUnicode");
         if (objectUnicode != null && objectUnicode instanceof Stream) {
-            toUnicodeCMap = new CMap(library, new HashMap(), (Stream) objectUnicode);
+            toUnicodeCMap = new CMap(library, new Hashtable(), (Stream) objectUnicode);
             toUnicodeCMap.init();
         }
 
         // Find any special encoding information, not used very often
-        Object o = library.getObject(entries, ENCODING_KEY);
+        Object o = library.getObject(entries, "Encoding");
         if (o != null) {
-            if (o instanceof HashMap) {
-                HashMap encoding = (HashMap) o;
-                setBaseEncoding(library.getName(encoding, BASE_ENCODING_KEY));
-                List differences = (List) library.getObject(encoding, DIFFERENCES_KEY);
+            if (o instanceof Hashtable) {
+                Hashtable encoding = (Hashtable) o;
+                setBaseEncoding(library.getName(encoding, "BaseEncoding"));
+                Vector differences = (Vector) library.getObject(encoding, "Differences");
                 if (differences != null) {
                     int c = 0;
                     for (Object oo : differences) {
@@ -289,23 +271,23 @@ public class Font extends org.icepdf.core.pobjects.fonts.Font {
                     }
                 }
             } else if (o instanceof Name) {
-                setBaseEncoding((Name) o);
+                setBaseEncoding(((Name) o).getName());
             }
         }
 
         // An array of (LastChar ? FirstChar + 1) widths, each element being the
         // glyph width for the character code that equals FirstChar plus the array index.
-        widths = (List) (library.getObject(entries, WIDTHS_KEY));
+        widths = (Vector) (library.getObject(entries, "Widths"));
         if (widths != null) {
 
             // Assigns the First character code defined in the font's Widths array
-            o = library.getObject(entries, FIRST_CHAR_KEY);
+            o = library.getObject(entries, "FirstChar");
             if (o != null) {
-                firstchar = ((Float) o).intValue();
+                firstchar = (int) (library.getFloat(entries, "FirstChar"));
             }
         }
         // check of a cid font
-        else if (library.getObject(entries, W_KEY) != null) {
+        else if (library.getObject(entries, "W") != null) {
             // calculate CID widths
             cidWidths = calculateCIDWidths();
             // first char is likely 1.
@@ -320,7 +302,7 @@ public class Font extends org.icepdf.core.pobjects.fonts.Font {
 
 
         // Assign the font descriptor
-        Object of = library.getObject(entries, FONT_DESCRIPTOR_KEY);
+        Object of = library.getObject(entries, "FontDescriptor");
         if (of instanceof FontDescriptor) {
             fontDescriptor = (FontDescriptor) of;
             fontDescriptor.init();
@@ -343,7 +325,7 @@ public class Font extends org.icepdf.core.pobjects.fonts.Font {
         // assign font name for descriptor
         if (fontDescriptor != null) {
             String name = fontDescriptor.getFontName();
-            if (name != null && name.length() > 0) {
+            if (name != null && name.length() > 0){
                 basefont = cleanFontName(name);
             }
         }
@@ -351,7 +333,7 @@ public class Font extends org.icepdf.core.pobjects.fonts.Font {
         // checking flags for set bits.
         if (fontDescriptor != null && (fontDescriptor.getFlags() & 64) != 0
                 && encoding == null) {
-            encodingName = STANDARD_ENCODING_KEY;
+            encodingName = "standard";
             encoding = Encoding.getStandard();
         }
 
@@ -359,12 +341,12 @@ public class Font extends org.icepdf.core.pobjects.fonts.Font {
         // is not setup to deal with this type of font,  however we can still
         // located the descendant font described by the CIDFont's data and try
         // and cMap the properties over to the type1 font
-        Object descendant = library.getObject(entries, DESCENDANT_FONTS_KEY);
-        if (descendant != null) {
-            List tmp = (List) descendant;
-            if (tmp.get(0) instanceof Reference) {
+        Object desendantFont = library.getObject(entries, "DescendantFonts");
+        if (desendantFont != null) {
+            Vector tmp = (Vector) desendantFont;
+            if (tmp.elementAt(0) instanceof Reference) {
                 // locate the font reference
-                Object fontReference = library.getObject((Reference) tmp.get(0));
+                Object fontReference = library.getObject((Reference) tmp.elementAt(0));
                 if (fontReference instanceof Font) {
                     // create and initiate the font based on the stream data
                     Font desendant = (Font) fontReference;
@@ -376,7 +358,7 @@ public class Font extends org.icepdf.core.pobjects.fonts.Font {
                     if (fontDescriptor == null) {
                         fontDescriptor = desendant.fontDescriptor;
                         String name = fontDescriptor.getFontName();
-                        if (name != null) {
+                        if (name != null ){
                             basefont = cleanFontName(name);
                         }
                     }
@@ -448,7 +430,7 @@ public class Font extends org.icepdf.core.pobjects.fonts.Font {
 
             for (java.awt.Font font1 : fonts) {
                 // find font family match
-                if (FontUtil.normalizeString(
+                if(FontUtil.normalizeString(
                         font1.getFamily()).equalsIgnoreCase(fontFamily)) {
                     // create new font with font family name and style
                     font = new OFont(new java.awt.Font(font1.getFamily(), style, 1));
@@ -458,15 +440,21 @@ public class Font extends org.icepdf.core.pobjects.fonts.Font {
                 }
             }
         }
+        // if the font is still null decode the name, which will try and find
+        // the basefont, if it fails it will assign a default dialog font
+        if (font == null && basefont != null && basefont.indexOf("-") != -1) {
+            font = new OFont(java.awt.Font.decode(basefont));
+            basefont = font.getName();
+        }
         // if still null, shouldn't be, assigned the basefont name
         if (font == null) {
-            try {
+            try{
                 font = new OFont(java.awt.Font.getFont(basefont,
                         new java.awt.Font(basefont,
                                 style,
                                 12)));
                 basefont = font.getName();
-            } catch (Exception e) {
+            }catch(Exception e){
                 if (logger.isLoggable(Level.WARNING)) {
                     logger.warning("Error creating awt.font for: " + entries);
                 }
@@ -477,47 +465,47 @@ public class Font extends org.icepdf.core.pobjects.fonts.Font {
         // font family font names.  if all else fails use serif as it is the most'
         // common font.
         if (!isFontSubstitution && font != null &&
-                !font.getName().toLowerCase().contains(font.getFamily().toLowerCase())) {
+                font.getName().toLowerCase().indexOf(font.getFamily().toLowerCase()) < 0) {
             // see if we working with a sans serif font
-            if ((font.getName().toLowerCase().contains("times new roman") ||
-                    font.getName().toLowerCase().contains("timesnewroman") ||
-                    font.getName().toLowerCase().contains("bodoni") ||
-                    font.getName().toLowerCase().contains("garamond") ||
-                    font.getName().toLowerCase().contains("minion web") ||
-                    font.getName().toLowerCase().contains("stone serif") ||
-                    font.getName().toLowerCase().contains("stoneserif") ||
-                    font.getName().toLowerCase().contains("georgia") ||
-                    font.getName().toLowerCase().contains("bitstream cyberbit"))) {
+            if ((font.getName().toLowerCase().indexOf("times new roman") != -1 ||
+                    font.getName().toLowerCase().indexOf("timesnewroman") != -1 ||
+                    font.getName().toLowerCase().indexOf("bodoni") != -1 ||
+                    font.getName().toLowerCase().indexOf("garamond") != -1 ||
+                    font.getName().toLowerCase().indexOf("minion web") != -1 ||
+                    font.getName().toLowerCase().indexOf("stone serif") != -1 ||
+                    font.getName().toLowerCase().indexOf("stoneserif") != -1 ||
+                    font.getName().toLowerCase().indexOf("georgia") != -1 ||
+                    font.getName().toLowerCase().indexOf("bitstream cyberbit") != -1)) {
                 font = new OFont(new java.awt.Font("serif",
                         font.getStyle(), (int) font.getSize()));
                 basefont = "serif";
             }
             // see if we working with a monospaced font
-            else if ((font.getName().toLowerCase().contains("helvetica") ||
-                    font.getName().toLowerCase().contains("arial") ||
-                    font.getName().toLowerCase().contains("trebuchet") ||
-                    font.getName().toLowerCase().contains("avant garde gothic") ||
-                    font.getName().toLowerCase().contains("avantgardegothic") ||
-                    font.getName().toLowerCase().contains("verdana") ||
-                    font.getName().toLowerCase().contains("univers") ||
-                    font.getName().toLowerCase().contains("futura") ||
-                    font.getName().toLowerCase().contains("stone sans") ||
-                    font.getName().toLowerCase().contains("stonesans") ||
-                    font.getName().toLowerCase().contains("gill sans") ||
-                    font.getName().toLowerCase().contains("gillsans") ||
-                    font.getName().toLowerCase().contains("akzidenz") ||
-                    font.getName().toLowerCase().contains("grotesk"))) {
+            else if ((font.getName().toLowerCase().indexOf("helvetica") != -1 ||
+                    font.getName().toLowerCase().indexOf("arial") != -1 ||
+                    font.getName().toLowerCase().indexOf("trebuchet") != -1 ||
+                    font.getName().toLowerCase().indexOf("avant garde gothic") != -1 ||
+                    font.getName().toLowerCase().indexOf("avantgardegothic") != -1 ||
+                    font.getName().toLowerCase().indexOf("verdana") != -1 ||
+                    font.getName().toLowerCase().indexOf("univers") != -1 ||
+                    font.getName().toLowerCase().indexOf("futura") != -1 ||
+                    font.getName().toLowerCase().indexOf("stone sans") != -1 ||
+                    font.getName().toLowerCase().indexOf("stonesans") != -1 ||
+                    font.getName().toLowerCase().indexOf("gill sans") != -1 ||
+                    font.getName().toLowerCase().indexOf("gillsans") != -1 ||
+                    font.getName().toLowerCase().indexOf("akzidenz") != -1 ||
+                    font.getName().toLowerCase().indexOf("grotesk") != -1)) {
                 font = new OFont(new java.awt.Font("sansserif",
                         font.getStyle(), (int) font.getSize()));
                 basefont = "sansserif";
             }
             // see if we working with a mono spaced font
-            else if ((font.getName().toLowerCase().contains("courier") ||
-                    font.getName().toLowerCase().contains("courier new") ||
-                    font.getName().toLowerCase().contains("couriernew") ||
-                    font.getName().toLowerCase().contains("prestige") ||
-                    font.getName().toLowerCase().contains("eversonmono") ||
-                    font.getName().toLowerCase().contains("Everson Mono"))) {
+            else if ((font.getName().toLowerCase().indexOf("courier") != -1 ||
+                    font.getName().toLowerCase().indexOf("courier new") != -1 ||
+                    font.getName().toLowerCase().indexOf("couriernew") != -1 ||
+                    font.getName().toLowerCase().indexOf("prestige") != -1 ||
+                    font.getName().toLowerCase().indexOf("eversonmono") != -1 ||
+                    font.getName().toLowerCase().indexOf("Everson Mono") != -1)) {
                 font = new OFont(new java.awt.Font("monospaced",
                         font.getStyle(), (int) font.getSize()));
                 basefont = "monospaced";
@@ -531,7 +519,7 @@ public class Font extends org.icepdf.core.pobjects.fonts.Font {
         }
         // finally if we have an empty font then we default to serif so that
         // we can try and render the character codes.
-        if (font == null) {
+        if (font == null){
             font = new OFont(new java.awt.Font("serif", style, 12));
             basefont = "serif";
         }
@@ -551,22 +539,24 @@ public class Font extends org.icepdf.core.pobjects.fonts.Font {
     /**
      * Sets the encoding of the font
      *
-     * @param baseEncoding encoding name ususally MacRomanEncoding,
+     * @param baseencoding encoding name ususally MacRomanEncoding,
      *                     MacExpertEncoding, or WinAnsi- Encoding
      */
-    private void setBaseEncoding(Name baseEncoding) {
-        if (baseEncoding == null) {
-            encodingName = NONE_KEY;
+    private void setBaseEncoding(String baseencoding) {
+        if (baseencoding == null) {
+            encodingName = "none";
             return;
-        }
-        encodingName = baseEncoding;
-        if (baseEncoding.equals(STANDARD_ENCODING_KEY)) {
+        } else if (baseencoding.equals("StandardEncoding")) {
+            encodingName = "StandardEncoding";
             encoding = Encoding.getStandard();
-        } else if (baseEncoding.equals(MACROMAN_ENCODING_KEY)) {
+        } else if (baseencoding.equals("MacRomanEncoding")) {
+            encodingName = "MacRomanEncoding";
             encoding = Encoding.getMacRoman();
-        } else if (baseEncoding.equals(WINANSI_ENCODING_KEY)) {
+        } else if (baseencoding.equals("WinAnsiEncoding")) {
+            encodingName = "WinAnsiEncoding";
             encoding = Encoding.getWinAnsi();
-        } else if (baseEncoding.equals(PDF_DOC_ENCODING_KEY)) {
+        } else if (baseencoding.equals("PDFDocEncoding")) {
+            encodingName = "PDFDocEncoding";
             encoding = Encoding.getPDFDoc();
         }
         // initiate encoding cMap.
@@ -596,25 +586,25 @@ public class Font extends org.icepdf.core.pobjects.fonts.Font {
      * @return width of specfied character.
 
     private float getWidth(int character, float advance) {
-    character -= firstchar;
-    if (widths != null) {
-    if (character >= 0 && character < widths.size()) {
-    return ((Number) widths.elementAt(character)).floatValue() / 1000f;
-    }
-    }
-    // get any necessary afm widths
-    else if (afm != null) {
-    Float i = afm.getWidths()[(character)];
-    if (i != null) {
-    return i / 1000f;
-    }
-    }
-    // find any widths in the font descriptor
-    else if (fontDescriptor != null) {
-    if (fontDescriptor.getMissingWidth() > 0)
-    return fontDescriptor.getMissingWidth() / 1000f;
-    }
-    return advance;
+        character -= firstchar;
+        if (widths != null) {
+            if (character >= 0 && character < widths.size()) {
+                return ((Number) widths.elementAt(character)).floatValue() / 1000f;
+            }
+        }
+        // get any necessary afm widths
+        else if (afm != null) {
+            Float i = afm.getWidths()[(character)];
+            if (i != null) {
+                return i / 1000f;
+            }
+        }
+        // find any widths in the font descriptor
+        else if (fontDescriptor != null) {
+            if (fontDescriptor.getMissingWidth() > 0)
+                return fontDescriptor.getMissingWidth() / 1000f;
+        }
+        return advance;
     }*/
 
     /**
@@ -635,15 +625,15 @@ public class Font extends org.icepdf.core.pobjects.fonts.Font {
         if (widths != null) {
             float[] newWidth = new float[256 - firstchar];
             for (int i = 0, max = widths.size(); i < max; i++) {
-                if (widths.get(i) != null) {
-                    newWidth[i] = ((Number) widths.get(i)).floatValue() / 1000f;
+                if (widths.elementAt(i) != null) {
+                    newWidth[i] = ((Number) widths.elementAt(i)).floatValue() / 1000f;
                 }
             }
             font = font.deriveFont(newWidth, firstchar, missingWidth, ascent, descent, cMap);
         } else if (cidWidths != null) {
             // cidWidth are already scaled correct to .001
             font = font.deriveFont(cidWidths, firstchar, missingWidth, ascent, descent, null);
-        } else if (afm != null && isAFMFont) {
+        } else if (afm != null) {
             font = font.deriveFont(afm.getWidths(), firstchar, missingWidth, ascent, descent, cMap);
         }
 
@@ -659,7 +649,8 @@ public class Font extends org.icepdf.core.pobjects.fonts.Font {
             try {
                 Integer.parseInt(tmp);
                 fontName = fontName.substring(0, index);
-            } catch (NumberFormatException e) {
+            }
+            catch (NumberFormatException e) {
                 if (logger.isLoggable(Level.FINE)) {
                     logger.fine("error cleaning font base name " + fontName);
                 }
@@ -687,25 +678,25 @@ public class Font extends org.icepdf.core.pobjects.fonts.Font {
         return fontName;
     }
 
-    private HashMap<Integer, Float> calculateCIDWidths() {
+    private Map<Integer, Float> calculateCIDWidths() {
         HashMap<Integer, Float> cidWidths = new HashMap<Integer, Float>(75);
         // get width vector
-        Object o = library.getObject(entries, W_KEY);
-        if (o instanceof List) {
-            List cidWidth = (List) o;
+        Object o = library.getObject(entries, "W");
+        if (o instanceof Vector) {
+            Vector cidWidth = (Vector) o;
             Object current;
             Object peek;
-            List subWidth;
+            Vector subWidth;
             int currentChar;
             for (int i = 0, max = cidWidth.size() - 1; i < max; i++) {
                 current = cidWidth.get(i);
                 peek = cidWidth.get(i + 1);
                 // found format c[w1, w2 ... wn]
                 if (current instanceof Integer &&
-                        peek instanceof List) {
+                        peek instanceof Vector) {
                     // apply Unicode mapping if any
                     currentChar = (Integer) current;
-                    subWidth = (List) peek;
+                    subWidth = (Vector) peek;
                     for (int j = 0, subMax = subWidth.size(); j < subMax; j++) {
                         if (subWidth.get(j) instanceof Integer) {
                             cidWidths.put(currentChar + j, (Integer) subWidth.get(j) / 1000f);
@@ -720,9 +711,9 @@ public class Font extends org.icepdf.core.pobjects.fonts.Font {
                     for (int j = (Integer) current; j <= (Integer) peek; j++) {
                         // apply Unicode mapping if any
                         currentChar = j;
-                        if (cidWidth.get(i + 2) instanceof Integer) {
+                        if (cidWidth.get(i + 2) instanceof Integer){
                             cidWidths.put(currentChar, (Integer) cidWidth.get(i + 2) / 1000f);
-                        } else if (cidWidth.get(i + 2) instanceof Float) {
+                        }else if(cidWidth.get(i + 2) instanceof Float){
                             cidWidths.put(currentChar, (Float) cidWidth.get(i + 2) / 1000f);
                         }
                     }

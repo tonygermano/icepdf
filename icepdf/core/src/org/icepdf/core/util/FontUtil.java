@@ -1,16 +1,15 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.util;
@@ -40,10 +39,10 @@ public class FontUtil {
      * Utility method which maps know style strings to an AWT font style constants.
      * The style attribute read as follows from the java.awt.font constructor:
      * <ul>
-     * the style constant for the Font The style argument is an integer bitmask
-     * that may be PLAIN, or a bitwise union of BOLD and/or ITALIC
-     * (for example, ITALIC or BOLD|ITALIC). If the style argument does not
-     * conform to one of the expected integer bitmasks then the style is set to PLAIN.
+     *   the style constant for the Font The style argument is an integer bitmask
+     *   that may be PLAIN, or a bitwise union of BOLD and/or ITALIC
+     *   (for example, ITALIC or BOLD|ITALIC). If the style argument does not
+     *   conform to one of the expected integer bitmasks then the style is set to PLAIN.
      * </ul>
      *
      * @param name base name of font.
@@ -74,11 +73,12 @@ public class FontUtil {
      * name.  For example:
      * <p/>
      * <ul>
-     * <li>Arial,BoldItalic</li>
-     * <li>Times-Bold"</li>
-     * <li>Arial BoldItalic</li>
-     * <li>TimesNewRomansBold</li>
+     *    <li>Arial,BoldItalic</li>
+     *    <li>Times-Bold"</li>
+     *    <li>Arial BoldItalic</li>
+     *    <li>TimesNewRomansBold</li>
      * </ul>
+     *
      *
      * @param name base name of font.
      * @return guess of the base fonts name.
@@ -94,16 +94,16 @@ public class FontUtil {
             fam = fam.substring(0, inx);
         // Family name with no dash or commas, example "TimesNewRomansBold" or
         // "CalibriBoldItalic"
-        if ((inx = fam.toLowerCase().lastIndexOf(STYLE_BOLD_ITALIC)) > 0) {
-            fam = fam.substring(0, inx);
-        } else if ((inx = fam.toLowerCase().lastIndexOf(STYLE_DEMI_ITALIC)) > 0) {
-            fam = fam.substring(0, inx);
-        } else if ((inx = fam.toLowerCase().lastIndexOf(STYLE_BOLD)) > 0) {
-            fam = fam.substring(0, inx);
-        } else if ((inx = fam.toLowerCase().lastIndexOf(STYLE_ITALIC)) > 0) {
-            fam = fam.substring(0, inx);
-        } else if ((inx = fam.toLowerCase().lastIndexOf(STYLE_BLACK)) > 0) {
-            fam = fam.substring(0, inx);
+        if ((inx = fam.toLowerCase().lastIndexOf(STYLE_BOLD_ITALIC)) > 0){
+        	fam = fam.substring(0, inx);
+        }else if ((inx = fam.toLowerCase().lastIndexOf(STYLE_DEMI_ITALIC)) > 0){
+        	fam = fam.substring(0, inx);
+        }else if ((inx = fam.toLowerCase().lastIndexOf(STYLE_BOLD)) > 0){
+        	fam = fam.substring(0, inx);
+        }else if ((inx = fam.toLowerCase().lastIndexOf(STYLE_ITALIC)) > 0){
+        	fam = fam.substring(0, inx);
+        }else if ((inx = fam.toLowerCase().lastIndexOf(STYLE_BLACK)) > 0){
+        	fam = fam.substring(0, inx);
         }
         return fam;
     }

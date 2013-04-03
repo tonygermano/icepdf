@@ -1,16 +1,15 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.pobjects.security;
@@ -496,7 +495,7 @@ class StandardEncryption {
 
             // Step 5: Pass in the first element of the file's file identifies array
             String firstFileID =
-                    ((StringObject) encryptionDictionary.getFileID().get(0)).getLiteralString();
+                    ((StringObject) encryptionDictionary.getFileID().elementAt(0)).getLiteralString();
             byte[] fileID = Utils.convertByteCharSequenceToByteArray(firstFileID);
             paddedPassword = md5.digest(fileID);
 
@@ -697,7 +696,7 @@ class StandardEncryption {
 
     /**
      * Computing Owner password value, Algorithm 3.3.
-     * <p/>
+     *
      * AESv3 passwords are not handle by this method, instead use
      * {@link #generalEncryptionAlgorithm(org.icepdf.core.pobjects.Reference, byte[], String, byte[])}
      * If the result is not null then the encryptionDictionary will container
@@ -842,7 +841,7 @@ class StandardEncryption {
      * Computing Owner password value, Algorithm 3.4 is respected for
      * Revision = 2 and Algorithm 3.5 is respected for Revisison = 3, null
      * otherwise.
-     * <p/>
+     *
      * AESv3 passwords are not handle by this method, instead use
      * {@link #generalEncryptionAlgorithm(org.icepdf.core.pobjects.Reference, byte[], String, byte[])}
      * If the result is not null then the encryptionDictionary will container
@@ -910,7 +909,7 @@ class StandardEncryption {
 
             // Step 3: Pass the first element of the files identify array to the
             // hash function and finish the hash.
-            String firstFileID = ((StringObject) encryptionDictionary.getFileID().get(0)).getLiteralString();
+            String firstFileID = ((StringObject) encryptionDictionary.getFileID().elementAt(0)).getLiteralString();
             byte[] fileID = Utils.convertByteCharSequenceToByteArray(firstFileID);
             byte[] encryptData = md5.digest(fileID);
 
@@ -968,7 +967,7 @@ class StandardEncryption {
             System.arraycopy(PADDING, 0, finalData, 16, 16);
 
             return finalData;
-        } else {
+        }else {
             return null;
         }
     }
@@ -1112,6 +1111,7 @@ class StandardEncryption {
      *
      * @param intermediateKey key to use for decryption
      * @param encryptedString byte[] to decrypt
+     *
      * @return
      */
     private static byte[] AES256CBC(byte[] intermediateKey, byte[] encryptedString) {
@@ -1149,7 +1149,7 @@ class StandardEncryption {
      *
      * @param byteArray1 byte array to compare
      * @param byteArray2 byte array to compare
-     * @param range      number of elements to compare starting at zero.
+     * @param range number of elements to compare starting at zero.
      * @return true if the
      */
     private static boolean byteCompare(byte[] byteArray1, byte[] byteArray2, int range) {

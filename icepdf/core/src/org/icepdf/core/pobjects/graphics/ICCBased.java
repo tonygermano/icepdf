@@ -1,21 +1,20 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.pobjects.graphics;
 
-import org.icepdf.core.pobjects.Name;
+import org.icepdf.core.io.SeekableInput;
 import org.icepdf.core.pobjects.Stream;
 import org.icepdf.core.util.Library;
 import org.icepdf.core.util.Utils;
@@ -24,6 +23,8 @@ import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.awt.color.ICC_ColorSpace;
 import java.awt.color.ICC_Profile;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -34,9 +35,6 @@ public class ICCBased extends PColorSpace {
 
     private static final Logger logger =
             Logger.getLogger(ICCBased.class.toString());
-
-    public static final Name ICCBASED_KEY = new Name("ICCBased");
-    public static final Name N_KEY = new Name("N");
 
     int numcomp;
     PColorSpace alternate;
@@ -52,7 +50,7 @@ public class ICCBased extends PColorSpace {
      */
     public ICCBased(Library l, Stream h) {
         super(l, h.getEntries());
-        numcomp = h.getInt(N_KEY);
+        numcomp = h.getInt("N");
         switch (numcomp) {
             case 1:
                 alternate = new DeviceGray(l, null);
@@ -75,12 +73,19 @@ public class ICCBased extends PColorSpace {
             return;
         }
         inited = true;
-        byte[] in = null;
+        InputStream in = null;
         try {
             stream.init();
-            in = stream.getDecodedStreamBytes(0);
+            in = stream.getInputStreamForDecodedStreamBytes();
             if (logger.isLoggable(Level.FINEST)) {
-                String content = Utils.convertByteArrayToByteString(in);
+                String content;
+                if (in instanceof SeekableInput) {
+                    content = Utils.getContentFromSeekableInput((SeekableInput) in, false);
+                } else {
+                    InputStream[] inArray = new InputStream[]{in};
+                    content = Utils.getContentAndReplaceInputStream(inArray, false);
+                    in = inArray[0];
+                }
                 logger.finest("Content = " + content);
             }
             if (in != null) {
@@ -89,6 +94,13 @@ public class ICCBased extends PColorSpace {
             }
         } catch (Exception e) {
             logger.log(Level.FINE, "Error Processing ICCBased Colour Profile", e);
+        }
+        finally {
+            try {
+                if (in != null) in.close();
+            }
+            catch (IOException e) {
+            }
         }
     }
 

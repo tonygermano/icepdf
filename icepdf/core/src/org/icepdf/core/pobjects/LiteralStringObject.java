@@ -1,16 +1,15 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2012 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
  * License. You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an "AS
- * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language
+ * IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
 package org.icepdf.core.pobjects;
@@ -51,10 +50,6 @@ public class LiteralStringObject implements StringObject {
         this(new StringBuilder(bytes.length).append(new String(bytes)));
     }
 
-    public LiteralStringObject(StringBuilder chars, boolean dif) {
-        stringData = chars;
-    }
-
     /**
      * <p>Creates a new literal string object so that it represents the same
      * sequence of character data specifed by the argument.</p>
@@ -74,9 +69,9 @@ public class LiteralStringObject implements StringObject {
      * is all ready encrypted. This method is used for creating new
      * LiteralStringObject's that are created post document parse. </p>
      *
-     * @param string          the initial contents of the literal string object,
-     *                        unencrypted.
-     * @param reference       of parent PObject
+     * @param string    the initial contents of the literal string object,
+     *                  unencrypted.
+     * @param reference of parent PObject
      * @param securityManager security manager used ot encrypt the string.
      */
     public LiteralStringObject(String string, Reference reference,
@@ -211,7 +206,7 @@ public class LiteralStringObject implements StringObject {
             for (int i = 0; i < length; i += charOffset) {
                 charValue = getUnsignedInt(i - lastIndex, lastIndex + charOffset);
                 // it is possible to have some cid's that are zero
-                if (charValue > 0 && font.canDisplayEchar((char) charValue)) {
+                if (charValue > 0 && font.canDisplayEchar((char)charValue)){
                     tmp.append((char) charValue);
                     lastIndex = 0;
                 } else {
@@ -278,15 +273,15 @@ public class LiteralStringObject implements StringObject {
     }
 
     /**
-     * Decryptes or encrtypes a string.
+     * Decryptes or encrtypes a string. 
      *
-     * @param string          string to encrypt or decrypt
-     * @param decrypt         true to decrypt string, false otherwise;
+     * @param string string to encrypt or decrypt
+     * @param decrypt true to decrypt string, false otherwise;
      * @param securityManager security manager for document.
      * @return encrypted or decrypted string, depends on value of decrypt param.
      */
     public String encryption(String string, boolean decrypt,
-                             SecurityManager securityManager) {
+                                         SecurityManager securityManager) {
         // get the security manager instance
         if (securityManager != null && reference != null) {
             // get the key
@@ -294,17 +289,17 @@ public class LiteralStringObject implements StringObject {
 
             // convert string to bytes.
             byte[] textBytes =
-                    Utils.convertByteCharSequenceToByteArray(string);
+                Utils.convertByteCharSequenceToByteArray(string);
 
             // Decrypt String
-            if (decrypt) {
+            if (decrypt){
                 textBytes = securityManager.decrypt(reference,
-                        key,
-                        textBytes);
-            } else {
+                    key,
+                    textBytes);
+            }else{
                 textBytes = securityManager.encrypt(reference,
-                        key,
-                        textBytes);
+                    key,
+                    textBytes);
             }
 
             // convert back to a string
