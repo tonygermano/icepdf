@@ -167,7 +167,7 @@ public abstract class AbstractAnnotationComponent extends JComponent implements 
         // update zoom and rotation state
         currentRotation = documentViewModel.getViewRotation();
         currentZoom = documentViewModel.getViewZoom();
-
+        resizableBorder.setZoom(currentZoom);
     }
 
     public Document getDocument() {
@@ -277,6 +277,7 @@ public abstract class AbstractAnnotationComponent extends JComponent implements 
             refreshDirtyBounds();
             currentRotation = documentViewModel.getViewRotation();
             currentZoom = documentViewModel.getViewZoom();
+            resizableBorder.setZoom(currentZoom);
         }
 
         if (resized) {
@@ -312,6 +313,13 @@ public abstract class AbstractAnnotationComponent extends JComponent implements 
             setCursor(documentViewController.getViewCursor(
                     DocumentViewController.CURSOR_HAND_ANNOTATION));
         }
+    }
+
+    public void dispose() {
+        removeMouseListener(this);
+        removeMouseMotionListener(this);
+        // disabled focus until we are ready to implement our own handler.
+        removeFocusListener(this);
     }
 
     public void mouseExited(MouseEvent mouseEvent) {
