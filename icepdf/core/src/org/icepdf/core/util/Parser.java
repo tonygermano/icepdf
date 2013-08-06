@@ -107,7 +107,7 @@ public class Parser {
                     //Thread.yield();
                 } catch (IOException e) {
                     // eat it as it is what is expected
-                    logger.warning("IO reading error.");
+//                    logger.warning("IO reading error.");
                     return null;
                 }
 
@@ -1107,17 +1107,18 @@ public class Parser {
                 break;
             }
         }
+
         if (singed) {
             if (isDecimal) {
                 return -(digit + decimal);
             } else {
-            return -digit;
+                return -digit;
             }
         } else {
             if (isDecimal) {
                 return digit + decimal;
-        } else {
-            return digit;
+            } else {
+                return digit;
             }
         }
     }

@@ -71,7 +71,6 @@ public class WidgetAnnotation extends Annotation {
             }
         }
         highlightMode = LinkAnnotation.HIGHLIGHT_INVERT;
-
     }
 
     /**

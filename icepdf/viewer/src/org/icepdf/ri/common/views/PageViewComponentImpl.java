@@ -261,12 +261,11 @@ public class PageViewComponentImpl extends
      * full parse of the page if accessed again.
      */
     public void invalidatePage() {
-        if (inited) {
-            Page page = pageTree.getPage(pageIndex);
-            page.getLibrary().disposeFontResources();
-            page.resetInitializedState();
-            currentZoom = -1;
-        }
+        Page page = pageTree.getPage(pageIndex);
+        page.getLibrary().disposeFontResources();
+        page.resetInitializedState();
+        currentZoom = -1;
+        pagePainter.setIsBufferDirty(true);
     }
 
     public void invalidatePageBuffer() {
@@ -401,6 +400,9 @@ public class PageViewComponentImpl extends
             else {
                 // mark as dirty
                 currentZoom = -1;
+                if (!isDirtyTimer.isRunning()) {
+                    isDirtyTimer.start();
+                }
             }
 
             // paint the annotations components
@@ -622,7 +624,7 @@ public class PageViewComponentImpl extends
      *
      * @param pagePainter painter doing the painting work.
      */
-    private void createBufferedPageImage(PagePainter pagePainter) {
+    private synchronized void createBufferedPageImage(Page page, PagePainter pagePainter) {
         if (disposing)
             return;
 
@@ -701,7 +703,6 @@ public class PageViewComponentImpl extends
         // keeps the same buffer size for the zoom/rotation, but manipulate its bounds
         // to avoid creating a series of new buffers and thus more flicker
         // Boolean isBufferDirty = isBufferDirty();
-        pageBufferImage = bufferedPageImageReference.get();
         // draw the clean buffer
         if (isPageStateDirty || pageBufferImage == null) {
             // clear old buffer
@@ -726,7 +727,6 @@ public class PageViewComponentImpl extends
 
             bufferedPageImageReference =
                     new SoftReference<Image>(pageBufferImage);
-
             // IMPORTANT! we don't won't to do a copy area if the page state is dirty.
             pagePainter.setIsBufferDirty(false);
         }
@@ -829,8 +829,7 @@ public class PageViewComponentImpl extends
             }
 
             // Paint the page content
-            if (pageTree != null) {
-                Page page = pageTree.getPage(pageIndex);
+            if (page != null) {
                 page.paint(imageGraphics,
                         GraphicsRenderingHints.SCREEN,
                         documentViewModel.getPageBoundary(),
@@ -913,35 +912,53 @@ public class PageViewComponentImpl extends
         private boolean isBufferyDirty;
         private boolean isStopRequested;
 
+        private Page page;
+
         private final Object isRunningLock = new Object();
 
         private boolean hasBeenQueued;
 
         public synchronized boolean isLastPaintDirty() {
-            return isLastPaintDirty;
+            synchronized (isRunningLock) {
+                return isLastPaintDirty;
+            }
         }
 
         public void setIsLastPaintDirty(boolean isDirty) {
-            isLastPaintDirty = isDirty;
+            synchronized (isRunningLock) {
+                isLastPaintDirty = isDirty;
+            }
         }
 
         public void setIsBufferDirty(boolean isDirty) {
-            isBufferyDirty = isDirty;
+            synchronized (isRunningLock) {
+                isBufferyDirty = isDirty;
+            }
         }
 
         public boolean isBufferDirty() {
-            return isBufferyDirty;
+            synchronized (isRunningLock) {
+                return isBufferyDirty;
+            }
         }
 
         public boolean isStopPaintingRequested() {
-            return isStopRequested;
+            synchronized (isRunningLock) {
+                return isStopRequested;
+            }
         }
 
         // stop painting
         public synchronized void stopPaintingPage() {
-            isStopRequested = true;
-            isLastPaintDirty = true;
-            getPage().requestInterrupt();
+            synchronized (isRunningLock) {
+                isStopRequested = true;
+                isLastPaintDirty = true;
+                getPage().requestInterrupt();
+            }
+        }
+
+        public void setPage(Page page) {
+            this.page = page;
         }
 
         public void run() {
@@ -960,12 +977,12 @@ public class PageViewComponentImpl extends
                     };
                     SwingUtilities.invokeLater(doSwingWork);
                 }
-                createBufferedPageImage(this);
+                createBufferedPageImage(page, this);
                 isBufferyDirty = false;
+                page = null;
             } catch (Throwable e) {
                 logger.log(Level.WARNING,
                         "Error creating buffer, page: " + pageIndex, e);
-                e.printStackTrace();
                 // mark as dirty, so that it tries again to create buffer
                 currentZoom = -1;
             }
@@ -983,7 +1000,9 @@ public class PageViewComponentImpl extends
         }
 
         public void setHasBeenQueued(boolean hasBeenQueued) {
-            this.hasBeenQueued = hasBeenQueued;
+            synchronized (isRunningLock) {
+                this.hasBeenQueued = hasBeenQueued;
+            }
         }
 
         public boolean isRunning() {
@@ -1001,19 +1020,22 @@ public class PageViewComponentImpl extends
         private AbstractPageViewComponent pageComponent;
         private boolean hasBeenQueued;
 
+        private Page page;
+
         private PageInitializer(AbstractPageViewComponent pageComponent) {
             this.pageComponent = pageComponent;
         }
 
+        private void setPage(Page page) {
+            this.page = page;
+        }
+
         public void run() {
-
-
             synchronized (isRunningLock) {
                 isRunning = true;
             }
-
             try {
-                final Page page = pageTree.getPage(pageIndex);
+                page = pageTree.getPage(pageIndex);
                 page.init();
 
                 // add annotation components to container, this only done
@@ -1021,8 +1043,8 @@ public class PageViewComponentImpl extends
                 // when needed.
                 SwingUtilities.invokeLater(new Runnable() {
                     public void run() {
-                refreshAnnotationComponents(page);
-//                        pageComponent.validate();
+                        refreshAnnotationComponents(page);
+                        page = null;
                     }
                 });
                 // fire page annotation initialized callback
@@ -1033,9 +1055,8 @@ public class PageViewComponentImpl extends
             } catch (Throwable e) {
                 logger.log(Level.WARNING,
                         "Error initiating page: " + pageIndex, e);
-                e.printStackTrace();
                 // make sure we don't try to re-initialize
-                pageInitializer.setHasBeenQueued(true);
+                hasBeenQueued = true;
                 return;
             }
 
@@ -1046,11 +1067,15 @@ public class PageViewComponentImpl extends
         }
 
         public boolean hasBeenQueued() {
-            return hasBeenQueued;
+            synchronized (isRunningLock) {
+                return hasBeenQueued;
+            }
         }
 
         public void setHasBeenQueued(boolean hasBeenQueued) {
-            this.hasBeenQueued = hasBeenQueued;
+            synchronized (isRunningLock) {
+                this.hasBeenQueued = hasBeenQueued;
+            }
         }
 
         public boolean isRunning() {
@@ -1064,6 +1089,8 @@ public class PageViewComponentImpl extends
 
         private AbstractPageViewComponent pageComponent;
 
+        private Page page;
+
         private DirtyTimerAction(AbstractPageViewComponent pageComponent) {
             this.pageComponent = pageComponent;
         }
@@ -1071,6 +1098,7 @@ public class PageViewComponentImpl extends
         public void actionPerformed(ActionEvent e) {
             if (disposing || !isPageIntersectViewport()) {
                 isDirtyTimer.stop();
+                page = null;
 
                 // stop painting and mark buffer as dirty
                 if (pagePainter.isRunning()) {
@@ -1081,48 +1109,38 @@ public class PageViewComponentImpl extends
             }
 
             // if we are scrolling, no new threads
-            if (!disposing) {
+            if (!disposing && isPageIntersectViewport()) {
+
+                boolean isBufferDirty = pagePainter.isBufferDirty() || isBufferDirty();
 
                 // we don't want to draw if we are scrolling
                 if (parentScrollPane != null &&
                         parentScrollPane.getVerticalScrollBar().getValueIsAdjusting()) {
                     return;
                 }
-                final Page page = pageTree.getPage(pageIndex);
+                page = pageTree.getPage(pageIndex);
                 // load the page content
-                if (page != null && !page.isInitiated() &&
+                if (isBufferDirty &&
+                        page != null && !page.isInitiated() &&
                         !pageInitializer.isRunning() &&
                         !pageInitializer.hasBeenQueued()) {
                     pageInitializer.setHasBeenQueued(true);
+                    pageInitializer.setPage(page);
                     Library.execute(pageInitializer);
                 }
 
-                // check annotation states, there is a possibility that the
-                // page was initialized by some other process and in such
-                // a case the pageInitializer would not have build the up the
-                // annotationComponents.
-                if (!pageInitializer.isRunning() &&
-                        page.isInitiated() &&
-                        page.getAnnotations() != null &&
-                        annotationComponents == null) {
-                    SwingUtilities.invokeLater(new Runnable() {
-                        public void run() {
-                    refreshAnnotationComponents(page);
-                }
-                    });
-                }
-
                 // paint page content
-                boolean isBufferDirty = pagePainter.isBufferDirty() || isBufferDirty();
                 boolean tmp = !pageInitializer.isRunning() &&
+                        page != null &&
                         page.isInitiated() &&
                         !pagePainter.isRunning() &&
                         !pagePainter.hasBeenQueued();
+                isBufferDirty = pagePainter.isBufferDirty() || isBufferDirty();
                 if (page != null &&
                         tmp &&
                         (isPageStateDirty() || isBufferDirty)
                         ) {
-
+                    pagePainter.setPage(page);
                     pagePainter.setHasBeenQueued(true);
                     pagePainter.setIsBufferDirty(isBufferDirty);
                     Library.executePainter(pagePainter);
@@ -1139,6 +1157,21 @@ public class PageViewComponentImpl extends
                         pagePainter.stopPaintingPage();
                     }
                 }
+                // check annotation states, there is a possibility that the
+                // page was initialized by some other process and in such
+                // a case the pageInitializer would not have build the up the
+                // annotationComponents.
+//                if (!pageInitializer.isRunning() &&
+//                        page != null &&
+//                        page.isInitiated() &&
+//                        page.getAnnotations() != null &&
+//                        annotationComponents == null) {
+//                    SwingUtilities.invokeLater(new Runnable() {
+//                        public void run() {
+//                            refreshAnnotationComponents(page);
+//                        }
+//                    });
+//                }
             }
         }
     }
