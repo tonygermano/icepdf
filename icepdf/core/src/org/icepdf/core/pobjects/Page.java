@@ -232,6 +232,7 @@ public class Page extends Dictionary {
                 Object tmp = library.getObject((Reference) conts.get(i));
                 if (tmp instanceof Stream) {
                     Stream tmpStream = (Stream) tmp;
+                    // prune any zero length streams,
                     if (tmpStream != null && tmpStream.getRawBytes().length > 0) {
                         tmpStream.setPObjectReference((Reference) conts.get(i));
                         contents.add(tmpStream);
@@ -798,8 +799,8 @@ public class Page extends Dictionary {
             nAp.setDeleted(true);
             // find the xobjects font resources.
             Object tmp = library.getObject(nAp.entries, RESOURCES_KEY);
-            if (tmp instanceof Resources) {
-                Resources resources = (Resources) tmp;
+            if (tmp instanceof Resources){
+                Resources resources = (Resources)tmp;
                 // only remove our font instance, if we remove another font we would have
                 // to check the document to see if it was used anywhere else.
                 Dictionary font = resources.getFont(FreeTextAnnotation.EMBEDDED_FONT_NAME);

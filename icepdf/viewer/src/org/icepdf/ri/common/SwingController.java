@@ -3510,8 +3510,8 @@ public class SwingController
             if (selectedAnnotation != null) {
                 annotationPanel.setEnabled(true);
                 annotationPanel.setAnnotationComponent(selectedAnnotation);
-                setUtilityPaneVisible(true);
             }
+            setUtilityPaneVisible(true);
 
             // select the annotationPanel tab
             if (utilityTabbedPane.getSelectedComponent() != annotationPanel) {
@@ -4018,6 +4018,7 @@ public class SwingController
                 if (e.getStateChange() == ItemEvent.SELECTED) {
                     tool = DocumentViewModelImpl.DISPLAY_TOOL_SELECTION;
                     setDocumentToolMode(DocumentViewModelImpl.DISPLAY_TOOL_SELECTION);
+                    showAnnotationPanel(null);
                 }
             } else if (source == linkAnnotationToolButton) {
                 if (e.getStateChange() == ItemEvent.SELECTED) {
