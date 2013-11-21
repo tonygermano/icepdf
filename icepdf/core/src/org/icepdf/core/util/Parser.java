@@ -1117,6 +1117,7 @@ public class Parser {
                 break;
             }
         }
+
         if (singed) {
             if (isDecimal) {
                 return -(digit + decimal);

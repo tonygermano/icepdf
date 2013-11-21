@@ -181,7 +181,6 @@ public class OContentParser extends AbstractContentParser {
                         } catch (Exception e) {
                             logger.log(Level.FINEST, "Error parsing text block", e);
                         }
-                        break;
                     }
 
                     // Fill the path, using the nonzero winding number rule to

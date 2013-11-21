@@ -656,7 +656,7 @@ public abstract class AbstractContentParser implements ContentParser {
                 // a MS office bug where the first element of the array isn't scaled to
                 // user space.
                 if (dashArray.length > 1 && dashArray[0] != 0 &&
-                        dashArray[0] < dashArray[1] / 10000) {
+                        dashArray[0] < dashArray[1] / 10000 ){
                     dashArray[0] = dashArray[1];
                 }
             }
@@ -1341,9 +1341,8 @@ public abstract class AbstractContentParser implements ContentParser {
                         graphicState, oCGs);
             } else if (currentObject instanceof Number) {
                 f = (Number) currentObject;
-                textMetrics.getAdvance().x -=
-                        f.floatValue() * graphicState.getTextState().currentfont.getSize()
-                                / 1000.0;
+                textMetrics.getAdvance().x -= (f.floatValue() / 1000f) *
+                        graphicState.getTextState().currentfont.getSize();
             }
             textMetrics.setPreviousAdvance(textMetrics.getAdvance().x);
         }
@@ -1433,7 +1432,7 @@ public abstract class AbstractContentParser implements ContentParser {
 
         // font metrics data
         float textRise = textState.trise;
-        float charcterSpace = textState.cspace * textState.hScalling;
+        float characterSpace = textState.cspace * textState.hScalling;
         float whiteSpace = textState.wspace * textState.hScalling;
         int textLength = displayText.length();
 
@@ -1453,16 +1452,16 @@ public abstract class AbstractContentParser implements ContentParser {
             // Position of the specified glyph relative to the origin of glyphVector
             // advance is handled by the particular font implementation.
             newAdvanceX = (float) currentFont.echarAdvance(currentChar).getX();
-
             newAdvanceY = newAdvanceX;
             if (!isVerticalWriting) {
                 // add fonts rise to the to glyph position (sup,sub scripts)
                 currentX = advanceX + lastx;
                 currentY = lasty - textRise;
                 lastx += newAdvanceX;
-                // add the space between chars value
-                lastx += charcterSpace;
-                // lastly add space widths,
+                // store the pre Tc and Tw dimension.
+                textMetrics.setPreviousAdvance(lastx);
+                lastx += characterSpace;
+                // lastly add space widths, no funny corner case yet for this one.
                 if (displayText.charAt(i) == 32) { // currently to unreliable currentFont.getSpaceEchar()
                     lastx += whiteSpace;
                 }
@@ -1667,7 +1666,7 @@ public abstract class AbstractContentParser implements ContentParser {
                 // first pattern colour or the uncolour.
                 if ((tilingPattern.getbBoxMod() != null &&
                         (tilingPattern.getbBoxMod().getWidth() > 1 ||
-                                tilingPattern.getbBoxMod().getHeight() > 1))) {
+                        tilingPattern.getbBoxMod().getHeight() > 1))) {
                     shapes.add(new TilingPatternDrawCmd(tilingPattern));
                 } else {
                     // draw partial fill colour
@@ -1766,7 +1765,7 @@ public abstract class AbstractContentParser implements ContentParser {
                 // first pattern colour or the uncolour.
                 if (tilingPattern.getbBoxMod() != null &&
                         (tilingPattern.getbBoxMod().getWidth() >= 1 ||
-                                tilingPattern.getbBoxMod().getHeight() >= 1)) {
+                        tilingPattern.getbBoxMod().getHeight() >= 1)) {
                     shapes.add(new TilingPatternDrawCmd(tilingPattern));
                 } else {
                     // draw partial fill colour

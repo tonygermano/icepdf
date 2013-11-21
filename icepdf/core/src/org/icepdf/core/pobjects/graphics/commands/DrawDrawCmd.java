@@ -47,7 +47,7 @@ public class DrawDrawCmd extends AbstractDrawCmd {
             }
         }
         // coupld corner cases where we want to paint the shape when we don't have a clip.
-        else if (g.getClip() == null) {
+        else if (g.getClip() == null ){
             g.draw(currentShape);
             // Send a PaintPage Event to listeners
             if (parentPage != null && paintTimer.shouldTriggerRepaint()) {
