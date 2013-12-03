@@ -159,6 +159,7 @@ public class InkAnnotation extends MarkupAnnotation {
         inkAnnotation.setFlag(Annotation.FLAG_NO_ZOOM, false);
         inkAnnotation.setFlag(Annotation.FLAG_PRINT, true);
 
+
         return inkAnnotation;
     }
 
@@ -168,15 +169,8 @@ public class InkAnnotation extends MarkupAnnotation {
     public void resetAppearanceStream(double dx, double dy, AffineTransform pageSpace) {
 
         // setup clean shapes
-        Appearance appearance = appearances.get(currentAppearance);
-        AppearanceState appearanceState = appearance.getSelectedAppearanceState();
-
-        appearanceState.setMatrix(new AffineTransform());
-        appearanceState.setShapes(new Shapes());
-
-        Rectangle2D bbox = appearanceState.getBbox();
-        AffineTransform matrix = appearanceState.getMatrix();
-        Shapes shapes = appearanceState.getShapes();
+        matrix = new AffineTransform();
+        shapes = new Shapes();
 
         // setup the AP stream.
         setModifiedDate(PDate.formatDateTime(new Date()));
@@ -196,7 +190,7 @@ public class InkAnnotation extends MarkupAnnotation {
 
         // setup the space for the AP content stream.
         af = new AffineTransform();
-        af.translate(-bbox.getMinX(), -bbox.getMinY());
+        af.translate(-this.bbox.getMinX(), -this.bbox.getMinY());
 
         shapes.add(new TransformDrawCmd(af));
         shapes.add(new StrokeDrawCmd(stroke));

@@ -247,12 +247,8 @@ public class FreeTextAnnotation extends MarkupAnnotation {
 
     public void init() {
         super.init();
-
-        Appearance appearance = appearances.get(APPEARANCE_STREAM_NORMAL_KEY);
-        Shapes shapes = null;
-        if (appearance != null) {
-            AppearanceState appearanceState = appearance.getSelectedAppearanceState();
-            shapes = appearanceState.getShapes();
+        if (matrix == null) {
+            matrix = new AffineTransform();
         }
 
         // reget colour so we can check for a null entry
@@ -386,23 +382,13 @@ public class FreeTextAnnotation extends MarkupAnnotation {
 
     @Override
     public void resetAppearanceStream(double dx, double dy, AffineTransform pageTransform) {
-
-        Appearance appearance = appearances.get(currentAppearance);
-        AppearanceState appearanceState = appearance.getSelectedAppearanceState();
-        Rectangle2D bbox = appearanceState.getBbox();
-        AffineTransform matrix = appearanceState.getMatrix();
-        Shapes shapes = appearanceState.getShapes();
-
+        matrix = new AffineTransform();
         if (shapes == null) {
             shapes = new Shapes();
-            appearanceState.setShapes(shapes);
-        } else {
-            // remove any previous text
-            appearanceState.getShapes().getShapes().clear();
         }
 
         // remove any previous text
-        shapes.getShapes().clear();
+        this.shapes.getShapes().clear();
 
         // setup the space for the AP content stream.
         AffineTransform af = new AffineTransform();
@@ -410,7 +396,7 @@ public class FreeTextAnnotation extends MarkupAnnotation {
         af.translate(-bbox.getMinX(), -bbox.getMaxY());
         // adjust of the border offset, offset is define in viewer,
         // so we can't use the constant because of dependency issues.
-        double insets = 5 * pageTransform.getScaleX();
+        double insets = 5;
         af.translate(insets, -insets);
         shapes.add(new TransformDrawCmd(af));
 
@@ -508,8 +494,8 @@ public class FreeTextAnnotation extends MarkupAnnotation {
                 form.setRawBytes(stream.getDecodedStreamBytes());
                 form.init();
             }
-        }// else a stream, we won't support this for annotations.
-        else {
+            // else a stream, we won't support this for annotations.
+        } else {
             // create a new xobject/form object
             HashMap formEntries = new HashMap();
             formEntries.put(Form.TYPE_KEY, Form.TYPE_VALUE);
@@ -637,9 +623,7 @@ public class FreeTextAnnotation extends MarkupAnnotation {
     }
 
     public void clearShapes() {
-        Appearance appearance = appearances.get(currentAppearance);
-        AppearanceState appearanceState = appearance.getSelectedAppearanceState();
-        appearanceState.setShapes(null);
+        shapes = null;
     }
 
     public void setDocument(DefaultStyledDocument document) {
