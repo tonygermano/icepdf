@@ -23,17 +23,14 @@ import java.awt.*;
 import java.awt.geom.AffineTransform;
 
 /**
- * The StrokeDrawCmd stores a Stroke object and when executed the stroke
- * is applied to the graphics context.
  *
- * @since 5.0
  */
-public class StrokeDrawCmd extends AbstractDrawCmd {
+public class TextTransformDrawCmd  extends AbstractDrawCmd {
 
-    private Stroke stroke;
+    private AffineTransform affineTransform;
 
-    public StrokeDrawCmd(Stroke stroke) {
-        this.stroke = stroke;
+    public TextTransformDrawCmd(AffineTransform affineTransform) {
+        this.affineTransform = affineTransform;
     }
 
     @Override
@@ -41,11 +38,13 @@ public class StrokeDrawCmd extends AbstractDrawCmd {
                               Shape clip, AffineTransform base,
                               OptionalContentState optionalContentState,
                               boolean paintAlpha, PaintTimer paintTimer) {
-        g.setStroke(stroke);
+        AffineTransform af = new AffineTransform(base);
+        af.concatenate(affineTransform);
+        g.setTransform(af);
         return currentShape;
     }
 
-    public Stroke getStroke() {
-        return stroke;
+    public AffineTransform getAffineTransform() {
+        return affineTransform;
     }
 }
