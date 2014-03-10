@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -19,15 +19,14 @@ import org.icepdf.core.events.PaintPageEvent;
 import org.icepdf.core.events.PaintPageListener;
 import org.icepdf.core.pobjects.Page;
 import org.icepdf.core.pobjects.PageTree;
-import org.icepdf.core.pobjects.annotations.ChoiceWidgetAnnotation;
 import org.icepdf.core.pobjects.annotations.FreeTextAnnotation;
-import org.icepdf.core.pobjects.annotations.TextWidgetAnnotation;
 import org.icepdf.core.pobjects.graphics.text.PageText;
 import org.icepdf.core.search.DocumentSearchController;
 import org.icepdf.core.util.*;
 import org.icepdf.ri.common.tools.SelectionBoxHandler;
 import org.icepdf.ri.common.tools.TextSelectionPageHandler;
 import org.icepdf.ri.common.views.annotations.AbstractAnnotationComponent;
+import org.icepdf.ri.common.views.annotations.FreeTextAnnotationComponent;
 import org.icepdf.ri.common.views.annotations.PopupAnnotationComponent;
 
 import javax.swing.*;
@@ -473,11 +472,7 @@ public class PageViewComponentImpl extends
                     annotation = annotationComponents.get(i);
                     if (((Component) annotation).isVisible() &&
                             !(annotation.getAnnotation() instanceof FreeTextAnnotation
-                                    && ((AbstractAnnotationComponent) annotation).isActive()) &&
-                            !(annotation.getAnnotation() instanceof TextWidgetAnnotation
-                                    && ((AbstractAnnotationComponent) annotation).isActive()) &&
-                            !(annotation.getAnnotation() instanceof ChoiceWidgetAnnotation
-                                    && ((AbstractAnnotationComponent) annotation).isActive())) {
+                                    && ((FreeTextAnnotationComponent) annotation).isActive())) {
                         annotation.getAnnotation().render(gg2,
                                 GraphicsRenderingHints.SCREEN,
                                 documentViewModel.getViewRotation(),

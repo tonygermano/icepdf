@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -1341,9 +1341,8 @@ public abstract class AbstractContentParser implements ContentParser {
                         graphicState, oCGs);
             } else if (currentObject instanceof Number) {
                 f = (Number) currentObject;
-                textMetrics.getAdvance().x -=
-                        f.floatValue() * graphicState.getTextState().currentfont.getSize()
-                                / 1000.0;
+                textMetrics.getAdvance().x -= (f.floatValue() / 1000f) *
+                        graphicState.getTextState().currentfont.getSize();
             }
             textMetrics.setPreviousAdvance(textMetrics.getAdvance().x);
         }
@@ -1433,7 +1432,7 @@ public abstract class AbstractContentParser implements ContentParser {
 
         // font metrics data
         float textRise = textState.trise;
-        float charcterSpace = textState.cspace * textState.hScalling;
+        float characterSpace = textState.cspace * textState.hScalling;
         float whiteSpace = textState.wspace * textState.hScalling;
         int textLength = displayText.length();
 
@@ -1453,16 +1452,16 @@ public abstract class AbstractContentParser implements ContentParser {
             // Position of the specified glyph relative to the origin of glyphVector
             // advance is handled by the particular font implementation.
             newAdvanceX = (float) currentFont.echarAdvance(currentChar).getX();
-
             newAdvanceY = newAdvanceX;
             if (!isVerticalWriting) {
                 // add fonts rise to the to glyph position (sup,sub scripts)
                 currentX = advanceX + lastx;
                 currentY = lasty - textRise;
                 lastx += newAdvanceX;
-                // add the space between chars value
-                lastx += charcterSpace;
-                // lastly add space widths,
+                // store the pre Tc and Tw dimension.
+                textMetrics.setPreviousAdvance(lastx);
+                lastx += characterSpace;
+                // lastly add space widths, no funny corner case yet for this one.
                 if (displayText.charAt(i) == 32) { // currently to unreliable currentFont.getSpaceEchar()
                     lastx += whiteSpace;
                 }
