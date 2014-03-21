@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -181,7 +181,6 @@ public class OContentParser extends AbstractContentParser {
                         } catch (Exception e) {
                             logger.log(Level.FINEST, "Error parsing text block", e);
                         }
-                        break;
                     }
 
                     // Fill the path, using the nonzero winding number rule to

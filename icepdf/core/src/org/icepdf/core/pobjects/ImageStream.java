@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -169,7 +169,7 @@ public class ImageStream extends Stream {
             Tagger.tagImage("Filter=" + getNormalisedFilterNames());
 
         // parse colour space
-        PColorSpace colourSpace = null;
+        colourSpace = null;
         Object o = entries.get(COLORSPACE_KEY);
         if (resources != null && o != null) {
             colourSpace = resources.getColorSpace(o);

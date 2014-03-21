@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -196,7 +196,7 @@ public abstract class Font extends Dictionary {
 
         // figure out type
         if (subtype != null) {
-            subTypeFormat = (subtype.getName().toLowerCase().equals("type0") |
+            subTypeFormat = (subtype.getName().toLowerCase().equals("type0") ||
                     subtype.getName().toLowerCase().contains("cid")) ?
                     CID_FORMAT : SIMPLE_FORMAT;
         }
