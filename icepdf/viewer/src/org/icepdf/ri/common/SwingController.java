@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -1470,6 +1470,7 @@ public class SwingController
             // repaint the page views.
             documentViewController.getViewContainer().repaint();
         } catch (java.awt.HeadlessException e) {
+            e.printStackTrace();
             logger.log(Level.FINE, "Headless exception during tool selection", e);
         }
     }
@@ -2167,11 +2168,22 @@ public class SwingController
                 safelySelectUtilityPanel(annotationPanel);
             }
         }
-        setUtilityPaneVisible(showUtilityPane);
+
+        // showUtilityPane will be true the document has an outline, but the
+        // visibility can be over-ridden with the property application.utilitypane.show
+        boolean hideUtilityPane = PropertiesManager.checkAndStoreBooleanProperty(
+                propertiesManager,
+                PropertiesManager.PROPERTY_HIDE_UTILITYPANE, false);
+        // hide utility pane
+        if (hideUtilityPane) {
+            setUtilityPaneVisible(false);
+        } else {
+            setUtilityPaneVisible(showUtilityPane);
+        }
 
         // check if there are layers and enable/disable the tab as needed
         OptionalContent optionalContent = document.getCatalog().getOptionalContent();
-        if (layersPanel != null) {
+        if (layersPanel != null && utilityTabbedPane != null) {
             if (optionalContent == null || optionalContent.getOrder() == null) {
                 utilityTabbedPane.setEnabledAt(
                         utilityTabbedPane.indexOfComponent(layersPanel),
@@ -3510,8 +3522,8 @@ public class SwingController
             if (selectedAnnotation != null) {
                 annotationPanel.setEnabled(true);
                 annotationPanel.setAnnotationComponent(selectedAnnotation);
-                setUtilityPaneVisible(true);
             }
+            setUtilityPaneVisible(true);
 
             // select the annotationPanel tab
             if (utilityTabbedPane.getSelectedComponent() != annotationPanel) {
@@ -4018,6 +4030,7 @@ public class SwingController
                 if (e.getStateChange() == ItemEvent.SELECTED) {
                     tool = DocumentViewModelImpl.DISPLAY_TOOL_SELECTION;
                     setDocumentToolMode(DocumentViewModelImpl.DISPLAY_TOOL_SELECTION);
+                    showAnnotationPanel(null);
                 }
             } else if (source == linkAnnotationToolButton) {
                 if (e.getStateChange() == ItemEvent.SELECTED) {

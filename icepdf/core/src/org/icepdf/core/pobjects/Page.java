@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -1303,16 +1303,7 @@ public class Page extends Dictionary {
         if (boxDimensions != null) {
             cropBox = new PRectangle(boxDimensions);
         }
-        // If mediaBox is null check with the parent pages, as media box is inheritable
-        if (cropBox == null) {
-            PageTree pageTree = getParent();
-            while (pageTree != null && cropBox == null) {
-                cropBox = pageTree.getCropBox();
-                if (cropBox == null) {
-                    pageTree = pageTree.getParent();
-                }
-            }
-        }
+
         // Default value of the cropBox is the MediaBox if not set implicitly
         PRectangle mediaBox = (PRectangle) getMediaBox();
         if (cropBox == null && mediaBox != null) {
@@ -1322,6 +1313,17 @@ public class Page extends Dictionary {
             // crop box to get the new box. But we only want to do this if the
             // cropBox is not the same as the mediaBox
             cropBox = mediaBox.createCartesianIntersection(cropBox);
+        }
+
+        // If mediaBox is null check with the parent pages, as media box is inheritable
+        if (cropBox == null) {
+            PageTree pageTree = getParent();
+            while (pageTree != null && cropBox == null) {
+                cropBox = pageTree.getCropBox();
+                if (cropBox == null) {
+                    pageTree = pageTree.getParent();
+                }
+            }
         }
         return cropBox;
     }
