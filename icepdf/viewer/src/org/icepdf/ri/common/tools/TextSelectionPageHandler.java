@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -649,7 +649,8 @@ public class TextSelectionPageHandler extends SelectionBoxHandler
                         documentViewModel.getViewZoom());
                 // paint the sprites
                 GeneralPath textPath;
-                for (LineText lineText : pageText.getPageLines()) {
+                ArrayList<LineText> visiblePageLines = pageText.getPageLines();
+                for (LineText lineText : visiblePageLines) {
                     for (WordText wordText : lineText.getWords()) {
                         // paint whole word
                         if (wordText.isSelected() || wordText.isHighlighted()) {

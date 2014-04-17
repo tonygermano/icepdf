@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -17,7 +17,7 @@ package org.icepdf.core.pobjects.graphics.text;
 
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.List;
 
 /**
  * Line text is make up WordText objects.  This structure is to aid the
@@ -74,7 +74,7 @@ public class LineText extends AbstractText implements TextSelect {
             currentWord = null;
         }
         //  add punctuation as new words
-        else if (WordText.detectPunctuation(sprite)) {
+        else if (WordText.detectPunctuation(sprite, currentWord)) {
             // add as a new word, nothing special otherwise
             WordText newWord = new WordText();
             newWord.setWhiteSpace(true);
@@ -117,6 +117,11 @@ public class LineText extends AbstractText implements TextSelect {
         currentWord = wordText;
 
     }
+
+    public void addAll(List<WordText> words) {
+        this.words.addAll(words);
+    }
+
 
     /**
      * Gets the current word, if there is none, one is created.
@@ -182,7 +187,6 @@ public class LineText extends AbstractText implements TextSelect {
      */
     public StringBuilder getSelected() {
         StringBuilder selectedText = new StringBuilder();
-        Collections.sort(words, new TextPositionComparator());
 
         for (WordText word : words) {
             selectedText.append(word.getSelected());
