@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -76,6 +76,10 @@ public abstract class AbstractContentParser implements ContentParser {
     // TextBlock affine transform can be altered by the "cm" operand an thus
     // the text base affine transform must be accessible outside the parsTtext method
     protected AffineTransform textBlockBase;
+
+    // when parsing a type3 font we need to keep track of the the scale factor
+    // of the device space ctm.
+    protected float glyph2UserSpaceScale = 1.0f;
 
     // stack to help with the parse
     protected Stack<Object> stack = new Stack<Object>();
@@ -388,7 +392,9 @@ public abstract class AbstractContentParser implements ContentParser {
             // peek and then pop until a none Float is found
             int nCount = 0;
             // set colour to max of 4 which is cymk,
-            int compLength = 4;
+            // we have a corner case where 5 components are defined and once
+            // pushed throw the function produce a valid color.
+            int compLength = 5;
             float colour[] = new float[compLength];
             // peek and pop all of the colour floats
             while (!stack.isEmpty() && stack.peek() instanceof Number &&
@@ -593,8 +599,11 @@ public abstract class AbstractContentParser implements ContentParser {
                             .applyXObjectTransform(graphicState.getCTM());
                     // add the text to the current shapes for extraction and
                     // selection purposes.
-                    shapes.getPageText().addPageLines(
-                            formXObject.getShapes().getPageText().getPageLines());
+                    PageText pageText = formXObject.getShapes().getPageText();
+                    if (pageText != null && pageText.getPageLines() != null) {
+                        shapes.getPageText().addPageLines(
+                                pageText.getPageLines());
+                    }
                 }
                 shapes.add(new NoClipDrawCmd());
             }
@@ -703,9 +712,14 @@ public abstract class AbstractContentParser implements ContentParser {
         setStroke(shapes, graphicState);
     }
 
-    protected static void consume_w(GraphicsState graphicState, Stack stack, Shapes shapes) {
-        graphicState.setLineWidth(((Number) stack.pop()).floatValue());
-        setStroke(shapes, graphicState);
+    protected static void consume_w(GraphicsState graphicState, Stack stack,
+                                    Shapes shapes, float glyph2UserSpaceScale) {
+        // apply any type3 font scalling which is set via the glyph2User space affine transform.
+        if (!stack.isEmpty()) {
+            float scale = ((Number) stack.pop()).floatValue() * glyph2UserSpaceScale;
+            graphicState.setLineWidth(scale);
+            setStroke(shapes, graphicState);
+        }
     }
 
     protected static void consume_M(GraphicsState graphicState, Stack stack, Shapes shapes) {
@@ -804,19 +818,6 @@ public abstract class AbstractContentParser implements ContentParser {
         if (textMetrics.isYstart()) {
             textMetrics.setyBTStart(tm[5]);
             textMetrics.setYstart(false);
-            if (previousBTStart != textMetrics.getyBTStart()) {
-                pageText.newLine(oCGs);
-            }
-        }
-        double newTransY = graphicState.getCTM().getTranslateY();
-        double newScaleY = graphicState.getCTM().getScaleY();
-        // f5 and f6 will dictate a horizontal or vertical shift
-        // this information could be used to detect new lines
-
-        if (Math.round(oldTransY) != Math.round(newTransY)) {
-            pageText.newLine(oCGs);
-        } else if (Math.abs(oldScaleY) != Math.abs(newScaleY)) {
-            pageText.newLine(oCGs);
         }
 
     }
@@ -850,11 +851,6 @@ public abstract class AbstractContentParser implements ContentParser {
         if (textMetrics.isYstart()) {
             textMetrics.setyBTStart(y);
             textMetrics.setYstart(false);
-        }
-        // ty will dictate the vertical shift, many pdf will use
-        // ty=0 do just do a horizontal shift for layout.
-        if (y != 0f) {
-            pageText.newLine(oCGs);
         }
     }
 
@@ -919,15 +915,6 @@ public abstract class AbstractContentParser implements ContentParser {
         if (textMetrics.isYstart()) {
             textMetrics.setyBTStart(newY);
             textMetrics.setYstart(false);
-            if (previousBTStart != textMetrics.getyBTStart()) {
-                pageText.newLine(oCGs);
-            }
-        }
-
-        // ty will dictate the vertical shift, many pdf will use
-        // ty=0 do just do a horizontal shift for layout.
-        if (y != 0 && Math.round(newY) != Math.round(oldY)) {
-            pageText.newLine(oCGs);
         }
     }
 
@@ -980,16 +967,18 @@ public abstract class AbstractContentParser implements ContentParser {
 
     protected static GeneralPath consume_c(Stack stack,
                                            GeneralPath geometricPath) {
-        float y3 = ((Number) stack.pop()).floatValue();
-        float x3 = ((Number) stack.pop()).floatValue();
-        float y2 = ((Number) stack.pop()).floatValue();
-        float x2 = ((Number) stack.pop()).floatValue();
-        float y1 = ((Number) stack.pop()).floatValue();
-        float x1 = ((Number) stack.pop()).floatValue();
-        if (geometricPath == null) {
-            geometricPath = new GeneralPath();
+        if (!stack.isEmpty()) {
+            float y3 = ((Number) stack.pop()).floatValue();
+            float x3 = ((Number) stack.pop()).floatValue();
+            float y2 = ((Number) stack.pop()).floatValue();
+            float x2 = ((Number) stack.pop()).floatValue();
+            float y1 = ((Number) stack.pop()).floatValue();
+            float x1 = ((Number) stack.pop()).floatValue();
+            if (geometricPath == null) {
+                geometricPath = new GeneralPath();
+            }
+            geometricPath.curveTo(x1, y1, x2, y2, x3, y3);
         }
-        geometricPath.curveTo(x1, y1, x2, y2, x3, y3);
         return geometricPath;
     }
 
@@ -1344,9 +1333,8 @@ public abstract class AbstractContentParser implements ContentParser {
                         graphicState, oCGs);
             } else if (currentObject instanceof Number) {
                 f = (Number) currentObject;
-                textMetrics.getAdvance().x -=
-                        f.floatValue() * graphicState.getTextState().currentfont.getSize()
-                                / 1000.0;
+                textMetrics.getAdvance().x -= (f.floatValue() / 1000f) *
+                        graphicState.getTextState().currentfont.getSize();
             }
             textMetrics.setPreviousAdvance(textMetrics.getAdvance().x);
         }
@@ -1436,7 +1424,7 @@ public abstract class AbstractContentParser implements ContentParser {
 
         // font metrics data
         float textRise = textState.trise;
-        float charcterSpace = textState.cspace * textState.hScalling;
+        float characterSpace = textState.cspace * textState.hScalling;
         float whiteSpace = textState.wspace * textState.hScalling;
         int textLength = displayText.length();
 
@@ -1456,16 +1444,16 @@ public abstract class AbstractContentParser implements ContentParser {
             // Position of the specified glyph relative to the origin of glyphVector
             // advance is handled by the particular font implementation.
             newAdvanceX = (float) currentFont.echarAdvance(currentChar).getX();
-
             newAdvanceY = newAdvanceX;
             if (!isVerticalWriting) {
                 // add fonts rise to the to glyph position (sup,sub scripts)
                 currentX = advanceX + lastx;
                 currentY = lasty - textRise;
                 lastx += newAdvanceX;
-                // add the space between chars value
-                lastx += charcterSpace;
-                // lastly add space widths,
+                // store the pre Tc and Tw dimension.
+                textMetrics.setPreviousAdvance(lastx);
+                lastx += characterSpace;
+                // lastly add space widths, no funny corner case yet for this one.
                 if (displayText.charAt(i) == 32) { // currently to unreliable currentFont.getSpaceEchar()
                     lastx += whiteSpace;
                 }
@@ -1868,5 +1856,10 @@ public abstract class AbstractContentParser implements ContentParser {
                         alpha);
         shapes.add(new AlphaDrawCmd(alphaComposite));
     }
+
+    public void setGlyph2UserSpaceScale(float scale) {
+        glyph2UserSpaceScale = scale;
+    }
+
 }
 
