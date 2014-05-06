@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -564,19 +564,23 @@ public class Page extends Dictionary {
                 // paint the sprites
                 GeneralPath textPath;
                 // iterate over the data structure.
-                for (LineText lineText : pageText.getPageLines()) {
-                    for (WordText wordText : lineText.getWords()) {
-                        // paint whole word
-                        if (wordText.isHighlighted()) {
-                            textPath = new GeneralPath(wordText.getBounds());
-                            g2.setColor(highlightColor);
-                            g2.fill(textPath);
-                        } else {
-                            for (GlyphText glyph : wordText.getGlyphs()) {
-                                if (glyph.isHighlighted()) {
-                                    textPath = new GeneralPath(glyph.getBounds());
+                if (pageText.getPageLines() != null) {
+                    for (LineText lineText : pageText.getPageLines()) {
+                        if (lineText != null) {
+                            for (WordText wordText : lineText.getWords()) {
+                                // paint whole word
+                                if (wordText.isHighlighted()) {
+                                    textPath = new GeneralPath(wordText.getBounds());
                                     g2.setColor(highlightColor);
                                     g2.fill(textPath);
+                                } else {
+                                    for (GlyphText glyph : wordText.getGlyphs()) {
+                                        if (glyph.isHighlighted()) {
+                                            textPath = new GeneralPath(glyph.getBounds());
+                                            g2.setColor(highlightColor);
+                                            g2.fill(textPath);
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1303,21 +1307,26 @@ public class Page extends Dictionary {
         if (boxDimensions != null) {
             cropBox = new PRectangle(boxDimensions);
         }
-        // If mediaBox is null check with the parent pages, as media box is inheritable
+        // If cropbox is null check with the parent pages, as media box is inheritable
+        boolean isParentCropBox = false;
         if (cropBox == null) {
             PageTree pageTree = getParent();
             while (pageTree != null && cropBox == null) {
-                cropBox = pageTree.getCropBox();
-                if (cropBox == null) {
-                    pageTree = pageTree.getParent();
+                if (pageTree.getCropBox() == null) {
+                    break;
                 }
+                cropBox = pageTree.getCropBox();
+                if (cropBox != null) {
+                    isParentCropBox = true;
+                }
+                pageTree = pageTree.getParent();
             }
         }
         // Default value of the cropBox is the MediaBox if not set implicitly
         PRectangle mediaBox = (PRectangle) getMediaBox();
-        if (cropBox == null && mediaBox != null) {
+        if ((cropBox == null || isParentCropBox) && mediaBox != null) {
             cropBox = (PRectangle) mediaBox.clone();
-        } else if (mediaBox != null) {
+        } else if (cropBox != null && mediaBox != null) {
             // PDF 1.5 spec states that the media box should be intersected with the
             // crop box to get the new box. But we only want to do this if the
             // cropBox is not the same as the mediaBox

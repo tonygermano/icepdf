@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -81,4 +81,13 @@ public interface ContentParser {
      * @throws UnsupportedEncodingException encoding error.
      */
     Shapes parseTextBlocks(byte[][] source) throws UnsupportedEncodingException;
+
+    /**
+     * Sets the scale factor used by some graphic state parameters so that the
+     * to users space CTM scale factor can be applied.  In particular some
+     * Type3 glyphs need to take into account this scaling factor.
+     *
+     * @param scale scale factor to apply to various graphic state parameters.
+     */
+    void setGlyph2UserSpaceScale(float scale);
 }

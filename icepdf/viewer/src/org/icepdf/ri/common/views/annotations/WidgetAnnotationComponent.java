@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -33,8 +33,6 @@ public class WidgetAnnotationComponent extends AbstractAnnotationComponent {
                                      AbstractPageViewComponent pageViewComponent, DocumentViewModel documentViewModel) {
         super(annotation, documentViewController, pageViewComponent, documentViewModel);
         isShowInvisibleBorder = true;
-        isResizable = true;
-        isMovable = true;
     }
 
     @Override
@@ -45,9 +43,5 @@ public class WidgetAnnotationComponent extends AbstractAnnotationComponent {
     @Override
     public void paintComponent(Graphics g) {
 
-    }
-
-    public boolean isActive() {
-        return false;
     }
 }
