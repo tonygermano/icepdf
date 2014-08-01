@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -251,10 +251,8 @@ public abstract class AbstractDocumentViewModel implements DocumentViewModel {
     public Rectangle getPageBounds(int pageIndex) {
         Rectangle pageBounds = new Rectangle();
         if (pageComponents != null && pageIndex < pageComponents.size()) {
-            Component pageViewComponentImpl;
-            Object tmp = pageComponents.get(pageIndex);
-            if (tmp != null && tmp instanceof Component) {
-                pageViewComponentImpl = (Component) tmp;
+            Component pageViewComponentImpl = pageComponents.get(pageIndex);
+            if (pageViewComponentImpl != null) {
                 Component parentComponent = pageViewComponentImpl;
                 Dimension size = pageViewComponentImpl.getPreferredSize();
                 pageBounds.setSize(size.width, size.height);

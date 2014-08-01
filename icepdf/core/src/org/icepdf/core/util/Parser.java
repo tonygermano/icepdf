@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -179,7 +179,13 @@ public class Parser {
                 else if (nextToken.equals("stream")) {
                     deepnessCount++;
                     // pop dictionary that defines the stream
-                    HashMap streamHash = (HashMap) stack.pop();
+                    Object tmp = stack.pop();
+                    HashMap streamHash;
+                    if (tmp instanceof Dictionary) {
+                        streamHash = ((Dictionary) tmp).getEntries();
+                    } else {
+                        streamHash = (HashMap) tmp;
+                    }
                     // find the length of the stream
                     int streamLength = library.getInt(streamHash, Dictionary.LENGTH_KEY);
 
@@ -359,7 +365,12 @@ public class Parser {
                 else if (nextToken.equals("]")) {
                     deepnessCount--;
                     final int searchPosition = stack.search("[");
-                    final int size = searchPosition - 1;
+                    int size = searchPosition - 1;
+                    if (size < 0) {
+                        logger.warning("Negative array size, a  malformed content " +
+                                "stream has likely been encountered.");
+                        size = 0;
+                    }
                     List v = new ArrayList(size);
                     Object[] tmp = new Object[size];
                     if (searchPosition > 0) {
@@ -1118,6 +1129,7 @@ public class Parser {
                 break;
             }
         }
+
         if (singed) {
             if (isDecimal) {
                 return -(digit + decimal);

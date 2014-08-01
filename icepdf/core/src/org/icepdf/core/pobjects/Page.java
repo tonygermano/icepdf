@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -158,9 +158,6 @@ public class Page extends Dictionary {
      */
     public static final int BOUNDARY_ARTBOX = 5;
 
-    // Flag for call to init method, very simple cache
-    private boolean isInited = false;
-
     // resources for page's parent pages, default fonts, etc.
     private Resources resources;
 
@@ -205,7 +202,7 @@ public class Page extends Dictionary {
     }
 
     public boolean isInitiated() {
-        return isInited;
+        return inited;
     }
 
     private void initPageContents() throws InterruptedException {
@@ -317,7 +314,7 @@ public class Page extends Dictionary {
      * this page may trigger a call to init().
      */
     public void resetInitializedState() {
-        isInited = false;
+        inited = false;
     }
 
     /**
@@ -327,7 +324,7 @@ public class Page extends Dictionary {
     public synchronized void init() {
         try {
             // make sure we are not revisiting this method
-            if (isInited) {
+            if (inited) {
                 return;
             }
 
@@ -380,12 +377,12 @@ public class Page extends Dictionary {
                 shapes = new Shapes();
             }
             // set the initiated flag
-            isInited = true;
+            inited = true;
 
         } catch (InterruptedException e) {
             // keeps shapes vector so we can paint what we have but make init state as false
             // so we can try to re parse it later.
-            isInited = false;
+            inited = false;
             logger.log(Level.SEVERE, "Page initializing thread interrupted.", e);
         }
 
@@ -453,7 +450,7 @@ public class Page extends Dictionary {
     public void paint(Graphics g, int renderHintType, final int boundary,
                       float userRotation, float userZoom,
                       boolean paintAnnotations, boolean paintSearchHighlight) {
-        if (!isInited) {
+        if (!inited) {
             // make sure we don't do a page init on the awt thread in the viewer
             // ri, let the
             return;
@@ -524,7 +521,7 @@ public class Page extends Dictionary {
      *                             for search terms.
      */
     public void paintPageContent(Graphics g, int renderHintType, float userRotation, float userZoom, boolean paintAnnotations, boolean paintSearchHighlight) {
-        if (!isInited) {
+        if (!inited) {
             init();
         }
 
@@ -564,19 +561,23 @@ public class Page extends Dictionary {
                 // paint the sprites
                 GeneralPath textPath;
                 // iterate over the data structure.
-                for (LineText lineText : pageText.getPageLines()) {
-                    for (WordText wordText : lineText.getWords()) {
-                        // paint whole word
-                        if (wordText.isHighlighted()) {
-                            textPath = new GeneralPath(wordText.getBounds());
-                            g2.setColor(highlightColor);
-                            g2.fill(textPath);
-                        } else {
-                            for (GlyphText glyph : wordText.getGlyphs()) {
-                                if (glyph.isHighlighted()) {
-                                    textPath = new GeneralPath(glyph.getBounds());
+                if (pageText.getPageLines() != null) {
+                    for (LineText lineText : pageText.getPageLines()) {
+                        if (lineText != null) {
+                            for (WordText wordText : lineText.getWords()) {
+                                // paint whole word
+                                if (wordText.isHighlighted()) {
+                                    textPath = new GeneralPath(wordText.getBounds());
                                     g2.setColor(highlightColor);
                                     g2.fill(textPath);
+                                } else {
+                                    for (GlyphText glyph : wordText.getGlyphs()) {
+                                        if (glyph.isHighlighted()) {
+                                            textPath = new GeneralPath(glyph.getBounds());
+                                            g2.setColor(highlightColor);
+                                            g2.fill(textPath);
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -696,7 +697,7 @@ public class Page extends Dictionary {
     public Annotation addAnnotation(Annotation newAnnotation) {
 
         // make sure the page annotations have been initialized.
-        if (!isInited) {
+        if (!inited) {
             try {
                 initPageAnnotations();
             } catch (InterruptedException e) {
@@ -777,7 +778,7 @@ public class Page extends Dictionary {
     public void deleteAnnotation(Annotation annot) {
 
         // make sure the page annotations have been initialized.
-        if (!isInited) {
+        if (!inited) {
             try {
                 initPageAnnotations();
             } catch (InterruptedException e) {
@@ -859,7 +860,7 @@ public class Page extends Dictionary {
         }
 
         // make sure the page annotations have been initialized.
-        if (!isInited) {
+        if (!inited) {
             try {
                 initPageAnnotations();
             } catch (InterruptedException e) {
@@ -1209,7 +1210,7 @@ public class Page extends Dictionary {
      * @return annotation associated with page; null, if there are no annotations.
      */
     public List<Annotation> getAnnotations() {
-        if (!isInited) {
+        if (!inited) {
             try {
                 initPageAnnotations();
             } catch (InterruptedException e) {
@@ -1303,21 +1304,26 @@ public class Page extends Dictionary {
         if (boxDimensions != null) {
             cropBox = new PRectangle(boxDimensions);
         }
-        // If mediaBox is null check with the parent pages, as media box is inheritable
+        // If cropbox is null check with the parent pages, as media box is inheritable
+        boolean isParentCropBox = false;
         if (cropBox == null) {
             PageTree pageTree = getParent();
             while (pageTree != null && cropBox == null) {
-                cropBox = pageTree.getCropBox();
-                if (cropBox == null) {
-                    pageTree = pageTree.getParent();
+                if (pageTree.getCropBox() == null) {
+                    break;
                 }
+                cropBox = pageTree.getCropBox();
+                if (cropBox != null) {
+                    isParentCropBox = true;
+                }
+                pageTree = pageTree.getParent();
             }
         }
         // Default value of the cropBox is the MediaBox if not set implicitly
         PRectangle mediaBox = (PRectangle) getMediaBox();
-        if (cropBox == null && mediaBox != null) {
+        if ((cropBox == null || isParentCropBox) && mediaBox != null) {
             cropBox = (PRectangle) mediaBox.clone();
-        } else if (mediaBox != null) {
+        } else if (cropBox != null && mediaBox != null) {
             // PDF 1.5 spec states that the media box should be intersected with the
             // crop box to get the new box. But we only want to do this if the
             // cropBox is not the same as the mediaBox
@@ -1403,7 +1409,7 @@ public class Page extends Dictionary {
      * @return list of text sprites for the given page.
      */
     public synchronized PageText getViewText() {
-        if (!isInited) {
+        if (!inited) {
             init();
         }
         if (shapes != null) {
@@ -1423,7 +1429,7 @@ public class Page extends Dictionary {
     public synchronized PageText getText() throws InterruptedException {
 
         // we only do this once per page
-        if (isInited) {
+        if (inited) {
             if (shapes != null && shapes.getPageText() != null) {
                 return shapes.getPageText();
             }
@@ -1483,7 +1489,7 @@ public class Page extends Dictionary {
      * @return vector of Images inside the current page
      */
     public synchronized List<Image> getImages() {
-        if (!isInited) {
+        if (!inited) {
             init();
         }
         return shapes.getImages();
