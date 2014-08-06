@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -599,6 +599,10 @@ public class CCITTFax {
         // get decode parameters from stream properties
         HashMap decodeParmsDictionary = library.getDictionary(streamDictionary, ImageStream.DECODEPARMS_KEY);
         boolean blackIs1 = stream.getBlackIs1(library, decodeParmsDictionary);
+        // double check for blackIs1 in the main dictionary.
+        if (!blackIs1) {
+            blackIs1 = stream.getBlackIs1(library, streamDictionary);
+        }
         float k = library.getFloat(decodeParmsDictionary, ImageStream.K_KEY);
         boolean hasHeader;
 

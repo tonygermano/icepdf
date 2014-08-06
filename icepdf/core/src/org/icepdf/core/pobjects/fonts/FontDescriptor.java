@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -264,7 +264,11 @@ public class FontDescriptor extends Dictionary {
      * Initiate the Font Descriptor object. Reads embedded font programs
      * or CMap streams.
      */
-    public void init() {
+    public synchronized void init() {
+
+        if (inited) {
+            return;
+        }
 
         /**
          * FontFile1 = A stream containing a Type 1 font program
@@ -319,6 +323,7 @@ public class FontDescriptor extends Dictionary {
             logger.log(Level.FINE, "Error Reading Embedded Font ", e);
         }
 
+        inited = true;
     }
 
     /**

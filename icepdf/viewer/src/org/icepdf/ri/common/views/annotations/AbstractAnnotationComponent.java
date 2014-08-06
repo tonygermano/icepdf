@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -18,14 +18,12 @@ package org.icepdf.ri.common.views.annotations;
 import org.icepdf.core.pobjects.Document;
 import org.icepdf.core.pobjects.Page;
 import org.icepdf.core.pobjects.annotations.Annotation;
-import org.icepdf.core.pobjects.annotations.Appearance;
 import org.icepdf.core.util.ColorUtil;
 import org.icepdf.core.util.Defs;
 import org.icepdf.core.util.PropertyConstants;
 import org.icepdf.ri.common.views.*;
 
 import javax.swing.*;
-import javax.swing.border.Border;
 import javax.swing.event.MouseInputListener;
 import java.awt.*;
 import java.awt.event.FocusEvent;
@@ -174,10 +172,7 @@ public abstract class AbstractAnnotationComponent extends JComponent implements 
         currentRotation = documentViewModel.getViewRotation();
         currentZoom = documentViewModel.getViewZoom();
         resizableBorder.setZoom(currentZoom);
-
     }
-
-    public abstract boolean isActive();
 
     public Document getDocument() {
         return documentViewModel.getDocument();
@@ -312,10 +307,8 @@ public abstract class AbstractAnnotationComponent extends JComponent implements 
 
         if (toolMode == DocumentViewModel.DISPLAY_TOOL_SELECTION &&
                 !(annotation.getFlagLocked() || annotation.getFlagReadOnly())) {
-            Border border = getBorder();
-            if (border instanceof ResizableBorder) {
-                setCursor(Cursor.getPredefinedCursor(((ResizableBorder) border).getCursor(me)));
-            }
+            ResizableBorder border = (ResizableBorder) getBorder();
+            setCursor(Cursor.getPredefinedCursor(border.getCursor(me)));
         } else {
             // set cursor back to the hand cursor.
             setCursor(documentViewController.getViewCursor(
@@ -331,10 +324,6 @@ public abstract class AbstractAnnotationComponent extends JComponent implements 
     }
 
     public void mouseExited(MouseEvent mouseEvent) {
-
-        // set selected appearance state
-        annotation.setCurrentAppearance(Annotation.APPEARANCE_STREAM_NORMAL_KEY);
-
         setCursor(Cursor.getDefaultCursor());
         isRollover = false;
         repaint();
@@ -343,7 +332,6 @@ public abstract class AbstractAnnotationComponent extends JComponent implements 
     public void mouseClicked(MouseEvent e) {
         // clear the selection.
         requestFocus();
-
         // on click pass event to annotation callback if we are in normal viewing
         // mode.
         if (!(AbstractPageViewComponent.isAnnotationTool(
@@ -358,14 +346,6 @@ public abstract class AbstractAnnotationComponent extends JComponent implements 
     }
 
     public void mouseEntered(MouseEvent e) {
-        // reset the appearance steam
-        Appearance hover = annotation.getAppearances().get(Annotation.APPEARANCE_STREAM_ROLLOVER_KEY);
-        if (hover != null && hover.hasAlternativeAppearance()) {
-            // set selected appearance state
-            hover.setSelectedName(hover.getOnName());
-            annotation.setCurrentAppearance(Annotation.APPEARANCE_STREAM_ROLLOVER_KEY);
-        }
-
         // set border highlight when mouse over.
         isRollover = (documentViewModel.getViewToolMode() ==
                 DocumentViewModel.DISPLAY_TOOL_SELECTION ||
@@ -379,17 +359,6 @@ public abstract class AbstractAnnotationComponent extends JComponent implements 
         isMousePressed = true;
         startOfMousePress = e.getPoint();
         endOfMousePress = e.getPoint();
-
-        // check if there is a mouse down state
-        Appearance down = annotation.getAppearances().get(Annotation.APPEARANCE_STREAM_DOWN_KEY);
-        if (down != null && down.hasAlternativeAppearance()) {
-            if (down.getSelectedName().equals(down.getOnName())) {
-                down.setSelectedName(down.getOffName());
-            } else {
-                down.setSelectedName(down.getOnName());
-            }
-            annotation.setCurrentAppearance(Annotation.APPEARANCE_STREAM_DOWN_KEY);
-        }
 
         if (documentViewModel.getViewToolMode() ==
                 DocumentViewModel.DISPLAY_TOOL_SELECTION &&
@@ -513,18 +482,6 @@ public abstract class AbstractAnnotationComponent extends JComponent implements 
     public void mouseReleased(MouseEvent mouseEvent) {
         startPos = null;
         isMousePressed = false;
-
-        // reset the appearance steam
-        Appearance down = annotation.getAppearances().get(Annotation.APPEARANCE_STREAM_DOWN_KEY);
-        if (down != null && down.hasAlternativeAppearance()) {
-            if (down.getSelectedName().equals(down.getOnName())) {
-                down.setSelectedName(down.getOffName());
-            } else {
-                down.setSelectedName(down.getOnName());
-            }
-        }
-        // set selected appearance state
-        annotation.setCurrentAppearance(Annotation.APPEARANCE_STREAM_NORMAL_KEY);
 
         // check to see if a move/resize occurred and if so we add the
         // state change to the memento in document view.

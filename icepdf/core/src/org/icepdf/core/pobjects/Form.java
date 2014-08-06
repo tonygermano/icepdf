@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -104,6 +104,15 @@ public class Form extends Stream {
         if (graphicsState != null) {
             this.graphicsState = graphicsState;
         }
+    }
+
+    /**
+     * Gets the associated graphic state instance for this form.
+     *
+     * @return external graphic state,  can be null.
+     */
+    public GraphicsState getGraphicsState() {
+        return graphicsState;
     }
 
     /**
