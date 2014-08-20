@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -158,9 +158,6 @@ public class Page extends Dictionary {
      */
     public static final int BOUNDARY_ARTBOX = 5;
 
-    // Flag for call to init method, very simple cache
-    private boolean isInited = false;
-
     // resources for page's parent pages, default fonts, etc.
     private Resources resources;
 
@@ -205,7 +202,7 @@ public class Page extends Dictionary {
     }
 
     public boolean isInitiated() {
-        return isInited;
+        return inited;
     }
 
     private void initPageContents() throws InterruptedException {
@@ -233,7 +230,7 @@ public class Page extends Dictionary {
                 if (tmp instanceof Stream) {
                     Stream tmpStream = (Stream) tmp;
                     // prune any zero length streams,
-                    if (tmpStream != null && tmpStream.getRawBytes().length > 0) {
+                    if (tmpStream.getRawBytes().length > 0) {
                         tmpStream.setPObjectReference((Reference) conts.get(i));
                         contents.add(tmpStream);
                     }
@@ -317,7 +314,7 @@ public class Page extends Dictionary {
      * this page may trigger a call to init().
      */
     public void resetInitializedState() {
-        isInited = false;
+        inited = false;
     }
 
     /**
@@ -327,7 +324,7 @@ public class Page extends Dictionary {
     public synchronized void init() {
         try {
             // make sure we are not revisiting this method
-            if (isInited) {
+            if (inited) {
                 return;
             }
 
@@ -380,12 +377,12 @@ public class Page extends Dictionary {
                 shapes = new Shapes();
             }
             // set the initiated flag
-            isInited = true;
+            inited = true;
 
         } catch (InterruptedException e) {
             // keeps shapes vector so we can paint what we have but make init state as false
             // so we can try to re parse it later.
-            isInited = false;
+            inited = false;
             logger.log(Level.SEVERE, "Page initializing thread interrupted.", e);
         }
 
@@ -396,7 +393,7 @@ public class Page extends Dictionary {
      * entry exists then null is returned.
      *
      * @return thumbnail object of this page, null if no thumbnail value is
-     *         encoded.
+     * encoded.
      */
     public Thumbnail getThumbnail() {
         Object thumb = library.getObject(entries, THUMB_KEY);
@@ -453,7 +450,7 @@ public class Page extends Dictionary {
     public void paint(Graphics g, int renderHintType, final int boundary,
                       float userRotation, float userZoom,
                       boolean paintAnnotations, boolean paintSearchHighlight) {
-        if (!isInited) {
+        if (!inited) {
             // make sure we don't do a page init on the awt thread in the viewer
             // ri, let the
             return;
@@ -524,7 +521,7 @@ public class Page extends Dictionary {
      *                             for search terms.
      */
     public void paintPageContent(Graphics g, int renderHintType, float userRotation, float userZoom, boolean paintAnnotations, boolean paintSearchHighlight) {
-        if (!isInited) {
+        if (!inited) {
             init();
         }
 
@@ -549,9 +546,10 @@ public class Page extends Dictionary {
         if (annotations != null && paintAnnotations) {
             float totalRotation = getTotalRotation(userRotation);
             int num = annotations.size();
+            Annotation annotation;
             for (int i = 0; i < num; i++) {
-                Annotation annot = annotations.get(i);
-                annot.render(g2, renderHintType, totalRotation, userZoom, false);
+                annotation = annotations.get(i);
+                annotation.render(g2, renderHintType, totalRotation, userZoom, false);
             }
         }
         // paint search highlight values
@@ -564,19 +562,23 @@ public class Page extends Dictionary {
                 // paint the sprites
                 GeneralPath textPath;
                 // iterate over the data structure.
-                for (LineText lineText : pageText.getPageLines()) {
-                    for (WordText wordText : lineText.getWords()) {
-                        // paint whole word
-                        if (wordText.isHighlighted()) {
-                            textPath = new GeneralPath(wordText.getBounds());
-                            g2.setColor(highlightColor);
-                            g2.fill(textPath);
-                        } else {
-                            for (GlyphText glyph : wordText.getGlyphs()) {
-                                if (glyph.isHighlighted()) {
-                                    textPath = new GeneralPath(glyph.getBounds());
+                if (pageText.getPageLines() != null) {
+                    for (LineText lineText : pageText.getPageLines()) {
+                        if (lineText != null) {
+                            for (WordText wordText : lineText.getWords()) {
+                                // paint whole word
+                                if (wordText.isHighlighted()) {
+                                    textPath = new GeneralPath(wordText.getBounds());
                                     g2.setColor(highlightColor);
                                     g2.fill(textPath);
+                                } else {
+                                    for (GlyphText glyph : wordText.getGlyphs()) {
+                                        if (glyph.isHighlighted()) {
+                                            textPath = new GeneralPath(glyph.getBounds());
+                                            g2.setColor(highlightColor);
+                                            g2.fill(textPath);
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -603,7 +605,7 @@ public class Page extends Dictionary {
      * @param userRotation Rotation factor, in degrees, to be applied to the rendered page
      * @param userZoom     Zoom factor to be applied to the rendered page
      * @return AffineTransform for translating from the rotated and zoomed PDF
-     *         coordinate system to the Java Graphics coordinate system
+     * coordinate system to the Java Graphics coordinate system
      */
     public AffineTransform getPageTransform(final int boundary,
                                             float userRotation,
@@ -622,6 +624,7 @@ public class Page extends Dictionary {
         PRectangle pageBoundary = getPageBoundary(boundary);
 
         if (totalRotation == 0) {
+            // do nothing
         } else if (totalRotation == 90) {
             at.translate(pageBoundary.height, 0);
         } else if (totalRotation == 180) {
@@ -672,7 +675,7 @@ public class Page extends Dictionary {
      * @param userRotation Rotation factor, in degrees, to be applied
      * @param userZoom     Zoom factor to be applied
      * @return Shape outline of the rotated and zoomed portion of this Page
-     *         corresponding to the specified boundary
+     * corresponding to the specified boundary
      */
     public Shape getPageShape(int boundary, float userRotation, float userZoom) {
         AffineTransform at = getPageTransform(boundary, userRotation, userZoom);
@@ -693,10 +696,11 @@ public class Page extends Dictionary {
      * @param newAnnotation annotation object to add
      * @return reference to annotaiton that was added.
      */
+    @SuppressWarnings("unchecked")
     public Annotation addAnnotation(Annotation newAnnotation) {
 
         // make sure the page annotations have been initialized.
-        if (!isInited) {
+        if (!inited) {
             try {
                 initPageAnnotations();
             } catch (InterruptedException e) {
@@ -706,31 +710,31 @@ public class Page extends Dictionary {
 
         StateManager stateManager = library.getStateManager();
 
-        List annots = library.getArray(entries, ANNOTS_KEY);
+        List<Reference> annotations = library.getArray(entries, ANNOTS_KEY);
         boolean isAnnotAReference = library.isReference(entries, ANNOTS_KEY);
 
         // does the page not already have an annotations or if the annots
         // dictionary is indirect.  If so we have to add the page to the state
         // manager
-        if (!isAnnotAReference && annots != null) {
+        if (!isAnnotAReference && annotations != null) {
             // get annots array from page
             // update annots dictionary with new annotations reference,
-            annots.add(newAnnotation.getPObjectReference());
+            annotations.add(newAnnotation.getPObjectReference());
             // add the page as state change
             stateManager.addChange(
                     new PObject(this, this.getPObjectReference()));
-        } else if (isAnnotAReference && annots != null) {
+        } else if (isAnnotAReference && annotations != null) {
             // get annots array from page
             // update annots dictionary with new annotations reference,
-            annots.add(newAnnotation.getPObjectReference());
+            annotations.add(newAnnotation.getPObjectReference());
             // add the annotations reference dictionary as state has changed
             stateManager.addChange(
-                    new PObject(annots, library.getObjectReference(
+                    new PObject(annotations, library.getObjectReference(
                             entries, ANNOTS_KEY)));
         }
         // we need to add the a new annots reference
         else {
-            List annotsVector = new ArrayList(4);
+            List<Reference> annotsVector = new ArrayList(4);
             annotsVector.add(newAnnotation.getPObjectReference());
 
             // create a new Dictionary of annotations using an external reference
@@ -747,7 +751,7 @@ public class Page extends Dictionary {
                     new PObject(this, this.getPObjectReference()));
             stateManager.addChange(annotsPObject);
 
-            annotations = new ArrayList<Annotation>();
+            this.annotations = new ArrayList<Annotation>();
         }
 
         // update parent page reference.
@@ -755,7 +759,7 @@ public class Page extends Dictionary {
                 this.getPObjectReference());
 
         // add the annotations to the parsed annotations list
-        annotations.add(newAnnotation);
+        this.annotations.add(newAnnotation);
 
         // add the new annotations to the library
         library.addObject(newAnnotation, newAnnotation.getPObjectReference());
@@ -777,7 +781,7 @@ public class Page extends Dictionary {
     public void deleteAnnotation(Annotation annot) {
 
         // make sure the page annotations have been initialized.
-        if (!isInited) {
+        if (!inited) {
             try {
                 initPageAnnotations();
             } catch (InterruptedException e) {
@@ -852,6 +856,7 @@ public class Page extends Dictionary {
      * @param annotation annotation object that should be updated for this page.
      * @return true if the update was successful, false otherwise.
      */
+    @SuppressWarnings("unchecked")
     public boolean updateAnnotation(Annotation annotation) {
         // bail on null annotations
         if (annotation == null) {
@@ -859,7 +864,7 @@ public class Page extends Dictionary {
         }
 
         // make sure the page annotations have been initialized.
-        if (!isInited) {
+        if (!inited) {
             try {
                 initPageAnnotations();
             } catch (InterruptedException e) {
@@ -869,12 +874,12 @@ public class Page extends Dictionary {
 
         StateManager stateManager = library.getStateManager();
         // if we are doing an update we have at least on annot
-        List<Reference> annots = (List)
+        List<Reference> annotations = (List)
                 library.getObject(entries, ANNOTS_KEY);
 
         // make sure annotations is in part of page.
         boolean found = false;
-        for (Reference ref : annots) {
+        for (Reference ref : annotations) {
             if (ref.equals(annotation.getPObjectReference())) {
                 found = true;
                 break;
@@ -899,7 +904,7 @@ public class Page extends Dictionary {
                     this.getPObjectReference());
 
             // add the annotations to the parsed annotations list
-            annotations.add(annotation);
+            this.annotations.add(annotation);
 
             // add the new annotations to the library
             library.addObject(annotation, annotation.getPObjectReference());
@@ -945,7 +950,7 @@ public class Page extends Dictionary {
      * @param userRotation Rotation factor specified by the user under which the
      *                     page will be rotated.
      * @return Dimension of width and height of the page represented in point
-     *         units.
+     * units.
      * @see #getSize(float, float)
      */
     public PDimension getSize(float userRotation) {
@@ -977,7 +982,7 @@ public class Page extends Dictionary {
      * @param userZoom     zoom factor specified by the user under which the page will
      *                     be rotated.
      * @return Dimension of width and height of the page represented in point units.
-     *         or null if the boundary box is not defined.
+     * or null if the boundary box is not defined.
      */
     public PDimension getSize(final int boundary, float userRotation, float userZoom) {
         float totalRotation = getTotalRotation(userRotation);
@@ -1029,7 +1034,7 @@ public class Page extends Dictionary {
      * @param userRotation Rotation factor specified by the user under which the
      *                     page will be rotated.
      * @return Dimension of width and height of the page represented in point
-     *         units.
+     * units.
      * @see #getSize(float, float)
      */
     public Rectangle2D.Double getBoundingBox(float userRotation) {
@@ -1149,7 +1154,7 @@ public class Page extends Dictionary {
      *
      * @param userRotation rotation factor to be applied to page
      * @return Total Rotation, representing pageRoation + user rotation
-     *         factor applied to the whole document.
+     * factor applied to the whole document.
      */
     public float getTotalRotation(float userRotation) {
         float totalRotation = getPageRotation() + userRotation;
@@ -1209,7 +1214,7 @@ public class Page extends Dictionary {
      * @return annotation associated with page; null, if there are no annotations.
      */
     public List<Annotation> getAnnotations() {
-        if (!isInited) {
+        if (!inited) {
             try {
                 initPageAnnotations();
             } catch (InterruptedException e) {
@@ -1224,8 +1229,8 @@ public class Page extends Dictionary {
      * can have more then one content stream associated with it.
      *
      * @return An array of decoded content stream.  Each index in the array
-     *         represents one content stream.  Null return and null String array
-     *         values are possible.
+     * represents one content stream.  Null return and null String array
+     * values are possible.
      */
     public String[] getDecodedContentSteam() {
         // Some PDF's won't have any content for a given page.
@@ -1303,21 +1308,26 @@ public class Page extends Dictionary {
         if (boxDimensions != null) {
             cropBox = new PRectangle(boxDimensions);
         }
-        // If mediaBox is null check with the parent pages, as media box is inheritable
+        // If cropbox is null check with the parent pages, as media box is inheritable
+        boolean isParentCropBox = false;
         if (cropBox == null) {
             PageTree pageTree = getParent();
             while (pageTree != null && cropBox == null) {
-                cropBox = pageTree.getCropBox();
-                if (cropBox == null) {
-                    pageTree = pageTree.getParent();
+                if (pageTree.getCropBox() == null) {
+                    break;
                 }
+                cropBox = pageTree.getCropBox();
+                if (cropBox != null) {
+                    isParentCropBox = true;
+                }
+                pageTree = pageTree.getParent();
             }
         }
         // Default value of the cropBox is the MediaBox if not set implicitly
         PRectangle mediaBox = (PRectangle) getMediaBox();
-        if (cropBox == null && mediaBox != null) {
+        if ((cropBox == null || isParentCropBox) && mediaBox != null) {
             cropBox = (PRectangle) mediaBox.clone();
-        } else if (mediaBox != null) {
+        } else if (cropBox != null && mediaBox != null) {
             // PDF 1.5 spec states that the media box should be intersected with the
             // crop box to get the new box. But we only want to do this if the
             // cropBox is not the same as the mediaBox
@@ -1403,7 +1413,7 @@ public class Page extends Dictionary {
      * @return list of text sprites for the given page.
      */
     public synchronized PageText getViewText() {
-        if (!isInited) {
+        if (!inited) {
             init();
         }
         if (shapes != null) {
@@ -1423,7 +1433,7 @@ public class Page extends Dictionary {
     public synchronized PageText getText() throws InterruptedException {
 
         // we only do this once per page
-        if (isInited) {
+        if (inited) {
             if (shapes != null && shapes.getPageText() != null) {
                 return shapes.getPageText();
             }
@@ -1483,7 +1493,7 @@ public class Page extends Dictionary {
      * @return vector of Images inside the current page
      */
     public synchronized List<Image> getImages() {
-        if (!isInited) {
+        if (!inited) {
             init();
         }
         return shapes.getImages();

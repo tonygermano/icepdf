@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -143,6 +143,31 @@ public class Resources extends Dictionary {
                 library.addObject(font, ref);
                 font.setPObjectReference(ref);
             }
+            // if still null do a deeper search checking the base font name of
+            // each font for a match to the needed font name.  We have a few
+            // malformed documents that don't refer to a font by the base name
+            // and not the font name found in the resource table.
+            if (font == null) {
+                for (Object tmp : fonts.values()) {
+                    if (tmp instanceof Reference) {
+                        ob = library.getObject((Reference) tmp);
+                        if (ob instanceof PObject) {
+                            ob = ((PObject) ob).getObject();
+                        }
+                        if (ob instanceof org.icepdf.core.pobjects.fonts.Font) {
+                            font = (org.icepdf.core.pobjects.fonts.Font) ob;
+                            if (s.getName().equals(font.getBaseFont())) {
+                                // cache the font for later use.
+                                library.addObject(font, (Reference) tmp);
+                                font.setPObjectReference((Reference) tmp);
+                                break;
+                            } else {
+                                font = null;
+                            }
+                        }
+                    }
+                }
+            }
         }
         if (font != null) {
             try {
@@ -152,7 +177,7 @@ public class Resources extends Dictionary {
                 if (logger.isLoggable(Level.WARNING)) {
                     logger.log(Level.WARNING, "Error initializing font, falling back to font substitution.");
                 } else {
-                    logger.log(Level.FINER, "Error initializing font, falling back to font substitution. " + font, e);
+                    logger.log(Level.FINER, "Error initializing font, falling back to font substitution. " + font);
                 }
             }
         }
@@ -305,5 +330,14 @@ public class Resources extends Dictionary {
             return (OptionalContents) library.getObject(properties.get(key));
         }
         return null;
+    }
+
+    /**
+     * Checks to see if the Shading key has value in this resource dictionary.
+     *
+     * @return true if there are shading values,  false otherwise.
+     */
+    public boolean isShading() {
+        return shading != null;
     }
 }

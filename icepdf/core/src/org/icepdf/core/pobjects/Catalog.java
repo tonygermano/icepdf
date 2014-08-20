@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -15,7 +15,6 @@
  */
 package org.icepdf.core.pobjects;
 
-import org.icepdf.core.pobjects.acroform.InteractiveForm;
 import org.icepdf.core.util.Library;
 
 import java.util.ArrayList;
@@ -55,7 +54,6 @@ public class Catalog extends Dictionary {
     public static final Name PAGES_KEY = new Name("Pages");
     public static final Name PAGELAYOUT_KEY = new Name("PageLayout");
     public static final Name PAGEMODE_KEY = new Name("PageMode");
-    public static final Name ACRO_FORM_KEY = new Name("AcroForm");
 
     private PageTree pageTree;
     private Outlines outlines;
@@ -104,8 +102,8 @@ public class Catalog extends Dictionary {
         // malformed cornercase, just have a page object, instead of tree.
         else if (tmp instanceof Page) {
             Page tmpPage = (Page) tmp;
-            HashMap tmpPages = new HashMap();
-            List kids = new ArrayList();
+            HashMap<String, Object> tmpPages = new HashMap<String, Object>();
+            List<Reference> kids = new ArrayList<Reference>();
             kids.add(tmpPage.getPObjectReference());
             tmpPages.put("Kids", kids);
             tmpPages.put("Count", 1);
@@ -113,15 +111,9 @@ public class Catalog extends Dictionary {
         }
 
         // let any exception bubble up.
-        pageTree.init();
-
-        // load the Acroform data.
-        tmp = library.getObject(entries, ACRO_FORM_KEY);
-        if (tmp instanceof HashMap) {
-            InteractiveForm interactiveForm = new InteractiveForm(library, (HashMap) tmp);
-            interactiveForm.init();
+        if (pageTree != null) {
+            pageTree.init();
         }
-        // todo namesTree contains forms javascript, might need to be initialized here
 
     }
 
@@ -159,7 +151,7 @@ public class Catalog extends Dictionary {
      * rather than by object reference.
      *
      * @return name dictionary for document.  If no name dictionary exists null
-     *         is returned.
+     * is returned.
      */
     public NameTree getNameTree() {
         if (!namesTreeInited) {
@@ -182,6 +174,7 @@ public class Catalog extends Dictionary {
      *
      * @return A Dictionary of Destinations; if none, null is returned.
      */
+    @SuppressWarnings("unchecked")
     public Dictionary getDestinations() {
         if (!destsInited) {
             destsInited = true;
