@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -247,12 +247,8 @@ public class FreeTextAnnotation extends MarkupAnnotation {
 
     public void init() {
         super.init();
-
-        Appearance appearance = appearances.get(APPEARANCE_STREAM_NORMAL_KEY);
-        Shapes shapes = null;
-        if (appearance != null) {
-            AppearanceState appearanceState = appearance.getSelectedAppearanceState();
-            shapes = appearanceState.getShapes();
+        if (matrix == null) {
+            matrix = new AffineTransform();
         }
 
         // reget colour so we can check for a null entry
@@ -386,23 +382,13 @@ public class FreeTextAnnotation extends MarkupAnnotation {
 
     @Override
     public void resetAppearanceStream(double dx, double dy, AffineTransform pageTransform) {
-
-        Appearance appearance = appearances.get(currentAppearance);
-        AppearanceState appearanceState = appearance.getSelectedAppearanceState();
-        Rectangle2D bbox = appearanceState.getBbox();
-        AffineTransform matrix = appearanceState.getMatrix();
-        Shapes shapes = appearanceState.getShapes();
-
+        matrix = new AffineTransform();
         if (shapes == null) {
             shapes = new Shapes();
-            appearanceState.setShapes(shapes);
-        } else {
-            // remove any previous text
-            appearanceState.getShapes().getShapes().clear();
         }
 
         // remove any previous text
-        shapes.getShapes().clear();
+        this.shapes.getShapes().clear();
 
         // setup the space for the AP content stream.
         AffineTransform af = new AffineTransform();
@@ -410,7 +396,7 @@ public class FreeTextAnnotation extends MarkupAnnotation {
         af.translate(-bbox.getMinX(), -bbox.getMaxY());
         // adjust of the border offset, offset is define in viewer,
         // so we can't use the constant because of dependency issues.
-        double insets = 5 * pageTransform.getScaleX();
+        double insets = 5;
         af.translate(insets, -insets);
         shapes.add(new TransformDrawCmd(af));
 
@@ -508,10 +494,10 @@ public class FreeTextAnnotation extends MarkupAnnotation {
                 form.setRawBytes(stream.getDecodedStreamBytes());
                 form.init();
             }
-        }// else a stream, we won't support this for annotations.
-        else {
+            // else a stream, we won't support this for annotations.
+        } else {
             // create a new xobject/form object
-            HashMap formEntries = new HashMap();
+            HashMap<Object, Object> formEntries = new HashMap<Object, Object>();
             formEntries.put(Form.TYPE_KEY, Form.TYPE_VALUE);
             formEntries.put(Form.SUBTYPE_KEY, Form.SUB_TYPE_VALUE);
             form = new Form(library, formEntries, null);
@@ -527,7 +513,7 @@ public class FreeTextAnnotation extends MarkupAnnotation {
             // update the AP's stream bytes so contents can be written out
             form.setRawBytes(
                     PostScriptEncoder.generatePostScript(shapes.getShapes()));
-            HashMap appearanceRefs = new HashMap();
+            HashMap<Object, Object> appearanceRefs = new HashMap<Object, Object>();
             appearanceRefs.put(APPEARANCE_STREAM_NORMAL_KEY, form.getPObjectReference());
             entries.put(APPEARANCE_STREAM_KEY, appearanceRefs);
 
@@ -539,7 +525,7 @@ public class FreeTextAnnotation extends MarkupAnnotation {
             }
 
             // create the font
-            HashMap fontDictionary = new HashMap();
+            HashMap<Object, Object> fontDictionary = new HashMap<Object, Object>();
             fontDictionary.put(org.icepdf.core.pobjects.fonts.Font.TYPE_KEY,
                     org.icepdf.core.pobjects.fonts.Font.SUBTYPE_KEY);
             fontDictionary.put(org.icepdf.core.pobjects.fonts.Font.SUBTYPE_KEY,
@@ -560,10 +546,10 @@ public class FreeTextAnnotation extends MarkupAnnotation {
                         library, fontDictionary);
                 newFont.setPObjectReference(stateManager.getNewReferencNumber());
                 // create font entry
-                HashMap fontResources = new HashMap();
+                HashMap<Object, Object> fontResources = new HashMap<Object, Object>();
                 fontResources.put(EMBEDDED_FONT_NAME, newFont.getPObjectReference());
                 // add the font resource entry.
-                HashMap resources = new HashMap();
+                HashMap<Object, Object> resources = new HashMap<Object, Object>();
                 resources.put(new Name("Font"), fontResources);
                 // and finally add it to the form.
                 form.getEntries().put(new Name("Resources"), resources);
@@ -637,9 +623,7 @@ public class FreeTextAnnotation extends MarkupAnnotation {
     }
 
     public void clearShapes() {
-        Appearance appearance = appearances.get(currentAppearance);
-        AppearanceState appearanceState = appearance.getSelectedAppearanceState();
-        appearanceState.setShapes(null);
+        shapes = null;
     }
 
     public void setDocument(DefaultStyledDocument document) {

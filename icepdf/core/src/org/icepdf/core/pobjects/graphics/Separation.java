@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -104,7 +104,8 @@ public class Separation extends PColorSpace {
             String colorName = ((Name) name).getName().toLowerCase();
             // check for additive colours we can work ith .
             if (!(colorName.equals("red") || colorName.equals("blue")
-                    || colorName.equals("blue") || colorName.equals("black"))) {
+                    || colorName.equals("blue") || colorName.equals("black")
+                    || colorName.equals("auto"))) {
                 // sniff out All or Null
                 if (colorName.equals(COLORANT_ALL)) {
                     isAll = true;
@@ -117,6 +118,10 @@ public class Separation extends PColorSpace {
             int colorVaue = ColorUtil.convertNamedColor(colorName.toLowerCase());
             if (colorVaue != -1) {
                 namedColor = new Color(colorVaue);
+            }
+            // quick check for auto color which we'll paint as black
+            if (colorName.equalsIgnoreCase("auto")) {
+                namedColor = Color.BLACK;
             }
         }
     }
