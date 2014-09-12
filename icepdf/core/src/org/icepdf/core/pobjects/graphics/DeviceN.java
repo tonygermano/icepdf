@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -51,6 +51,7 @@ public class DeviceN extends PColorSpace {
 
     boolean foundCMYK;
 
+    @SuppressWarnings("unchecked")
     DeviceN(Library l, HashMap h, Object o1, Object o2, Object o3, Object o4) {
         super(l, h);
         names = (java.util.List) o1;

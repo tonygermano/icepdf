@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -203,15 +203,8 @@ public class TextAnnotation extends MarkupAnnotation {
      */
     public void resetAppearanceStream(double dx, double dy, AffineTransform pageTransform) {
         // setup the context
-        Appearance appearance = appearances.get(currentAppearance);
-        AppearanceState appearanceState = appearance.getSelectedAppearanceState();
-
-        appearanceState.setMatrix(new AffineTransform());
-        appearanceState.setShapes(new Shapes());
-
-        Rectangle2D bbox = appearanceState.getBbox();
-        AffineTransform matrix = appearanceState.getMatrix();
-        Shapes shapes;
+        matrix = new AffineTransform();
+        shapes = new Shapes();
 
         String iconContentString;
         // get the correct icon content
@@ -267,7 +260,7 @@ public class TextAnnotation extends MarkupAnnotation {
         try {
             ContentParser cp = ContentParserFactory.getInstance()
                     .getContentParser(library, null);
-            shapes = cp.parse(new byte[][]{iconContentString.getBytes()}).getShapes();
+            shapes = cp.parse(new byte[][]{iconContentString.getBytes()}, null).getShapes();
         } catch (Exception e) {
             shapes = new Shapes();
             logger.log(Level.FINE, "Error building named icon.", e);
@@ -282,7 +275,7 @@ public class TextAnnotation extends MarkupAnnotation {
             // else a stream, we won't support this for annotations.
         } else {
             // create a new xobject/form object
-            HashMap formEntries = new HashMap();
+            HashMap<Object, Object> formEntries = new HashMap<Object, Object>();
             formEntries.put(Form.TYPE_KEY, Form.TYPE_VALUE);
             formEntries.put(Form.SUBTYPE_KEY, Form.SUB_TYPE_VALUE);
             form = new Form(library, formEntries, null);
@@ -297,7 +290,7 @@ public class TextAnnotation extends MarkupAnnotation {
             stateManager.addChange(new PObject(form, form.getPObjectReference()));
             // update the AP's stream bytes so contents can be written out
             form.setRawBytes(iconContentString.getBytes());
-            HashMap appearanceRefs = new HashMap();
+            HashMap<Object, Object> appearanceRefs = new HashMap<Object, Object>();
             appearanceRefs.put(APPEARANCE_STREAM_NORMAL_KEY, form.getPObjectReference());
             entries.put(APPEARANCE_STREAM_KEY, appearanceRefs);
 

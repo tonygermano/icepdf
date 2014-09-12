@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -22,6 +22,7 @@ import org.icepdf.core.util.Library;
 
 import java.awt.*;
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * <p>Separation Color Space background:</p>
@@ -83,6 +84,8 @@ public class Separation extends PColorSpace {
     private boolean isNone;
     public static final String COLORANT_NONE = "none";
     private float tint = 1.0f;
+    // basic cache to speed up the lookup.
+    private ConcurrentHashMap<Integer, Color> colorTable;
 
     /**
      * Create a new Seperation colour space.  Separation is specified using
@@ -97,6 +100,7 @@ public class Separation extends PColorSpace {
     protected Separation(Library l, HashMap h, Object name, Object alternateSpace, Object tintTransform) {
         super(l, h);
         alternate = getColorSpace(l, alternateSpace);
+        colorTable = new ConcurrentHashMap<Integer, Color>(256);
 
         this.tintTransform = Function.getFunction(l, l.getObject(tintTransform));
         // see if name can be converted to a known colour.
@@ -104,7 +108,8 @@ public class Separation extends PColorSpace {
             String colorName = ((Name) name).getName().toLowerCase();
             // check for additive colours we can work ith .
             if (!(colorName.equals("red") || colorName.equals("blue")
-                    || colorName.equals("blue") || colorName.equals("black"))) {
+                    || colorName.equals("blue") || colorName.equals("black")
+                    || colorName.equals("auto"))) {
                 // sniff out All or Null
                 if (colorName.equals(COLORANT_ALL)) {
                     isAll = true;
@@ -117,6 +122,10 @@ public class Separation extends PColorSpace {
             int colorVaue = ColorUtil.convertNamedColor(colorName.toLowerCase());
             if (colorVaue != -1) {
                 namedColor = new Color(colorVaue);
+            }
+            // quick check for auto color which we'll paint as black
+            if (colorName.equalsIgnoreCase("auto")) {
+                namedColor = Color.BLACK;
             }
         }
     }
@@ -176,8 +185,20 @@ public class Separation extends PColorSpace {
             return alternate.getColor(alternateColour);
         }
         if (alternate != null && !isNone) {
-            float y[] = tintTransform.calculate(reverse(components));
-            return alternate.getColor(reverse(y));
+            // component is our key which we can use to avoid doing the tintTransform.
+            int key = 0;
+            for (int i = 0, bit = 0, max = components.length; i < max; i++, bit += 8) {
+                key |= (((int) (components[i] * 255) & 0xff) << bit);
+            }
+            Color color = colorTable.get(key);
+            if (color == null) {
+                float y[] = tintTransform.calculate(reverse(components));
+                color = alternate.getColor(reverse(y));
+                colorTable.put(key, color);
+                return color;
+            } else {
+                return color;
+            }
         }
         if (isNone) {
             return new Color(0, 0, 0, 0);

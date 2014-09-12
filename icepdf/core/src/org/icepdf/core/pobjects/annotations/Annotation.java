@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -17,17 +17,19 @@ package org.icepdf.core.pobjects.annotations;
 
 import org.icepdf.core.pobjects.Dictionary;
 import org.icepdf.core.pobjects.*;
-import org.icepdf.core.pobjects.acroform.FieldDictionary;
 import org.icepdf.core.pobjects.actions.Action;
 import org.icepdf.core.pobjects.graphics.Shapes;
 import org.icepdf.core.pobjects.security.SecurityManager;
 import org.icepdf.core.util.GraphicsRenderingHints;
 import org.icepdf.core.util.Library;
+import org.icepdf.core.util.content.ContentParser;
+import org.icepdf.core.util.content.ContentParserFactory;
 
 import java.awt.*;
 import java.awt.geom.*;
 import java.util.*;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -543,8 +545,11 @@ public abstract class Annotation extends Dictionary {
     public static final int VISIBLE_RECTANGLE = 1;
     public static final int INVISIBLE_RECTANGLE = 0;
 
-    protected HashMap<Name, Appearance> appearances = new HashMap<Name, Appearance>(3);
-    protected Name currentAppearance;
+    // shapes form apparenece stream
+    protected Shapes shapes;
+    //
+    protected AffineTransform matrix = new AffineTransform();
+    protected Rectangle2D bbox = null;
 
     // modified date.
     protected PDate modifiedDate;
@@ -603,30 +608,7 @@ public abstract class Annotation extends Dictionary {
             } else if (subType.equals(Annotation.SUBTYPE_POPUP)) {
                 annot = new PopupAnnotation(library, hashMap);
             } else if (subType.equals(Annotation.SUBTYPE_WIDGET)) {
-                // sub factory break out the various types.
-                String fieldType = library.getString(hashMap, FieldDictionary.FT_KEY);
-                if (fieldType == null) {
-                    // get type from parent object.
-                    // radio buttons type is often found in the parent dictionary.
-                    Object tmp = library.getObject(hashMap, FieldDictionary.PARENT_KEY);
-                    if (tmp instanceof HashMap) {
-                        fieldType = library.getString((HashMap) tmp, FieldDictionary.FT_KEY);
-                        hashMap.put(FieldDictionary.FT_KEY, new Name(fieldType));
-                        hashMap.put(FieldDictionary.Ff_KEY,
-                                library.getInt((HashMap) tmp, FieldDictionary.Ff_KEY));
-                    }
-                }
-                if (FieldDictionary.FT_BUTTON_VALUE.equals(fieldType)) {
-                    annot = new ButtonWidgetAnnotation(library, hashMap);
-                } else if (FieldDictionary.FT_CHOICE_VALUE.equals(fieldType)) {
-                    annot = new ChoiceWidgetAnnotation(library, hashMap);
-                } else if (FieldDictionary.FT_TEXT_VALUE.equals(fieldType)) {
-                    annot = new TextWidgetAnnotation(library, hashMap);
-                }
-                // todo signatures widget.
-                else {
-                    annot = new WidgetAnnotation(library, hashMap);
-                }
+                annot = new WidgetAnnotation(library, hashMap);
             }
         }
         if (annot == null) {
@@ -677,7 +659,7 @@ public abstract class Annotation extends Dictionary {
         // else build out a border style from the old B entry or create
         // a default invisible border.
         else {
-            HashMap borderMap = new HashMap();
+            HashMap<Name, Object> borderMap = new HashMap<Name, Object>();
             // get old school border
             Object borderObject = getObject(BORDER_KEY);
             if (borderObject != null && borderObject instanceof List) {
@@ -725,79 +707,36 @@ public abstract class Annotation extends Dictionary {
         // process the streams if available.
         Object AP = getObject(APPEARANCE_STREAM_KEY);
         if (AP instanceof HashMap) {
-            // assign the default AS key as the default appearance
-            currentAppearance = APPEARANCE_STREAM_NORMAL_KEY;
-            Name appearanceState = (Name) getObject(APPEARANCE_STATE_KEY);
-            if (appearanceState == null) {
-                appearanceState = APPEARANCE_STREAM_NORMAL_KEY;
-            }
-            // The annotations normal appearance.
-            Object appearance = library.getObject(
+            Object N = library.getObject(
                     (HashMap) AP, APPEARANCE_STREAM_NORMAL_KEY);
-            if (appearance != null) {
-                appearances.put(APPEARANCE_STREAM_NORMAL_KEY,
-                        parseAppearanceDictionary(APPEARANCE_STREAM_NORMAL_KEY,
-                                appearance));
-                appearances.get(APPEARANCE_STREAM_NORMAL_KEY).setSelectedName(appearanceState);
+            if (N instanceof HashMap) {
+                Object AS = getObject(APPEARANCE_STATE_KEY);
+                if (AS != null && AS instanceof Name)
+                    N = library.getObject((HashMap) N, (Name) AS);
             }
-            // (Optional) The annotation’s rollover appearance.
-            // Default value: the value of the N entry.
-            appearance = library.getObject(
-                    (HashMap) AP, APPEARANCE_STREAM_ROLLOVER_KEY);
-            if (appearance != null) {
-                appearances.put(APPEARANCE_STREAM_ROLLOVER_KEY,
-                        parseAppearanceDictionary(APPEARANCE_STREAM_ROLLOVER_KEY,
-                                appearance));
-            }
-            // (Optional) The annotation’s down appearance.
-            // Default value: the value of the N entry.
-            appearance = library.getObject(
-                    (HashMap) AP, APPEARANCE_STREAM_DOWN_KEY);
-            if (appearance != null) {
-                appearances.put(APPEARANCE_STREAM_DOWN_KEY,
-                        parseAppearanceDictionary(APPEARANCE_STREAM_DOWN_KEY,
-                                appearance));
-            }
-        } else {
-            // new annotation, so setup the default appearance states.
-            Appearance newAppearance = new Appearance();
-            HashMap appearanceDictionary = new HashMap();
-            appearanceDictionary.put(BBOX_VALUE, getUserSpaceRectangle());
+            // n should be a Form but we have a few cases of Stream
+            if (N instanceof Form) {
+                Form form = (Form) N;
+                form.init();
+                shapes = form.getShapes();
+                matrix = form.getMatrix();
+                bbox = form.getBBox();
+            } else if (N instanceof Stream) {
 
-            newAppearance.addAppearance(APPEARANCE_STREAM_NORMAL_KEY,
-                    new AppearanceState(library, appearanceDictionary));
-            appearances.put(APPEARANCE_STREAM_NORMAL_KEY, newAppearance);
-            currentAppearance = APPEARANCE_STREAM_NORMAL_KEY;
-        }
-
-    }
-
-    private Appearance parseAppearanceDictionary(Name appearanceDictionary,
-                                                 Object streamOrDictionary) {
-
-        Appearance appearance = new Appearance();
-
-        // iterate over all of the keys so we can index the various annotation
-        // state names.
-        if (streamOrDictionary instanceof HashMap) {
-            HashMap dictionary = (HashMap) streamOrDictionary;
-            Set keys = dictionary.keySet();
-            Object value;
-            for (Object key : keys) {
-                value = dictionary.get(key);
-                if (value instanceof Reference) {
-                    appearance.addAppearance((Name) key,
-                            new AppearanceState(library, dictionary,
-                                    library.getObject((Reference) value)));
+                Stream stream = (Stream) N;
+                Resources res = library.getResources(stream.getEntries(), RESOURCES_VALUE);
+                bbox = library.getRectangle(stream.getEntries(), BBOX_VALUE);
+                matrix = new AffineTransform();
+                try {
+                    ContentParser cp = ContentParserFactory.getInstance()
+                            .getContentParser(library, res);
+                    shapes = cp.parse(new byte[][]{stream.getDecodedStreamBytes()}, null).getShapes();
+                } catch (Exception e) {
+                    shapes = new Shapes();
+                    logger.log(Level.FINE, "Error initializing annotation content stream.", e);
                 }
             }
         }
-        // single entry so assign is using the default key name
-        else {
-            appearance.addAppearance(appearanceDictionary,
-                    new AppearanceState(library, entries, streamOrDictionary));
-        }
-        return appearance;
     }
 
     /**
@@ -834,23 +773,11 @@ public abstract class Annotation extends Dictionary {
     }
 
     public void setBBox(Rectangle bbox) {
-        Appearance appearance = appearances.get(currentAppearance);
-        AppearanceState appearanceState = appearance.getSelectedAppearanceState();
-        appearanceState.setBbox(bbox);
+        this.bbox = bbox;
     }
 
     public Rectangle2D getBbox() {
-        Appearance appearance = appearances.get(currentAppearance);
-        AppearanceState appearanceState = appearance.getSelectedAppearanceState();
-        return appearanceState.getBbox();
-    }
-
-    public Name getCurrentAppearance() {
-        return currentAppearance;
-    }
-
-    public void setCurrentAppearance(Name currentAppearance) {
-        this.currentAppearance = currentAppearance;
+        return bbox;
     }
 
     /**
@@ -876,7 +803,7 @@ public abstract class Annotation extends Dictionary {
         if (userSpaceRectangle != null && rect != null) {
             userSpaceRectangle = new Rectangle2D.Float(rect.x, rect.y,
                     rect.width, rect.height);
-            getEntries().put(Annotation.RECTANGLE_KEY,
+            entries.put(Annotation.RECTANGLE_KEY,
                     PRectangle.getPRectangleVector(userSpaceRectangle));
         }
     }
@@ -893,7 +820,7 @@ public abstract class Annotation extends Dictionary {
         // create the new action object on the fly.  However it is also possible
         // that we are parsing an action that has no type specification and 
         // thus we can't use the parser to create the new action.
-        if (tmp != null && tmp instanceof HashMap) {
+        if (tmp != null) {
             Action action = Action.buildAction(library, (HashMap) tmp);
             // assign reference if applicable
             if (action != null &&
@@ -922,7 +849,7 @@ public abstract class Annotation extends Dictionary {
      *               be created using the the ActionFactory in order to correctly setup
      *               the Pobject reference.
      * @return action that was added to Annotation, null if it was not success
-     *         fully added.
+     * fully added.
      */
     public Action addAction(Action action) {
 
@@ -964,7 +891,7 @@ public abstract class Annotation extends Dictionary {
             }
         }
         // add the new action as per usual
-        getEntries().put(ACTION_KEY, action.getPObjectReference());
+        entries.put(ACTION_KEY, action.getPObjectReference());
         stateManager.addChange(new PObject(this, getPObjectReference()));
 
         // if this is a link annotation and there is a dest, we need to remove
@@ -1038,7 +965,7 @@ public abstract class Annotation extends Dictionary {
                         currentAction.getPObjectReference()));
             }
             // add the action to the annotation
-            getEntries().put(ACTION_KEY, action.getPObjectReference());
+            entries.put(ACTION_KEY, action.getPObjectReference());
             stateManager.addChange(new PObject(action,
                     action.getPObjectReference()));
 
@@ -1078,6 +1005,7 @@ public abstract class Annotation extends Dictionary {
         return borderStyle;
     }
 
+    @SuppressWarnings("unchecked")
     public List<Number> getBorder() {
         return border;
     }
@@ -1112,7 +1040,7 @@ public abstract class Annotation extends Dictionary {
      * border width > 0.
      *
      * @return VISIBLE_RECTANGLE if the annotation has a visible borde, otherwise
-     *         INVISIBLE_RECTANGLE
+     * INVISIBLE_RECTANGLE
      */
     public int getBorderType() {
         // border style has W value for border with
@@ -1266,7 +1194,6 @@ public abstract class Annotation extends Dictionary {
         g.setRenderingHints(grh.getRenderingHints(renderHintType));
         g.setTransform(at);
         Shape preAppearanceStreamClip = g.getClip();
-        Shape annotationShape = deriveDrawingRectangle();
         g.clip(deriveDrawingRectangle());
 
         renderAppearanceStream(g);
@@ -1293,12 +1220,8 @@ public abstract class Annotation extends Dictionary {
     }
 
     protected void renderAppearanceStream(Graphics2D g) {
-        Appearance appearance = appearances.get(currentAppearance);
-        AppearanceState appearanceState = appearance.getSelectedAppearanceState();
-        if (appearanceState.getShapes() != null) {
 
-            AffineTransform matrix = appearanceState.getMatrix();
-            Rectangle2D bbox = appearanceState.getBbox();
+        if (shapes != null) {
 
 //            g.setColor( Color.blue );
 //            Rectangle2D.Float newRect = deriveDrawingRectangle();
@@ -1306,6 +1229,9 @@ public abstract class Annotation extends Dictionary {
 
             // step 1. appearance bounding box (BBox) is transformed, using
             // Matrix, to produce a quadrilateral with arbitrary orientation.
+            if (bbox == null) {
+                bbox = userSpaceRectangle;
+            }
             Rectangle2D tBbox = matrix.createTransformedShape(bbox).getBounds2D();
 
             // Step 2. matrix a is computed that scales and translates the
@@ -1322,7 +1248,7 @@ public abstract class Annotation extends Dictionary {
             g.transform(tAs);
 
             // regular paint
-            appearanceState.getShapes().paint(g);
+            shapes.paint(g);
         }
 
     }
@@ -1546,8 +1472,9 @@ public abstract class Annotation extends Dictionary {
     /**
      * Sets the Annotation colour and underlying
      *
-     * @param color
+     * @param color new colour value
      */
+
     public void setColor(Color color) {
         this.color = new Color(color.getRGB());
         // put colour back in to the dictionary
@@ -1586,11 +1513,7 @@ public abstract class Annotation extends Dictionary {
      */
     protected boolean allowScreenOrPrintRenderingOrInteraction() {
         // Based off of the annotation flags' Invisible and Hidden values
-        if (getFlagHidden())
-            return false;
-        if (getFlagInvisible() && isSupportedAnnotationType())
-            return false;
-        return true;
+        return !getFlagHidden() && !(getFlagInvisible() && isSupportedAnnotationType());
     }
 
     /**
@@ -1736,11 +1659,8 @@ public abstract class Annotation extends Dictionary {
     }
 
     public void syncBBoxToUserSpaceRectangle(Rectangle2D bbox) {
-        Appearance appearance = appearances.get(currentAppearance);
-        AppearanceState appearanceState = appearance.getSelectedAppearanceState();
-
-        appearanceState.setBbox(bbox);
-        Rectangle2D tBbox = appearanceState.getMatrix().createTransformedShape(bbox).getBounds2D();
+        this.bbox = bbox;
+        Rectangle2D tBbox = matrix.createTransformedShape(bbox).getBounds2D();
         setUserSpaceRectangle(new Rectangle2D.Float(
                 (float) tBbox.getX(), (float) tBbox.getY(),
                 (float) tBbox.getWidth(), (float) tBbox.getHeight()));
@@ -1753,13 +1673,7 @@ public abstract class Annotation extends Dictionary {
     }
 
     public Shapes getShapes() {
-        Appearance appearance = appearances.get(currentAppearance);
-        AppearanceState appearanceState = appearance.getSelectedAppearanceState();
-        return appearanceState.getShapes();
-    }
-
-    public HashMap<Name, Appearance> getAppearances() {
-        return appearances;
+        return shapes;
     }
 
     public static void setCompressAppearanceStream(boolean compressAppearanceStream) {
