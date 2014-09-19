@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -20,7 +20,13 @@ import org.icepdf.core.util.Defs;
 import org.icepdf.core.util.Library;
 
 import java.awt.*;
+import java.awt.color.ICC_ColorSpace;
+import java.awt.color.ICC_Profile;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
 
 /**
  * Device CMYK colour space definitions. The primary purpose of this colour
@@ -28,6 +34,9 @@ import java.util.HashMap;
  * process and the generated rgb colour is just and approximation.
  */
 public class DeviceCMYK extends PColorSpace {
+
+    private static final Logger logger =
+            Logger.getLogger(DeviceCMYK.class.toString());
 
     public static final Name DEVICECMYK_KEY = new Name("DeviceCMYK");
     public static final Name CMYK_KEY = new Name("CMYK");
@@ -37,12 +46,27 @@ public class DeviceCMYK extends PColorSpace {
     // default cmyk value,  > 255 will lighten the image.
     private static float blackRatio;
 
+    // CMYK ICC color profile.
+    private static ICC_ColorSpace iccCmykColorSpace;
+    // basic cache to speed up the lookup. always 4 bands, can be static
+    private static ConcurrentHashMap<Integer, Color> iccCmykColorCache;
+
+    // disable icc color profile lookups as they can be slow. n
+    private static boolean disableICCCmykColorSpace;
+
     static {
         // black ratio
         blackRatio = (float) Defs.doubleProperty("org.icepdf.core.cmyk.colorant.black", 1.0);
+
+        disableICCCmykColorSpace = Defs.booleanProperty("org.icepdf.core.cmyk.disableICCProfile", false);
+
+        iccCmykColorCache = new ConcurrentHashMap<Integer, Color>();
+
+        // check for a custom CMYK ICC colour profile specified using system properties.
+        iccCmykColorSpace = getIccCmykColorSpace();
     }
 
-    DeviceCMYK(Library l, HashMap h) {
+    public DeviceCMYK(Library l, HashMap h) {
         super(l, h);
     }
 
@@ -174,6 +198,28 @@ public class DeviceCMYK extends PColorSpace {
         float inYellow = f[1];
         float inBlack = f[0];
 
+        // check if we have a valid ICC profile to work with
+        if (!disableICCCmykColorSpace && iccCmykColorSpace != null) {
+            // generate a key for the colour
+            int key = (((int) (f[0] * 255) & 0xff) << 24) |
+                    (((int) (f[1] * 255) & 0xff) << 16) |
+                    (((int) (f[2] * 255) & 0xff) << 8) |
+                    (((int) (f[3] * 255) & 0xff) & 0xff);
+            Color color = iccCmykColorCache.get(key);
+            if (color != null) {
+                return color;
+            } else {
+                try {
+                    f = iccCmykColorSpace.toRGB(reverse(f));
+                    color = new Color(f[0], f[1], f[2]);
+                    iccCmykColorCache.put(key, color);
+                    return color;
+                } catch (Throwable e) {
+                    logger.warning("Error using iccCmykColorSpace in DeviceCMYK.");
+                }
+            }
+        }
+
         // soften the amount of black, but exclude explicit black colorant.
         if (!(inCyan == 0 && inMagenta == 0 && inYellow == 0)) {
             inBlack = inBlack * blackRatio;
@@ -222,4 +268,54 @@ public class DeviceCMYK extends PColorSpace {
         return value;
     }
 
+    /**
+     * Gets the ICC Color Profile found in the icepdf-core.jar at the location
+     * /org/icepdf/core/pobjects/graphics/res/ or the ICC Color Profiel
+     * specified by the system property org.icepdf.core.pobjects.graphics.cmyk.
+     *
+     * @return associated ICC CMYK Color space.
+     */
+    public static ICC_ColorSpace getIccCmykColorSpace() {
+        // would prefer to only have one instance but becuase of JDK-8033238
+        // we can run into decode issue if we share the profile across
+        String customCMYKProfilePath = null;
+        try {
+            Object profileStream;
+            customCMYKProfilePath = Defs.sysProperty("org.icepdf.core.pobjects.graphics.cmyk");
+            if (customCMYKProfilePath == null) {
+                customCMYKProfilePath = "/org/icepdf/core/pobjects/graphics/res/CoatedFOGRA27.icc";
+                profileStream = DeviceCMYK.class.getResourceAsStream(customCMYKProfilePath);
+            } else {
+                profileStream = new FileInputStream(customCMYKProfilePath);
+            }
+
+            ICC_Profile icc_profile = ICC_Profile.getInstance((InputStream) profileStream);
+            return new ICC_ColorSpace(icc_profile);
+        } catch (Exception exception) {
+            logger.warning("Error loading ICC color profile: " + customCMYKProfilePath);
+        }
+        return null;
+    }
+
+    /**
+     * Determines if the ICC CMYK color space should be used to convert
+     * CMYK images to RGB.
+     *
+     * @return true if the ICC CMYK color space should be used, false otherwise.
+     */
+    public static boolean isDisableICCCmykColorSpace() {
+        return disableICCCmykColorSpace;
+    }
+
+    /**
+     * Set the value of the disableICCCmykColorSpace property.  This property
+     * can be set using the system property org.icepdf.core.cmyk.disableICCProfile
+     * or overridden using this mehtod.
+     *
+     * @param disableICCCmykColorSpace true to disable the ICC CMYK color space
+     *                                 conversion, false otherwise.
+     */
+    public static void setDisableICCCmykColorSpace(boolean disableICCCmykColorSpace) {
+        DeviceCMYK.disableICCCmykColorSpace = disableICCCmykColorSpace;
+    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -40,6 +40,7 @@ import java.util.logging.Logger;
  * <p/>
  * org.icepdf.vi.views.buffersize.vertical
  */
+@SuppressWarnings("serial")
 public class PageThumbnailComponent extends JComponent implements MouseListener {
 
     private static final Logger logger =

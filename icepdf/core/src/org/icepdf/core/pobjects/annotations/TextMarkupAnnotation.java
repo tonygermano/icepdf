@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -146,6 +146,7 @@ public class TextMarkupAnnotation extends MarkupAnnotation {
         super(l, h);
     }
 
+    @SuppressWarnings("unchecked")
     public void init() {
         super.init();
         // collect the quad points.
@@ -177,9 +178,6 @@ public class TextMarkupAnnotation extends MarkupAnnotation {
         // for editing purposes grab anny shapes from the AP Stream and
         // store them as markupBounds and markupPath. This works ok but
         // perhaps a better way would be to reapply the bound box
-        Appearance appearance = appearances.get(currentAppearance);
-        AppearanceState appearanceState = appearance.getSelectedAppearanceState();
-        Shapes shapes = appearanceState.getShapes();
         if (shapes != null) {
             markupBounds = new ArrayList<Shape>();
             markupPath = new GeneralPath();
@@ -248,15 +246,8 @@ public class TextMarkupAnnotation extends MarkupAnnotation {
      */
     public void resetAppearanceStream(double dx, double dy, AffineTransform pageTransform) {
 
-        Appearance appearance = appearances.get(currentAppearance);
-        AppearanceState appearanceState = appearance.getSelectedAppearanceState();
-
-        appearanceState.setMatrix(new AffineTransform());
-        appearanceState.setShapes(new Shapes());
-
-        Rectangle2D bbox = appearanceState.getBbox();
-        AffineTransform matrix = appearanceState.getMatrix();
-        Shapes shapes = appearanceState.getShapes();
+        matrix = new AffineTransform();
+        shapes = new Shapes();
 
         // setup the space for the AP content stream.
         AffineTransform af = new AffineTransform();
@@ -340,7 +331,7 @@ public class TextMarkupAnnotation extends MarkupAnnotation {
             // else a stream, we won't support this for annotations.
         } else {
             // create a new xobject/form object
-            HashMap formEntries = new HashMap();
+            HashMap<Object, Object> formEntries = new HashMap<Object, Object>();
             formEntries.put(Form.TYPE_KEY, Form.TYPE_VALUE);
             formEntries.put(Form.SUBTYPE_KEY, Form.SUB_TYPE_VALUE);
             form = new Form(library, formEntries, null);
@@ -356,8 +347,8 @@ public class TextMarkupAnnotation extends MarkupAnnotation {
             if (SUBTYPE_HIGHLIGHT.equals(subtype)) {
                 // add the transparency graphic context settings.
                 Resources resources = form.getResources();
-                HashMap graphicsProperties = new HashMap(2);
-                HashMap graphicsState = new HashMap(1);
+                HashMap<Object, Object> graphicsProperties = new HashMap<Object, Object>(2);
+                HashMap<Object, Object> graphicsState = new HashMap<Object, Object>(1);
                 graphicsProperties.put(GraphicsState.CA_STROKING_KEY, HIGHLIGHT_ALPHA);
                 graphicsProperties.put(GraphicsState.CA_NON_STROKING_KEY, HIGHLIGHT_ALPHA);
                 graphicsState.put(EXTGSTATE_NAME, graphicsProperties);
@@ -367,7 +358,7 @@ public class TextMarkupAnnotation extends MarkupAnnotation {
             // update the AP's stream bytes so contents can be written out
             form.setRawBytes(
                     PostScriptEncoder.generatePostScript(shapes.getShapes()));
-            HashMap appearanceRefs = new HashMap();
+            HashMap<Object, Object> appearanceRefs = new HashMap<Object, Object>();
             appearanceRefs.put(APPEARANCE_STREAM_NORMAL_KEY, form.getPObjectReference());
             entries.put(APPEARANCE_STREAM_KEY, appearanceRefs);
 
@@ -382,10 +373,6 @@ public class TextMarkupAnnotation extends MarkupAnnotation {
 
     @Override
     protected void renderAppearanceStream(Graphics2D g) {
-        Appearance appearance = appearances.get(currentAppearance);
-        AppearanceState appearanceState = appearance.getSelectedAppearanceState();
-        Shapes shapes = appearanceState.getShapes();
-
         // Appearance stream takes precedence over the quad points.
         if (shapes != null) {
             super.renderAppearanceStream(g);

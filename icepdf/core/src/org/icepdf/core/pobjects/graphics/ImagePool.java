@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -20,6 +20,7 @@ import org.icepdf.core.util.Defs;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -45,12 +46,14 @@ import java.util.logging.Logger;
  *
  * @since 5.0
  */
+@SuppressWarnings("serial")
 public class ImagePool {
+
     private static final Logger log =
             Logger.getLogger(ImagePool.class.toString());
 
     // Image pool
-    private final LinkedHashMap<Reference, BufferedImage> fCache;
+    private final Map<Reference, BufferedImage> fCache;
 
     private static int defaultSize;
 
@@ -69,7 +72,7 @@ public class ImagePool {
     }
 
     public ImagePool(long maxCacheSize) {
-        fCache = new MemoryImageCache(maxCacheSize);
+        fCache = Collections.synchronizedMap(new MemoryImageCache(maxCacheSize));
     }
 
     public void put(Reference ref, BufferedImage image) {
@@ -85,6 +88,14 @@ public class ImagePool {
             return fCache.get(ref);
         } else {
             return null;
+        }
+    }
+
+    public boolean containsKey(Reference ref) {
+        if (enabled) {
+            return fCache.containsKey(ref);
+        } else {
+            return false;
         }
     }
 
