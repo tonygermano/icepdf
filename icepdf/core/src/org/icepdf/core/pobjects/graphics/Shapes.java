@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -53,6 +53,11 @@ public class Shapes {
         shapesInitialCapacity = Defs.sysPropertyInt(
                 "org.icepdf.core.shapes.initialCapacity", shapesInitialCapacity);
     }
+
+    // cache of common draw state, we try to avoid adding new operands if the
+    // stack already has the needed state,  more ops take longer to paint.
+    private int rule;
+    private float alpha;
 
     private boolean interrupted;
 
@@ -117,6 +122,7 @@ public class Shapes {
      */
     public void paint(Graphics2D g) {
         try {
+            interrupted = false;
             AffineTransform base = new AffineTransform(g.getTransform());
             Shape clip = g.getClip();
 
@@ -145,6 +151,10 @@ public class Shapes {
         interrupted = true;
     }
 
+    public boolean isInterrupted() {
+        return interrupted;
+    }
+
     /**
      * Iterates over the Shapes objects extracting all Image objects.
      *
@@ -170,5 +180,21 @@ public class Shapes {
         if (shapes != null) {
             shapes.trimToSize();
         }
+    }
+
+    public int getRule() {
+        return rule;
+    }
+
+    public void setRule(int rule) {
+        this.rule = rule;
+    }
+
+    public float getAlpha() {
+        return alpha;
+    }
+
+    public void setAlpha(float alpha) {
+        this.alpha = alpha;
     }
 }

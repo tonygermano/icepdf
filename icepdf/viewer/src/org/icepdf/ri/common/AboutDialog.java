@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -26,7 +26,10 @@ import java.awt.event.ActionListener;
 import java.awt.event.WindowListener;
 import java.util.ResourceBundle;
 
-public final class AboutDialog extends JDialog implements ActionListener, WindowListener {
+@SuppressWarnings("serial")
+public class AboutDialog extends JDialog implements ActionListener, WindowListener {
+
+
     private JButton ok;
     private Timer timer;
     private int whichTimer;
