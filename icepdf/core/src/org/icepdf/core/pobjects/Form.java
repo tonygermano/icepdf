@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -84,6 +84,7 @@ public class Form extends Stream {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public void setAppearance(Shapes shapes, AffineTransform matrix, Rectangle2D bbox) {
         this.shapes = shapes;
         this.matrix = matrix;
@@ -104,6 +105,15 @@ public class Form extends Stream {
         if (graphicsState != null) {
             this.graphicsState = graphicsState;
         }
+    }
+
+    /**
+     * Gets the associated graphic state instance for this form.
+     *
+     * @return external graphic state,  can be null.
+     */
+    public GraphicsState getGraphicsState() {
+        return graphicsState;
     }
 
     /**
@@ -165,7 +175,7 @@ public class Form extends Stream {
                 if (logger.isLoggable(Level.FINER)) {
                     logger.finer("Parsing form " + getPObjectReference());
                 }
-                shapes = cp.parse(new byte[][]{in}).getShapes();
+                shapes = cp.parse(new byte[][]{in}, null).getShapes();
             } catch (Throwable e) {
                 // reset shapes vector, we don't want to mess up the paint stack
                 shapes = new Shapes();
@@ -183,10 +193,10 @@ public class Form extends Stream {
         return leafResources;
     }
 
+    @SuppressWarnings("unchecked")
     public void setResources(Resources resources) {
         entries.put(RESOURCES_KEY, resources.getEntries());
     }
-
 
     /**
      * Gets the shapes that where parsed from the content stream.
@@ -211,7 +221,7 @@ public class Form extends Stream {
      * system in xObject space to the parent coordinates space.
      *
      * @return affine transform representing the xObject's pdf to xObject space
-     *         transform.
+     * transform.
      */
     public AffineTransform getMatrix() {
         return matrix;

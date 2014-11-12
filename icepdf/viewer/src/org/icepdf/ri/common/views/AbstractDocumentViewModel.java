@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -18,12 +18,15 @@ package org.icepdf.ri.common.views;
 import org.icepdf.core.Memento;
 import org.icepdf.core.pobjects.Document;
 import org.icepdf.core.pobjects.Page;
+import org.icepdf.core.util.Defs;
 import org.icepdf.ri.common.UndoCaretaker;
 
+import javax.swing.*;
 import java.awt.*;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -43,6 +46,21 @@ public abstract class AbstractDocumentViewModel implements DocumentViewModel {
 
     // document that model is associated.
     protected Document currentDocument;
+
+    // page dirty repaint timer
+    private Timer isDirtyTimer;
+    // dirty refresh timer call interval
+    private static int dirtyTimerInterval = 5;
+
+    static {
+        try {
+            dirtyTimerInterval =
+                    Defs.intProperty("org.icepdf.core.views.dirtytimer.interval",
+                            dirtyTimerInterval);
+        } catch (NumberFormatException e) {
+            log.log(Level.FINE, "Error reading dirty timer interval");
+        }
+    }
 
     // Pages that have selected text.
     private ArrayList<WeakReference<AbstractPageViewComponent>> selectedPageText;
@@ -74,6 +92,11 @@ public abstract class AbstractDocumentViewModel implements DocumentViewModel {
         this.currentDocument = currentDocument;
         // create new instance of the undoCaretaker
         undoCaretaker = new UndoCaretaker();
+
+        // timer will dictate when buffer repaints can take place
+        isDirtyTimer = new Timer(dirtyTimerInterval, null);
+        isDirtyTimer.setInitialDelay(0);
+        isDirtyTimer.start();
     }
 
     public Document getDocument() {
@@ -251,10 +274,8 @@ public abstract class AbstractDocumentViewModel implements DocumentViewModel {
     public Rectangle getPageBounds(int pageIndex) {
         Rectangle pageBounds = new Rectangle();
         if (pageComponents != null && pageIndex < pageComponents.size()) {
-            Component pageViewComponentImpl;
-            Object tmp = pageComponents.get(pageIndex);
-            if (tmp != null && tmp instanceof Component) {
-                pageViewComponentImpl = (Component) tmp;
+            Component pageViewComponentImpl = pageComponents.get(pageIndex);
+            if (pageViewComponentImpl != null) {
                 Component parentComponent = pageViewComponentImpl;
                 Dimension size = pageViewComponentImpl.getPreferredSize();
                 pageBounds.setSize(size.width, size.height);
@@ -278,6 +299,11 @@ public abstract class AbstractDocumentViewModel implements DocumentViewModel {
                 }
             }
             pageComponents.clear();
+
+            // stop the timer
+            if (isDirtyTimer != null && isDirtyTimer.isRunning()) {
+                isDirtyTimer.stop();
+            }
         }
     }
 
@@ -321,5 +347,9 @@ public abstract class AbstractDocumentViewModel implements DocumentViewModel {
 
     public void addMemento(Memento oldMementoState, Memento newMementoState) {
         undoCaretaker.addState(oldMementoState, newMementoState);
+    }
+
+    public Timer getDirtyTimer() {
+        return isDirtyTimer;
     }
 }

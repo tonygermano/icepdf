@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2013 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -67,7 +67,6 @@ public class LZWDecode extends ChunkingInputStream {
         int numRead = 0;
         // start decompression,  haven't tried to optimized this one yet for
         // speed or for memory.
-
         if (firstTime) {
             firstTime = false;
             old_code = code = inb.getBits(code_len);
@@ -128,7 +127,7 @@ public class LZWDecode extends ChunkingInputStream {
 
             if (inb.atEndOfFile())
                 break;
-        } while (numRead < (buffer.length - 512));
+        } while (numRead < buffer.length);
 
         return numRead;
     }
@@ -173,6 +172,7 @@ public class LZWDecode extends ChunkingInputStream {
             c = cc;
         }
 
+        @SuppressWarnings("unchecked")
         void getString(Stack s) {
             s.push(this);
             if (prefix != null)
