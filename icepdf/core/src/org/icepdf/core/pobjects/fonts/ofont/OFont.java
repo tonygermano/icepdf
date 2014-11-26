@@ -43,6 +43,14 @@ public class OFont implements FontFile {
 
     private static final Logger log =
             Logger.getLogger(OFont.class.toString());
+
+    private Font awtFont;
+    private Rectangle2D maxCharBounds =
+            new Rectangle2D.Double(0.0, 0.0, 1.0, 1.0);
+
+    // text layout map, very expensive to create, so we'll cache them.
+    private HashMap<String, Point2D.Float> echarAdvanceCache;
+
     protected float[] widths;
     protected Map<Integer, Float> cidWidths;
     protected float missingWidth;
@@ -52,11 +60,6 @@ public class OFont implements FontFile {
     protected Encoding encoding;
     protected CMap toUnicode;
     protected char[] cMap;
-    private Font awtFont;
-    private Rectangle2D maxCharBounds =
-            new Rectangle2D.Double(0.0, 0.0, 1.0, 1.0);
-    // text layout map, very expensive to create, so we'll cache them.
-    private HashMap<String, Point2D.Float> echarAdvanceCache;
 
 
     public OFont(Font awtFont) {
@@ -205,7 +208,7 @@ public class OFont implements FontFile {
      *
      * @param currentChar character to find a corresponding CMap for.
      * @return a new Character based on the CMap tranformation.  If the character
-     * can not be found in the CMap the orginal value is returned.
+     *         can not be found in the CMap the orginal value is returned.
      */
     private char getCMapping(char currentChar) {
         if (toUnicode != null) {

@@ -207,10 +207,12 @@ import java.util.logging.Logger;
  */
 public class GraphicsState {
 
-    public static final Name CA_STROKING_KEY = new Name("CA");
-    public static final Name CA_NON_STROKING_KEY = new Name("ca");
     private static final Logger logger =
             Logger.getLogger(GraphicsState.class.toString());
+
+    public static final Name CA_STROKING_KEY = new Name("CA");
+    public static final Name CA_NON_STROKING_KEY = new Name("ca");
+
     // allow over paint support for fill and stroke.  Still experimental
     // enabled buy default but can be turned off if required.
     private static boolean enabledOverpaint;
@@ -590,10 +592,6 @@ public class GraphicsState {
         }
     }
 
-    public Area getClip() {
-        return clip;
-    }
-
     /**
      * Set the graphics state clipping area.  The new clipping area is
      * intersected with the current current clip to generate the new clipping
@@ -624,6 +622,10 @@ public class GraphicsState {
             clip = null;
             shapes.add(noClipDrawCmd);
         }
+    }
+
+    public Area getClip() {
+        return clip;
     }
 
     public AffineTransform getCTM() {
@@ -702,24 +704,24 @@ public class GraphicsState {
         return strokeColor;
     }
 
-    public void setStrokeColor(Color strokeColor) {
-        this.strokeColor = strokeColor;
+    public void setStrokeAlpha(float alpha) {
+        strokeAlpha = alpha;
     }
 
     public float getStrokeAlpha() {
         return strokeAlpha;
     }
 
-    public void setStrokeAlpha(float alpha) {
-        strokeAlpha = alpha;
+    public void setFillAlpha(float alpha) {
+        fillAlpha = alpha;
     }
 
     public float getFillAlpha() {
         return fillAlpha;
     }
 
-    public void setFillAlpha(float alpha) {
-        fillAlpha = alpha;
+    public void setStrokeColor(Color strokeColor) {
+        this.strokeColor = strokeColor;
     }
 
     public PColorSpace getFillColorSpace() {
@@ -750,20 +752,20 @@ public class GraphicsState {
         return overprintMode;
     }
 
-    public void setOverprintMode(int overprintMode) {
-        this.overprintMode = overprintMode;
-    }
-
     public boolean isOverprintStroking() {
         return overprintStroking;
     }
 
-    public void setOverprintStroking(boolean overprintStroking) {
-        this.overprintStroking = overprintStroking;
-    }
-
     public boolean isOverprintOther() {
         return overprintOther;
+    }
+
+    public void setOverprintMode(int overprintMode) {
+        this.overprintMode = overprintMode;
+    }
+
+    public void setOverprintStroking(boolean overprintStroking) {
+        this.overprintStroking = overprintStroking;
     }
 
     public void setOverprintOther(boolean overprintOther) {

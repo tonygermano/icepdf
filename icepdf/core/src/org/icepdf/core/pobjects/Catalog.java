@@ -15,7 +15,6 @@
  */
 package org.icepdf.core.pobjects;
 
-import org.icepdf.core.pobjects.acroform.InteractiveForm;
 import org.icepdf.core.util.Library;
 
 import java.util.ArrayList;
@@ -43,6 +42,9 @@ import java.util.logging.Logger;
  */
 public class Catalog extends Dictionary {
 
+    private static final Logger logger =
+            Logger.getLogger(Catalog.class.toString());
+
     public static final Name TYPE = new Name("Catalog");
     public static final Name DESTS_KEY = new Name("Dests");
     public static final Name VIEWERPREFERENCES_KEY = new Name("ViewerPreferences");
@@ -52,9 +54,8 @@ public class Catalog extends Dictionary {
     public static final Name PAGES_KEY = new Name("Pages");
     public static final Name PAGELAYOUT_KEY = new Name("PageLayout");
     public static final Name PAGEMODE_KEY = new Name("PageMode");
-    public static final Name ACRO_FORM_KEY = new Name("AcroForm");
-    private static final Logger logger =
-            Logger.getLogger(Catalog.class.toString());
+    public static final Name COLLECTION_KEY = new Name("Collection");
+
     private PageTree pageTree;
     private Outlines outlines;
     private Names names;
@@ -121,15 +122,6 @@ public class Catalog extends Dictionary {
             names = new Names(library, (HashMap) tmp);
             names.init();
         }
-
-        // load the Acroform data.
-        tmp = library.getObject(entries, ACRO_FORM_KEY);
-        if (tmp instanceof HashMap) {
-            InteractiveForm interactiveForm = new InteractiveForm(library, (HashMap) tmp);
-            interactiveForm.init();
-        }
-        // todo namesTree contains forms javascript, might need to be initialized here
-
     }
 
     /**
@@ -159,7 +151,6 @@ public class Catalog extends Dictionary {
         }
         return outlines;
     }
-
 
     /**
      * Gets the document's Names dictionary.  The Names dictionary contains

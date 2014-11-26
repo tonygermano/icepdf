@@ -116,7 +116,7 @@ public abstract class AbstractText implements Text {
      * is highlighted.
      *
      * @return true if one or more root or parent elements are in a highlighted
-     * state.
+     *         state.
      */
     public boolean hasHighligh() {
         return hasHighlight;
@@ -127,7 +127,7 @@ public abstract class AbstractText implements Text {
      * is selected.
      *
      * @return true if one or more root or parent elements are in a highlighted
-     * state.
+     *         state.
      */
     public boolean hasSelected() {
         return hasSelected;

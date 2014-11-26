@@ -115,7 +115,7 @@ public class PageText implements TextSelect {
      * is set to True by default.
      *
      * @return list of page lines that are in the main content stream and any
-     * visible layers.
+     *         visible layers.
      */
     public ArrayList<LineText> getPageLines() {
         if (sortedPageLines == null) {
