@@ -45,37 +45,18 @@ import java.util.logging.Logger;
  */
 public class TextMarkupAnnotation extends MarkupAnnotation {
 
+    private static final Logger logger =
+            Logger.getLogger(TextMarkupAnnotation.class.toString());
+
     public static final Name SUBTYPE_HIGHLIGHT = new Name("Highlight");
     public static final Name SUBTYPE_UNDERLINE = new Name("Underline");
     public static final Name SUBTYPE_SQUIGGLY = new Name("Squiggly");
     public static final Name SUBTYPE_STRIKE_OUT = new Name("StrikeOut");
-    /**
-     * (Required) An array of 8 × n numbers specifying the coordinates of
-     * n quadrilaterals in default user space. Each quadrilateral shall encompasses
-     * a word or group of contiguous words in the text underlying the annotation.
-     * The coordinates for each quadrilateral shall be given in the order
-     * x1 y1 x2 y2 x3 y3 x4 y4
-     * specifying the quadrilateral’s four vertices in counterclockwise order
-     * (see Figure 64). The text shall be oriented with respect to the edge
-     * connecting points (x1, y1) and (x2, y2).
-     * <p/>
-     * The annotation dictionary’s AP entry, if present, shall take precedence
-     * over QuadPoints; see Table 168 and 12.5.5, “Appearance Streams.”
-     */
-    public static final Name KEY_QUAD_POINTS = new Name("QuadPoints");
-    /**
-     * Named graphics state name used to store highlight transparency values.
-     */
-    public static final Name EXTGSTATE_NAME = new Name("ip1");
-    /**
-     * Highlight transparency default
-     */
-    public static final float HIGHLIGHT_ALPHA = 0.3f;
-    private static final Logger logger =
-            Logger.getLogger(TextMarkupAnnotation.class.toString());
+
     private static Color highlightColor;
     private static Color strikeOutColor;
     private static Color underlineColor;
+
     static {
 
         // sets annotation selected highlight colour
@@ -118,6 +99,33 @@ public class TextMarkupAnnotation extends MarkupAnnotation {
             }
         }
     }
+
+    /**
+     * (Required) An array of 8 × n numbers specifying the coordinates of
+     * n quadrilaterals in default user space. Each quadrilateral shall encompasses
+     * a word or group of contiguous words in the text underlying the annotation.
+     * The coordinates for each quadrilateral shall be given in the order
+     * x1 y1 x2 y2 x3 y3 x4 y4
+     * specifying the quadrilateral’s four vertices in counterclockwise order
+     * (see Figure 64). The text shall be oriented with respect to the edge
+     * connecting points (x1, y1) and (x2, y2).
+     * <p/>
+     * The annotation dictionary’s AP entry, if present, shall take precedence
+     * over QuadPoints; see Table 168 and 12.5.5, “Appearance Streams.”
+     */
+    public static final Name KEY_QUAD_POINTS = new Name("QuadPoints");
+
+    /**
+     * Named graphics state name used to store highlight transparency values.
+     */
+    public static final Name EXTGSTATE_NAME = new Name("ip1");
+
+    /**
+     * Highlight transparency default
+     */
+    public static final float HIGHLIGHT_ALPHA = 0.3f;
+
+
     /**
      * Converted Quad points.
      */
@@ -136,6 +144,55 @@ public class TextMarkupAnnotation extends MarkupAnnotation {
      */
     public TextMarkupAnnotation(Library l, HashMap h) {
         super(l, h);
+    }
+
+    @SuppressWarnings("unchecked")
+    public void init() {
+        super.init();
+        // collect the quad points.
+        List<Number> quadPoints = library.getArray(entries, KEY_QUAD_POINTS);
+        if (quadPoints != null) {
+            int size = quadPoints.size() / 8;
+            quadrilaterals = new Shape[size];
+            GeneralPath shape;
+            for (int i = 0, count = 0; i < size; i++, count += 8) {
+                shape = new GeneralPath(GeneralPath.WIND_EVEN_ODD, 4);
+                shape.moveTo(quadPoints.get(count + 6).floatValue(), quadPoints.get(count + 7).floatValue());
+                shape.lineTo(quadPoints.get(count + 4).floatValue(), quadPoints.get(count + 5).floatValue());
+                shape.lineTo(quadPoints.get(count).floatValue(), quadPoints.get(count + 1).floatValue());
+                shape.lineTo(quadPoints.get(count + 2).floatValue(), quadPoints.get(count + 3).floatValue());
+                shape.closePath();
+                quadrilaterals[i] = shape;
+            }
+        }
+        if (SUBTYPE_HIGHLIGHT.equals(subtype)) {
+            textMarkupColor = highlightColor;
+        } else if (SUBTYPE_STRIKE_OUT.equals(subtype)) {
+            textMarkupColor = strikeOutColor;
+        } else if (SUBTYPE_UNDERLINE.equals(subtype)) {
+            textMarkupColor = underlineColor;
+        } else if (SUBTYPE_SQUIGGLY.equals(subtype)) {
+            // not implemented
+        }
+
+        // for editing purposes grab anny shapes from the AP Stream and
+        // store them as markupBounds and markupPath. This works ok but
+        // perhaps a better way would be to reapply the bound box
+        if (shapes != null) {
+            markupBounds = new ArrayList<Shape>();
+            markupPath = new GeneralPath();
+
+            ShapeDrawCmd shapeDrawCmd;
+            for (DrawCmd cmd : shapes.getShapes()) {
+                if (cmd instanceof ShapeDrawCmd) {
+                    shapeDrawCmd = (ShapeDrawCmd) cmd;
+                    markupBounds.add(shapeDrawCmd.getShape());
+                    markupPath.append(shapeDrawCmd.getShape(), false);
+                }
+            }
+
+        }
+
     }
 
     /**
@@ -176,6 +233,7 @@ public class TextMarkupAnnotation extends MarkupAnnotation {
         return textMarkupAnnotation;
     }
 
+
     public static boolean isTextMarkupAnnotation(Name subType) {
         return SUBTYPE_HIGHLIGHT.equals(subType) ||
                 SUBTYPE_UNDERLINE.equals(subType) ||
@@ -183,72 +241,13 @@ public class TextMarkupAnnotation extends MarkupAnnotation {
                 SUBTYPE_STRIKE_OUT.equals(subType);
     }
 
-    @SuppressWarnings("unchecked")
-    public void init() {
-        super.init();
-        // collect the quad points.
-        List<Number> quadPoints = library.getArray(entries, KEY_QUAD_POINTS);
-        if (quadPoints != null) {
-            int size = quadPoints.size() / 8;
-            quadrilaterals = new Shape[size];
-            GeneralPath shape;
-            for (int i = 0, count = 0; i < size; i++, count += 8) {
-                shape = new GeneralPath(GeneralPath.WIND_EVEN_ODD, 4);
-                shape.moveTo(quadPoints.get(count + 6).floatValue(), quadPoints.get(count + 7).floatValue());
-                shape.lineTo(quadPoints.get(count + 4).floatValue(), quadPoints.get(count + 5).floatValue());
-                shape.lineTo(quadPoints.get(count).floatValue(), quadPoints.get(count + 1).floatValue());
-                shape.lineTo(quadPoints.get(count + 2).floatValue(), quadPoints.get(count + 3).floatValue());
-                shape.closePath();
-                quadrilaterals[i] = shape;
-            }
-        }
-        if (SUBTYPE_HIGHLIGHT.equals(subtype)) {
-            textMarkupColor = highlightColor;
-        } else if (SUBTYPE_STRIKE_OUT.equals(subtype)) {
-            textMarkupColor = strikeOutColor;
-        } else if (SUBTYPE_UNDERLINE.equals(subtype)) {
-            textMarkupColor = underlineColor;
-        } else if (SUBTYPE_SQUIGGLY.equals(subtype)) {
-            // not implemented
-        }
-
-        // for editing purposes grab anny shapes from the AP Stream and
-        // store them as markupBounds and markupPath. This works ok but
-        // perhaps a better way would be to reapply the bound box
-        Appearance appearance = appearances.get(currentAppearance);
-        AppearanceState appearanceState = appearance.getSelectedAppearanceState();
-        Shapes shapes = appearanceState.getShapes();
-        if (shapes != null) {
-            markupBounds = new ArrayList<Shape>();
-            markupPath = new GeneralPath();
-
-            ShapeDrawCmd shapeDrawCmd;
-            for (DrawCmd cmd : shapes.getShapes()) {
-                if (cmd instanceof ShapeDrawCmd) {
-                    shapeDrawCmd = (ShapeDrawCmd) cmd;
-                    markupBounds.add(shapeDrawCmd.getShape());
-                    markupPath.append(shapeDrawCmd.getShape(), false);
-                }
-            }
-
-        }
-
-    }
-
     /**
      * Resets the annotations appearance stream.
      */
     public void resetAppearanceStream(double dx, double dy, AffineTransform pageTransform) {
 
-        Appearance appearance = appearances.get(currentAppearance);
-        AppearanceState appearanceState = appearance.getSelectedAppearanceState();
-
-        appearanceState.setMatrix(new AffineTransform());
-        appearanceState.setShapes(new Shapes());
-
-        Rectangle2D bbox = appearanceState.getBbox();
-        AffineTransform matrix = appearanceState.getMatrix();
-        Shapes shapes = appearanceState.getShapes();
+        matrix = new AffineTransform();
+        shapes = new Shapes();
 
         // setup the space for the AP content stream.
         AffineTransform af = new AffineTransform();
@@ -374,10 +373,6 @@ public class TextMarkupAnnotation extends MarkupAnnotation {
 
     @Override
     protected void renderAppearanceStream(Graphics2D g) {
-        Appearance appearance = appearances.get(currentAppearance);
-        AppearanceState appearanceState = appearance.getSelectedAppearanceState();
-        Shapes shapes = appearanceState.getShapes();
-
         // Appearance stream takes precedence over the quad points.
         if (shapes != null) {
             super.renderAppearanceStream(g);

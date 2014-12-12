@@ -24,8 +24,6 @@ import java.awt.*;
  */
 public class ModifiedFlowLayout extends FlowLayout {
 
-    private static final long serialVersionUID = -5384365489254593185L;
-
     public ModifiedFlowLayout() {
         super();
     }
