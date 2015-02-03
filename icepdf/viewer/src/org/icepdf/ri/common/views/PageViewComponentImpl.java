@@ -19,15 +19,14 @@ import org.icepdf.core.events.PaintPageEvent;
 import org.icepdf.core.events.PaintPageListener;
 import org.icepdf.core.pobjects.Page;
 import org.icepdf.core.pobjects.PageTree;
-import org.icepdf.core.pobjects.annotations.ChoiceWidgetAnnotation;
 import org.icepdf.core.pobjects.annotations.FreeTextAnnotation;
-import org.icepdf.core.pobjects.annotations.TextWidgetAnnotation;
 import org.icepdf.core.pobjects.graphics.text.PageText;
 import org.icepdf.core.search.DocumentSearchController;
 import org.icepdf.core.util.*;
 import org.icepdf.ri.common.tools.SelectionBoxHandler;
 import org.icepdf.ri.common.tools.TextSelectionPageHandler;
 import org.icepdf.ri.common.views.annotations.AbstractAnnotationComponent;
+import org.icepdf.ri.common.views.annotations.FreeTextAnnotationComponent;
 import org.icepdf.ri.common.views.annotations.PopupAnnotationComponent;
 import org.icepdf.ri.common.views.listeners.DefaultPageViewLoadingListener;
 import org.icepdf.ri.common.views.listeners.PageViewLoadingListener;
@@ -104,13 +103,53 @@ public class PageViewComponentImpl extends
     // turn off page image buffer proxy loading.
     private static boolean enablePageLoadingProxy =
             Defs.booleanProperty("org.icepdf.core.views.page.proxy", true);
+
+    private PageTree pageTree;
+    private JScrollPane parentScrollPane;
+    private int previousScrollValue;
+    private int pageIndex;
+
+    private Rectangle pageSize = new Rectangle();
+    // cached page size, we call this a lot.
+    private Rectangle defaultPageSize = new Rectangle();
+
+    private boolean isPageSizeCalculated = false;
+    private float currentZoom;
+    private float currentRotation;
+
+    // the buffered image which will be painted to
+    private SoftReference<Image> bufferedPageImageReference;
+    // the bounds of the buffered image.
+    private Rectangle bufferedPageImageBounds = new Rectangle();
+
+    private Timer isDirtyTimer;
+    private DirtyTimerAction dirtyTimerAction;
+    private boolean isActionListenerRegistered;
+    private PageInitializer pageInitializer;
+    private PagePainter pagePainter;
+    private final Object paintCopyAreaLock = new Object();
+    //    private final Object isDirtyLock = new Object();
+    private boolean disposing = false;
+
+    // track loading events for wait icon
+    private PageViewLoadingListener pageLoadingListener;
+
+    // current clip
+    private Rectangle clipBounds;
+    private Rectangle oldClipBounds;
+
+    private boolean inited;
+
     // vertical scale factor to extend buffer
     private static double verticalScaleFactor;
     // horizontal  scale factor to extend buffer
     private static double horizontalScaleFactor;
+
     private static int scrollInitThreshold = 250;
+
     // graphics configuration
     private static GraphicsConfiguration gc;
+
     static {
         // default value have been assigned.  Keep in mind that larger ratios will
         // result in more memory usage.
@@ -133,34 +172,6 @@ public class PageViewComponentImpl extends
             logger.log(Level.FINE, "Error reading init threshold timer interval");
         }
     }
-    private final Object paintCopyAreaLock = new Object();
-    private PageTree pageTree;
-    private JScrollPane parentScrollPane;
-    private int previousScrollValue;
-    private int pageIndex;
-    private Rectangle pageSize = new Rectangle();
-    // cached page size, we call this a lot.
-    private Rectangle defaultPageSize = new Rectangle();
-    private boolean isPageSizeCalculated = false;
-    private float currentZoom;
-    private float currentRotation;
-    // the buffered image which will be painted to
-    private SoftReference<Image> bufferedPageImageReference;
-    // the bounds of the buffered image.
-    private Rectangle bufferedPageImageBounds = new Rectangle();
-    private Timer isDirtyTimer;
-    private DirtyTimerAction dirtyTimerAction;
-    private boolean isActionListenerRegistered;
-    private PageInitializer pageInitializer;
-    private PagePainter pagePainter;
-    //    private final Object isDirtyLock = new Object();
-    private boolean disposing = false;
-    // track loading events for wait icon
-    private PageViewLoadingListener pageLoadingListener;
-    // current clip
-    private Rectangle clipBounds;
-    private Rectangle oldClipBounds;
-    private boolean inited;
 
 
     public PageViewComponentImpl(DocumentViewModel documentViewModel,
@@ -409,7 +420,6 @@ public class PageViewComponentImpl extends
             if (pageBufferImage != null && !isPageStateDirty()) {
                 // block, if copy area is being done in painter thread
 //                synchronized (paintCopyAreaLock) {
-
                 g.drawImage(pageBufferImage, bufferedPageImageBounds.x,
                         bufferedPageImageBounds.y, this);
 //                }
@@ -514,11 +524,7 @@ public class PageViewComponentImpl extends
                     annotation = annotationComponents.get(i);
                     if (((Component) annotation).isVisible() &&
                             !(annotation.getAnnotation() instanceof FreeTextAnnotation
-                                    && ((AbstractAnnotationComponent) annotation).isActive()) &&
-                            !(annotation.getAnnotation() instanceof TextWidgetAnnotation
-                                    && ((AbstractAnnotationComponent) annotation).isActive()) &&
-                            !(annotation.getAnnotation() instanceof ChoiceWidgetAnnotation
-                                    && ((AbstractAnnotationComponent) annotation).isActive())) {
+                                    && ((FreeTextAnnotationComponent) annotation).isActive())) {
                         annotation.getAnnotation().render(gg2,
                                 GraphicsRenderingHints.SCREEN,
                                 documentViewModel.getViewRotation(),
@@ -879,7 +885,6 @@ public class PageViewComponentImpl extends
                         !pagePainter.isLastPaintDirty() &&
                         pagePainter.isBufferDirty() &&
                         bufferedPageImageBounds.intersects(oldBufferedPageImageBounds)) {
-
                     // calculate intersection for buffer copy of a visible area, as we
                     // can only copy graphics that are visible.
                     copyRect = bufferedPageImageBounds.intersection(oldBufferedPageImageBounds);
@@ -998,12 +1003,15 @@ public class PageViewComponentImpl extends
 
     public class PagePainter implements Runnable {
 
-        private final Object isRunningLock = new Object();
         private boolean isRunning;
         private boolean isLastPaintDirty;
         private boolean isBufferyDirty;
         private boolean isStopRequested;
+
         private Page page;
+
+        private final Object isRunningLock = new Object();
+
         private boolean hasBeenQueued;
 
         public synchronized boolean isLastPaintDirty() {
@@ -1121,8 +1129,9 @@ public class PageViewComponentImpl extends
 
     private class PageInitializer implements Runnable {
 
-        private final Object isRunningLock = new Object();
         private boolean isRunning;
+        private final Object isRunningLock = new Object();
+
         private boolean hasBeenQueued;
 
         private Page page;
@@ -1203,7 +1212,6 @@ public class PageViewComponentImpl extends
                 isDirtyTimer.removeActionListener(dirtyTimerAction);
                 isActionListenerRegistered = false;
                 page = null;
-
                 // stop painting and mark buffer as dirty
                 if (pagePainter.isRunning()) {
                     pagePainter.stopPaintingPage();

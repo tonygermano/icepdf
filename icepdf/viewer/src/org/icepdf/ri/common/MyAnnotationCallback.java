@@ -115,10 +115,6 @@ public class MyAnnotationCallback implements AnnotationCallback {
                 } else if (action instanceof URIAction) {
                     BareBonesBrowserLaunch.openURL(
                             ((URIAction) action).getURI());
-                } else if (action instanceof SubmitFormAction) {
-                    ((FormAction) action).executeFormAction();
-                } else if (action instanceof ResetFormAction) {
-                    ((ResetFormAction) action).executeFormAction();
                 }
             }
         }
