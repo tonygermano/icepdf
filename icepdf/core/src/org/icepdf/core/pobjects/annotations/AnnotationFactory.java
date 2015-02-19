@@ -46,7 +46,7 @@ public class AnnotationFactory {
      * @param subType type of annotation to create
      * @param rect    bounds of new annotation specified in user space.
      * @return new annotation object with the same properties as the one
-     * specified in annotaiton state.
+     *         specified in annotaiton state.
      */
     public static Annotation buildAnnotation(Library library,
                                              final Name subType,
@@ -75,6 +75,8 @@ public class AnnotationFactory {
             return TextAnnotation.getInstance(library, rect);
         } else if (subType.equals(Annotation.SUBTYPE_POPUP)) {
             return PopupAnnotation.getInstance(library, rect);
+        } else if (subType.equals(Annotation.SUBTYPE_WIDGET)) {
+            return WidgetAnnotation.getInstance(library, rect);
         } else {
             logger.warning("Unsupported Annotation type. ");
             return null;

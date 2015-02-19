@@ -185,8 +185,4 @@ public abstract class MarkupAnnotationComponent extends AbstractAnnotationCompon
 
     }
 
-    public boolean isActive() {
-        return false;
-    }
-
 }

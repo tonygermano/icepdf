@@ -181,7 +181,6 @@ public class NewAnnotationPrePageLoad {
         }
     }
 
-
     /**
      * Utility for creation a URI action
      *

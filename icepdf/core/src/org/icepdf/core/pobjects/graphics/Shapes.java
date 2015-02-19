@@ -53,15 +53,20 @@ public class Shapes {
         shapesInitialCapacity = Defs.sysPropertyInt(
                 "org.icepdf.core.shapes.initialCapacity", shapesInitialCapacity);
     }
-    // Graphics stack for a page's content.
-    protected ArrayList<DrawCmd> shapes = new ArrayList<DrawCmd>(shapesInitialCapacity);
-    // stores the state of the currently visible optional content.
-    protected OptionalContentState optionalContentState = new OptionalContentState();
+
     // cache of common draw state, we try to avoid adding new operands if the
     // stack already has the needed state,  more ops take longer to paint.
     private int rule;
     private float alpha;
+
     private boolean interrupted;
+
+    // Graphics stack for a page's content.
+    protected ArrayList<DrawCmd> shapes = new ArrayList<DrawCmd>(shapesInitialCapacity);
+
+    // stores the state of the currently visible optional content.
+    protected OptionalContentState optionalContentState = new OptionalContentState();
+
     // the collection of objects listening for page paint events
     private Page parentPage;
 
@@ -128,8 +133,9 @@ public class Shapes {
             // for loops actually faster in this case.
             for (int i = 0, max = shapes.size(); i < max; i++) {
 
-                if (interrupted) {
+                if (interrupted || Thread.currentThread().isInterrupted()) {
                     interrupted = false;
+                    logger.log(Level.FINE, "Page painting interrupted");
                     break;
                 }
 
