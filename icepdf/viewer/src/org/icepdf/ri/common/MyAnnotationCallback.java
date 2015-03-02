@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2014 ICEsoft Technologies Inc.
+ * Copyright 2006-2015 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -115,10 +115,6 @@ public class MyAnnotationCallback implements AnnotationCallback {
                 } else if (action instanceof URIAction) {
                     BareBonesBrowserLaunch.openURL(
                             ((URIAction) action).getURI());
-                } else if (action instanceof SubmitFormAction) {
-                    ((FormAction) action).executeFormAction();
-                } else if (action instanceof ResetFormAction) {
-                    ((ResetFormAction) action).executeFormAction();
                 }
             }
         }

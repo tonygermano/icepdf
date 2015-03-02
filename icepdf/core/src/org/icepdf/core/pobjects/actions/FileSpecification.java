@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2014 ICEsoft Technologies Inc.
+ * Copyright 2006-2015 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -93,7 +93,7 @@ public class FileSpecification extends Dictionary {
      * be included in the referenced file.
      * <p/>
      * <b>NOTE</b>
-     * The use of this entry improves an application's chances of finding the
+     * The use of this entry improves an application’s chances of finding the
      * intended file and allows it to warn the user if the file has changed
      * since the link was made.
      */

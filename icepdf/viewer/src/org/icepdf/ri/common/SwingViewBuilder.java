@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2014 ICEsoft Technologies Inc.
+ * Copyright 2006-2015 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -310,21 +310,17 @@ import java.util.logging.Logger;
  */
 public class SwingViewBuilder {
 
+    private static final Logger logger =
+            Logger.getLogger(SwingViewBuilder.class.toString());
+
     public static final int TOOL_BAR_STYLE_FLOATING = 1;
     public static final int TOOL_BAR_STYLE_FIXED = 2;
+
     protected static final float[] DEFAULT_ZOOM_LEVELS = {
             0.05f, 0.10f, 0.25f, 0.50f, 0.75f,
             1.0f, 1.5f, 2.0f, 3.0f,
             4.0f, 8.0f, 16.0f, 24.0f, 32.0f, 64.0f};
-    private static final Logger logger =
-            Logger.getLogger(SwingViewBuilder.class.toString());
-    public static boolean isMacOs;
-    private static boolean isDemo;
-    static {
-        isMacOs = (Defs.sysProperty("mrj.version") != null);
-        // check for demo system property
-        isDemo = Defs.sysPropertyBoolean("org.icepdf.ri.viewer.demo", false);
-    }
+
     protected SwingController viewerController;
     protected Font buttonFont;
     protected boolean showButtonText;
@@ -333,8 +329,20 @@ public class SwingViewBuilder {
     protected boolean haveMadeAToolBar;
     protected int documentViewType;
     protected int documentPageFitMode;
+
     protected ResourceBundle messageBundle;
+
     protected PropertiesManager propertiesManager;
+
+    public static boolean isMacOs;
+
+    private static boolean isDemo;
+
+    static {
+        isMacOs = (Defs.sysProperty("mrj.version") != null);
+        // check for demo system property
+        isDemo = Defs.sysPropertyBoolean("org.icepdf.ri.viewer.demo", false);
+    }
 
     /**
      * Construct a SwingVewBuilder with all of the default settings

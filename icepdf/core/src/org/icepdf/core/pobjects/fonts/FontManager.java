@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2014 ICEsoft Technologies Inc.
+ * Copyright 2006-2015 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -55,6 +55,19 @@ public class FontManager {
 
     private static final Logger logger =
             Logger.getLogger(FontManager.class.toString());
+
+    // stores all font data
+    private static List<Object[]> fontList;
+
+    // stores fonts loaded from jar, these won't be cached
+    private static List<Object[]> fontJarList;
+
+    // flags for detecting font decorations
+    private static int PLAIN = 0xF0000001;
+    private static int BOLD = 0xF0000010;
+    private static int ITALIC = 0xF0000100;
+    private static int BOLD_ITALIC = 0xF0001000;
+
     // Differences for type1 fonts which match adobe core14 metrics
     private static final String TYPE1_FONT_DIFFS[][] =
             {{"Bookman-Demi", "URWBookmanL-DemiBold", "Arial"},
@@ -101,34 +114,30 @@ public class FontManager {
                     {"ZapfChancery-MediumItalic", "URWChanceryL-MediItal", "Arial"},
                     {"ZapfDingbats", "Dingbats", "Zapf-Dingbats"}
             };
+
     private static final String[] JAPANESE_FONT_NAMES = {
             "Arial Unicode MS", "PMingLiU", "MingLiU",
             "MS PMincho", "MS Mincho", "Kochi Mincho", "Hiragino Mincho Pro",
             "KozMinPro Regular Acro", "HeiseiMin W3 Acro", "Adobe Ming Std Acro"
     };
+
     private static final String[] CHINESE_SIMPLIFIED_FONT_NAMES = {
             "Arial Unicode MS", "PMingLiU", "MingLiU",
             "SimSun", "NSimSun", "Kochi Mincho", "STFangsong", "STSong Light Acro",
             "Adobe Song Std Acro"
     };
+
     private static final String[] CHINESE_TRADITIONAL_FONT_NAMES = {
             "Arial Unicode MS", "PMingLiU", "MingLiU",
             "SimSun", "NSimSun", "Kochi Mincho", "BiauKai", "MSungStd Light Acro",
             "Adobe Song Std Acro"
     };
+
     private static final String[] KOREAN_FONT_NAMES = {
             "Arial Unicode MS", "Gulim", "Batang",
             "BatangChe", "HYSMyeongJoStd Medium Acro", "Adobe Myungjo Std Acro"
     };
-    // stores all font data
-    private static List<Object[]> fontList;
-    // stores fonts loaded from jar, these won't be cached
-    private static List<Object[]> fontJarList;
-    // flags for detecting font decorations
-    private static int PLAIN = 0xF0000001;
-    private static int BOLD = 0xF0000010;
-    private static int ITALIC = 0xF0000100;
-    private static int BOLD_ITALIC = 0xF0001000;
+
     private static String JAVA_FONT_PATHS = Defs.sysProperty("java.home") + "/lib/fonts";
 
     // Default system directories to scan for font programs. This variable can
@@ -254,60 +263,6 @@ public class FontManager {
     }
 
     /**
-     * <p>Utility method for guessing a font family name from its base name.</p>
-     *
-     * @param name base name of font.
-     * @return guess of the base fonts name.
-     */
-    public static String guessFamily(String name) {
-        String fam = name;
-        int inx;
-        // Family name usually precedes a common, ie. "Arial,BoldItalic"
-        if ((inx = fam.indexOf(',')) > 0)
-            fam = fam.substring(0, inx);
-        // Family name usually precedes a dash, example "Times-Bold",
-        if ((inx = fam.lastIndexOf('-')) > 0)
-            fam = fam.substring(0, inx);
-        return fam;
-    }
-
-    /**
-     * Utility method which maps know style strings to an integer value which
-     * is used later for efficient font searching.
-     * todo: move out to FontUtil and use awt constants
-     *
-     * @param name base name of font.
-     * @return integer representing dffs
-     */
-    private static int guessFontStyle(String name) {
-        name = name.toLowerCase();
-        int decorations = 0;
-        if ((name.indexOf("boldital") > 0) || (name.indexOf("demiital") > 0)) {
-            decorations |= BOLD_ITALIC;
-        } else if (name.indexOf("bold") > 0 || name.indexOf("black") > 0
-                || name.indexOf("demi") > 0) {
-            decorations |= BOLD;
-        } else if (name.indexOf("ital") > 0 || name.indexOf("obli") > 0) {
-            decorations |= ITALIC;
-        } else {
-            decorations |= PLAIN;
-        }
-        return decorations;
-    }
-
-    /**
-     * Sorts the fontList of system fonts by font name or the first element
-     * int the object[] store.
-     */
-    private static void sortFontListByName() {
-        Collections.sort(fontList, new Comparator<Object[]>() {
-            public int compare(Object[] o1, Object[] o2) {
-                return ((String) o2[0]).compareTo((String) o1[0]);
-            }
-        });
-    }
-
-    /**
      * <p>Gets a Properties object containing font information for the operating
      * system which the FontManager is running on.  This Properties object
      * can be saved to disk and read at a later time using the {@see #setFontProperties}
@@ -385,6 +340,7 @@ public class FontManager {
         }
     }
 
+
     /**
      * Clears internal font list of items. Used to clean list while constructing
      * a new list.
@@ -439,7 +395,7 @@ public class FontManager {
         // Iterate through SYSTEM_FONT_PATHS and load all readable fonts
         for (int i = fontDirectories.length - 1; i >= 0; i--) {
             path = fontDirectories[i];
-            // if the path is valid start reading fonts.
+            // if the path is valid start reading fonts. 
             if (path != null) {
                 loadSystemFont(new File(path));
             }
@@ -481,6 +437,25 @@ public class FontManager {
                 }
             }
         }
+    }
+
+
+    /**
+     * <p>Utility method for guessing a font family name from its base name.</p>
+     *
+     * @param name base name of font.
+     * @return guess of the base fonts name.
+     */
+    public static String guessFamily(String name) {
+        String fam = name;
+        int inx;
+        // Family name usually precedes a common, ie. "Arial,BoldItalic"
+        if ((inx = fam.indexOf(',')) > 0)
+            fam = fam.substring(0, inx);
+        // Family name usually precedes a dash, example "Times-Bold",
+        if ((inx = fam.lastIndexOf('-')) > 0)
+            fam = fam.substring(0, inx);
+        return fam;
     }
 
     /**
@@ -656,7 +631,7 @@ public class FontManager {
      * @param name  base name of font.
      * @param flags flags used to describe font.
      * @return a new instance of NFont which best approximates the font described
-     * by the name and flags attribute.
+     *         by the name and flags attribute.
      */
     public FontFile getInstance(String name, int flags) {
 
@@ -821,7 +796,7 @@ public class FontManager {
                         found = true;
                     }
                     // symbol type fonts don't have an associated style, so
-                    // no point trying to match  them based on style.
+                    // no point trying to match  them based on style. 
                     else if (baseName.contains("wingdings") ||
                             baseName.contains("zapfdingbats") ||
                             baseName.contains("dingbats") ||
@@ -880,17 +855,17 @@ public class FontManager {
         if ((fontPath.endsWith(".ttf") || fontPath.endsWith(".TTF")) ||
                 (fontPath.endsWith(".dfont") || fontPath.endsWith(".DFONT")) ||
                 (fontPath.endsWith(".ttc") || fontPath.endsWith(".TTC"))) {
-            font = fontFactory.createFontFile(fontFile, FontFactory.FONT_TRUE_TYPE);
+            font = fontFactory.createFontFile(fontFile, FontFactory.FONT_TRUE_TYPE, null);
         }
         // found Type 1 font
         else if ((fontPath.endsWith(".pfa") || fontPath.endsWith(".PFA")) ||
                 (fontPath.endsWith(".pfb") || fontPath.endsWith(".PFB"))) {
-            font = fontFactory.createFontFile(fontFile, FontFactory.FONT_TYPE_1);
+            font = fontFactory.createFontFile(fontFile, FontFactory.FONT_TYPE_1, null);
         }
         // found OpenType font
         else if ((fontPath.endsWith(".otf") || fontPath.endsWith(".OTF")) ||
                 (fontPath.endsWith(".otc") || fontPath.endsWith(".OTC"))) {
-            font = fontFactory.createFontFile(fontFile, FontFactory.FONT_OPEN_TYPE);
+            font = fontFactory.createFontFile(fontFile, FontFactory.FONT_OPEN_TYPE, null);
         }
         return font;
     }
@@ -904,17 +879,17 @@ public class FontManager {
             if ((fontPath.endsWith(".ttf") || fontPath.endsWith(".TTF")) ||
                     (fontPath.endsWith(".dfont") || fontPath.endsWith(".DFONT")) ||
                     (fontPath.endsWith(".ttc") || fontPath.endsWith(".TTC"))) {
-                font = fontFactory.createFontFile(fontUri, FontFactory.FONT_TRUE_TYPE);
+                font = fontFactory.createFontFile(fontUri, FontFactory.FONT_TRUE_TYPE, null);
             }
             // found Type 1 font
             else if ((fontPath.endsWith(".pfa") || fontPath.endsWith(".PFA")) ||
                     (fontPath.endsWith(".pfb") || fontPath.endsWith(".PFB"))) {
-                font = fontFactory.createFontFile(fontUri, FontFactory.FONT_TYPE_1);
+                font = fontFactory.createFontFile(fontUri, FontFactory.FONT_TYPE_1, null);
             }
             // found OpenType font
             else if ((fontPath.endsWith(".otf") || fontPath.endsWith(".OTF")) ||
                     (fontPath.endsWith(".otc") || fontPath.endsWith(".OTC"))) {
-                font = fontFactory.createFontFile(fontUri, FontFactory.FONT_OPEN_TYPE);
+                font = fontFactory.createFontFile(fontUri, FontFactory.FONT_OPEN_TYPE, null);
             }
         } catch (Throwable e) {
             logger.log(Level.FINE, "Error reading font program.", e);
@@ -935,21 +910,28 @@ public class FontManager {
         int decorations = guessFontStyle(fontName);
         fontName = FontUtil.normalizeString(fontName);
         FontFile font;
+
+        // read font flags as it can sometimes give us hints as to serif
+        // san sarif or a monospace font, there is more data we can pull if needed too.
+        boolean isFixedPitch = (flags & org.icepdf.core.pobjects.fonts.Font.FONT_FLAG_FIXED_PITCH) != 0;
+        boolean isSerif = (flags & org.icepdf.core.pobjects.fonts.Font.FONT_FLAG_SERIF) != 0;
+//        boolean isSymbolic = (flags & org.icepdf.core.pobjects.fonts.Font.FONT_FLAG_SYMBOLIC) != 0;
+//        boolean isNotSymbolic = (flags & org.icepdf.core.pobjects.fonts.Font.FONT_FLAG_NON_SYMBOLIC) != 0;
         // If no name are found then match against the core java font names
         // "Serif", java equivalent is  "Lucida Bright"
-        if ((fontName.contains("timesnewroman") ||
+        if (fontName.contains("timesnewroman") ||
                 fontName.contains("bodoni") ||
                 fontName.contains("garamond") ||
                 fontName.contains("minionweb") ||
                 fontName.contains("stoneserif") ||
                 fontName.contains("georgia") ||
-                fontName.contains("bitstreamcyberbit"))) {
+                fontName.contains("bitstreamcyberbit")) {
             // important, add style information
             font = findFont(fontList, "lucidabright-" + getFontStyle(decorations, flags), 0);
         }
         // see if we working with a monospaced font, we sub "Sans Serif",
         // java equivalent is "Lucida Sans"
-        else if ((fontName.contains("helvetica") ||
+        else if (fontName.contains("helvetica") ||
                 fontName.contains("arial") ||
                 fontName.contains("trebuchet") ||
                 fontName.contains("avantgardegothic") ||
@@ -960,26 +942,32 @@ public class FontManager {
                 fontName.contains("gillsans") ||
                 fontName.contains("akzidenz") ||
                 fontName.contains("frutiger") ||
-                fontName.contains("grotesk"))) {
+                fontName.contains("grotesk")) {
             // important, add style information
             font = findFont(fontList, baseFontName + "-" + getFontStyle(decorations, flags), 0);
         }
         // see if we working with a mono spaced font "Mono Spaced"
         // java equivalent is "Lucida Sans Typewriter"
-        else if ((fontName.contains("courier") ||
+        else if (fontName.contains("courier") ||
                 fontName.contains("couriernew") ||
                 fontName.contains("prestige") ||
-                fontName.contains("eversonmono"))) {
+                fontName.contains("eversonmono")) {
             // important, add style information
             font = findFont(fontList, baseFontName + "typewriter-" + getFontStyle(decorations, flags), 0);
         }
         // first try get the first match based on the style type and finally on failure
         // failure go with the serif as it is the most common font family
         else {
-//            System.out.println("Decorations " + decorations);
-//            System.out.println("flags " + flags);
-//            System.out.println("sytel " + getFontStyle(decorations, flags));
-            font = findFont(fontList, "lucidabright-" + getFontStyle(decorations, flags), 0);
+            if (isSerif) {
+                font = findFont(fontList, "lucidabright-" + getFontStyle(decorations, flags), 0);
+            } else if (isFixedPitch) {
+                // lucidatypewriter, seems to make the font engine barf, converting to other
+                // common fixed pitch font courier-new.
+                font = findFont(fontList, "couriernew-" + getFontStyle(decorations, flags), 0);
+            } else {
+                // sans serif
+                font = findFont(fontList, "lucidasans-" + getFontStyle(decorations, flags), 0);
+            }
         }
 
         return font;
@@ -1159,6 +1147,30 @@ public class FontManager {
     }
 
     /**
+     * Utility method which maps know style strings to an integer value which
+     * is used later for efficient font searching.
+     * todo: move out to FontUtil and use awt constants
+     *
+     * @param name base name of font.
+     * @return integer representing dffs
+     */
+    private static int guessFontStyle(String name) {
+        name = name.toLowerCase();
+        int decorations = 0;
+        if ((name.indexOf("boldital") > 0) || (name.indexOf("demiital") > 0)) {
+            decorations |= BOLD_ITALIC;
+        } else if (name.indexOf("bold") > 0 || name.indexOf("black") > 0 || name.endsWith("bt")
+                || name.indexOf("demi") > 0) {
+            decorations |= BOLD;
+        } else if (name.indexOf("ital") > 0 || name.indexOf("obli") > 0) {
+            decorations |= ITALIC;
+        } else {
+            decorations |= PLAIN;
+        }
+        return decorations;
+    }
+
+    /**
      * Returns the string representation of a font style specified by the
      * decoration and flags integers.
      *
@@ -1171,13 +1183,27 @@ public class FontManager {
         String style = "";
         if ((sytle & BOLD_ITALIC) == BOLD_ITALIC) {
             style += " BoldItalic";
-        } else if ((sytle & BOLD) == BOLD) {
+        } else if ((sytle & BOLD) == BOLD ||
+                (flags & org.icepdf.core.pobjects.fonts.Font.FONT_FLAG_FORCE_BOLD) != 0) {
             style += " Bold";
-        } else if ((sytle & ITALIC) == ITALIC) {
+        } else if ((sytle & ITALIC) == ITALIC ||
+                (flags & org.icepdf.core.pobjects.fonts.Font.FONT_FLAG_FORCE_BOLD) != 0) {
             style += " Italic";
         } else if ((sytle & PLAIN) == PLAIN) {
             style += " Plain";
         }
         return style;
+    }
+
+    /**
+     * Sorts the fontList of system fonts by font name or the first element
+     * int the object[] store.
+     */
+    private static void sortFontListByName() {
+        Collections.sort(fontList, new Comparator<Object[]>() {
+            public int compare(Object[] o1, Object[] o2) {
+                return ((String) o2[0]).compareTo((String) o1[0]);
+            }
+        });
     }
 }

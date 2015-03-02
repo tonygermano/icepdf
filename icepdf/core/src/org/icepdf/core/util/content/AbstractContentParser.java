@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2014 ICEsoft Technologies Inc.
+ * Copyright 2006-2015 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -43,11 +43,12 @@ import java.util.logging.Logger;
  * @since 5.0
  */
 public abstract class AbstractContentParser implements ContentParser {
-    public static final float OVERPAINT_ALPHA = 0.4f;
     private static final Logger logger =
             Logger.getLogger(AbstractContentParser.class.toString());
+
     private static boolean disableTransparencyGroups;
     private static boolean enabledOverPrint;
+
     static {
         // decide if large images will be scaled
         disableTransparencyGroups =
@@ -59,6 +60,9 @@ public abstract class AbstractContentParser implements ContentParser {
                 Defs.sysPropertyBoolean("org.icepdf.core.enabledOverPrint",
                         true);
     }
+
+    public static final float OVERPAINT_ALPHA = 0.4f;
+
     private static ClipDrawCmd clipDrawCmd = new ClipDrawCmd();
     private static NoClipDrawCmd noClipDrawCmd = new NoClipDrawCmd();
 
@@ -101,6 +105,68 @@ public abstract class AbstractContentParser implements ContentParser {
         resources = r;
     }
 
+    /**
+     * Returns the Shapes that have accumulated turing multiple calls to
+     * parse().
+     *
+     * @return resultant shapes object of all processed content streams.
+     */
+    public Shapes getShapes() {
+        shapes.contract();
+        return shapes;
+    }
+
+    /**
+     * Returns the stack of object used to parse content streams. If parse
+     * was successful the stack should be empty.
+     *
+     * @return stack of objects accumulated during a cotent stream parse.
+     */
+    public Stack<Object> getStack() {
+        return stack;
+    }
+
+    /**
+     * Returns the current graphics state object being used by this content
+     * stream.
+     *
+     * @return current graphics context of content stream.  May be null if
+     * parse method has not been previously called.
+     */
+    public GraphicsState getGraphicsState() {
+        return graphicState;
+    }
+
+    /**
+     * Sets the graphics state object which will be used for the current content
+     * parsing.  This method must be called before the parse method is called
+     * otherwise it will not have an effect on the state of the draw operands.
+     *
+     * @param graphicState graphics state of this content stream
+     */
+    public void setGraphicsState(GraphicsState graphicState) {
+        this.graphicState = graphicState;
+    }
+
+    /**
+     * Parse a pages content stream.
+     *
+     * @param streamBytes byte stream containing page content
+     * @return a Shapes Object containing all the pages text and images shapes.
+     * @throws InterruptedException if current parse thread is interrupted.
+     * @throws java.io.IOException  unexpected end of content stream.
+     */
+    public abstract ContentParser parse(byte[][] streamBytes, Page page)
+            throws InterruptedException, IOException;
+
+    /**
+     * Specialized method for extracting text from documents.
+     *
+     * @param source content stream source.
+     * @return vector where each entry is the text extracted from a text block.
+     */
+    public abstract Shapes parseTextBlocks(byte[][] source) throws UnsupportedEncodingException;
+
     protected static void consume_G(GraphicsState graphicState, Stack stack,
                                     Library library) {
         float gray = ((Number) stack.pop()).floatValue();
@@ -112,7 +178,7 @@ public abstract class AbstractContentParser implements ContentParser {
 
     protected static void consume_g(GraphicsState graphicState, Stack stack,
                                     Library library) {
-        float gray = ((Number) stack.pop()).floatValue();
+        float gray = Math.abs(((Number) stack.pop()).floatValue());
         // Fill Color Gray
         graphicState.setFillColorSpace(
                 PColorSpace.getColorSpace(library, DeviceGray.DEVICEGRAY_KEY));
@@ -276,6 +342,7 @@ public abstract class AbstractContentParser implements ContentParser {
         }
     }
 
+
     protected static void consume_sc(GraphicsState graphicState, Stack stack,
                                      Library library, Resources resources, boolean isTint) {
         Object o = null;
@@ -363,6 +430,22 @@ public abstract class AbstractContentParser implements ContentParser {
 
     protected static GraphicsState consume_q(GraphicsState graphicState) {
         return graphicState.save();
+    }
+
+    protected GraphicsState consume_Q(GraphicsState graphicState, Shapes shapes) {
+        GraphicsState gs1 = graphicState.restore();
+        // point returned stack
+        if (gs1 != null) {
+            graphicState = gs1;
+        }
+        // otherwise start a new stack
+        else {
+            graphicState = new GraphicsState(shapes);
+            graphicState.set(new AffineTransform());
+            shapes.add(noClipDrawCmd);
+        }
+
+        return graphicState;
     }
 
     protected static void consume_cm(GraphicsState graphicState, Stack stack,
@@ -509,7 +592,7 @@ public abstract class AbstractContentParser implements ContentParser {
                 if (!disableTransparencyGroups &&
                         ((formXObject.getGraphicsState() != null &&
                                 formXObject.getGraphicsState().getSoftMask() != null) ||
-                                (formXObject.isTransparencyGroup() )) &&
+                                (formXObject.isTransparencyGroup())) &&
                         // limit size, as buffer is needed
                         (formXObject.getBBox().getWidth() < Short.MAX_VALUE &&
                                 formXObject.getBBox().getHeight() < Short.MAX_VALUE)) {
@@ -677,7 +760,6 @@ public abstract class AbstractContentParser implements ContentParser {
         float size = ((Number) stack.pop()).floatValue();
         Name name2 = (Name) stack.pop();
         // build the new font and initialize it.
-
         graphicState.getTextState().font = resources.getFont(name2);
         // in the rare case that the font can't be found then we try and build
         // one so the document can be rendered in some shape or form.
@@ -1405,7 +1487,6 @@ public abstract class AbstractContentParser implements ContentParser {
             // Position of the specified glyph relative to the origin of glyphVector
             // advance is handled by the particular font implementation.
             newAdvanceX = (float) currentFont.echarAdvance(currentChar).getX();
-
             newAdvanceY = newAdvanceX;
             if (!isVerticalWriting) {
                 // add fonts rise to the to glyph position (sup,sub scripts)
@@ -1832,84 +1913,6 @@ public abstract class AbstractContentParser implements ContentParser {
             shapes.setAlpha(alpha);
             shapes.setRule(rule);
         }
-    }
-
-    /**
-     * Returns the Shapes that have accumulated turing multiple calls to
-     * parse().
-     *
-     * @return resultant shapes object of all processed content streams.
-     */
-    public Shapes getShapes() {
-        shapes.contract();
-        return shapes;
-    }
-
-    /**
-     * Returns the stack of object used to parse content streams. If parse
-     * was successful the stack should be empty.
-     *
-     * @return stack of objects accumulated during a cotent stream parse.
-     */
-    public Stack<Object> getStack() {
-        return stack;
-    }
-
-    /**
-     * Returns the current graphics state object being used by this content
-     * stream.
-     *
-     * @return current graphics context of content stream.  May be null if
-     * parse method has not been previously called.
-     */
-    public GraphicsState getGraphicsState() {
-        return graphicState;
-    }
-
-    /**
-     * Sets the graphics state object which will be used for the current content
-     * parsing.  This method must be called before the parse method is called
-     * otherwise it will not have an effect on the state of the draw operands.
-     *
-     * @param graphicState graphics state of this content stream
-     */
-    public void setGraphicsState(GraphicsState graphicState) {
-        this.graphicState = graphicState;
-    }
-
-    /**
-     * Parse a pages content stream.
-     *
-     * @param streamBytes byte stream containing page content
-     * @return a Shapes Object containing all the pages text and images shapes.
-     * @throws InterruptedException if current parse thread is interrupted.
-     * @throws java.io.IOException  unexpected end of content stream.
-     */
-    public abstract ContentParser parse(byte[][] streamBytes, Page page)
-            throws InterruptedException, IOException;
-
-    /**
-     * Specialized method for extracting text from documents.
-     *
-     * @param source content stream source.
-     * @return vector where each entry is the text extracted from a text block.
-     */
-    public abstract Shapes parseTextBlocks(byte[][] source) throws UnsupportedEncodingException;
-
-    protected GraphicsState consume_Q(GraphicsState graphicState, Shapes shapes) {
-        GraphicsState gs1 = graphicState.restore();
-        // point returned stack
-        if (gs1 != null) {
-            graphicState = gs1;
-        }
-        // otherwise start a new stack
-        else {
-            graphicState = new GraphicsState(shapes);
-            graphicState.set(new AffineTransform());
-            shapes.add(noClipDrawCmd);
-        }
-
-        return graphicState;
     }
 
     public void setGlyph2UserSpaceScale(float scale) {

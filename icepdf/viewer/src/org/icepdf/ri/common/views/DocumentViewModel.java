@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2014 ICEsoft Technologies Inc.
+ * Copyright 2006-2015 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -258,18 +258,18 @@ public interface DocumentViewModel {
     public void dispose();
 
     /**
-     * Gets the page boundry used to paint document pages.
-     *
-     * @return page boundary type as defined in the class Page.
-     */
-    public int getPageBoundary();
-
-    /**
      * Sets the page boundtry used to paint a page.
      *
      * @param pageBoundary page bounds
      */
     public void setPageBoundary(final int pageBoundary);
+
+    /**
+     * Gets the page boundry used to paint document pages.
+     *
+     * @return page boundary type as defined in the class Page.
+     */
+    public int getPageBoundary();
 
     /**
      * Gets the currently selected annotation

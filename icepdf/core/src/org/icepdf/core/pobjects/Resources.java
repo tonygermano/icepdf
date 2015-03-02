@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2014 ICEsoft Technologies Inc.
+ * Copyright 2006-2015 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -40,10 +40,17 @@ public class Resources extends Dictionary {
     public static final Name SHADING_KEY = new Name("Shading");
     public static final Name EXTGSTATE_KEY = new Name("ExtGState");
     public static final Name PROPERTIES_KEY = new Name("Properties");
+
+    // shared resource counter. 
+    private static int uniqueCounter = 0;
+
+    private static synchronized int getUniqueId() {
+        return uniqueCounter++;
+    }
+
     private static final Logger logger =
             Logger.getLogger(Resources.class.toString());
-    // shared resource counter.
-    private static int uniqueCounter = 0;
+
     HashMap fonts;
     HashMap xobjects;
     HashMap colorspaces;
@@ -51,6 +58,7 @@ public class Resources extends Dictionary {
     HashMap shading;
     HashMap extGStates;
     HashMap properties;
+
     /**
      * @param l
      * @param h
@@ -66,9 +74,6 @@ public class Resources extends Dictionary {
         properties = library.getDictionary(entries, PROPERTIES_KEY);
     }
 
-    private static synchronized int getUniqueId() {
-        return uniqueCounter++;
-    }
 
     /**
      * @param o

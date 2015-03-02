@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2014 ICEsoft Technologies Inc.
+ * Copyright 2006-2015 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -51,10 +51,11 @@ import java.util.logging.Logger;
  */
 public class TextAnnotationHandler extends CommonToolHandler implements ToolHandler {
 
-    protected static final Dimension ICON_SIZE = new Dimension(23, 23);
     private static final Logger logger =
             Logger.getLogger(TextAnnotationHandler.class.toString());
+
     protected static Color defaultFillColor;
+
     static {
 
         // sets annotation text fill colour
@@ -72,10 +73,26 @@ public class TextAnnotationHandler extends CommonToolHandler implements ToolHand
         }
     }
 
+    protected static final Dimension ICON_SIZE = new Dimension(23, 23);
+
     public TextAnnotationHandler(DocumentViewController documentViewController,
                                  AbstractPageViewComponent pageViewComponent,
                                  DocumentViewModel documentViewModel) {
         super(documentViewController, pageViewComponent, documentViewModel);
+    }
+
+    public void paintTool(Graphics g) {
+
+    }
+
+    public void mouseClicked(MouseEvent e) {
+        if (pageViewComponent != null) {
+            pageViewComponent.requestFocus();
+        }
+    }
+
+    public void mousePressed(MouseEvent e) {
+
     }
 
     public static TextAnnotation createTextAnnotation(Library library, Rectangle bbox,
@@ -122,20 +139,6 @@ public class TextAnnotationHandler extends CommonToolHandler implements ToolHand
         parent.setPopupAnnotation(popupAnnotation);
         popupAnnotation.resetAppearanceStream(0, 0, pageSpace);
         return popupAnnotation;
-    }
-
-    public void paintTool(Graphics g) {
-
-    }
-
-    public void mouseClicked(MouseEvent e) {
-        if (pageViewComponent != null) {
-            pageViewComponent.requestFocus();
-        }
-    }
-
-    public void mousePressed(MouseEvent e) {
-
     }
 
     public void mouseReleased(MouseEvent e) {

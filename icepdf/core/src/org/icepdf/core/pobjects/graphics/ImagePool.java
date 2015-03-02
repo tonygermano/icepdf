@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2014 ICEsoft Technologies Inc.
+ * Copyright 2006-2015 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -47,15 +47,21 @@ import java.util.logging.Logger;
  */
 @SuppressWarnings("serial")
 public class ImagePool {
+
     private static final Logger log =
             Logger.getLogger(ImagePool.class.toString());
+
+    // Image pool
+    private final Map<Reference, BufferedImage> fCache;
+
+
     private static boolean enabled;
+
     static {
         // enable/disable the image pool all together.
         enabled = Defs.booleanProperty("org.icepdf.core.views.imagePoolEnabled", true);
     }
-    // Image pool
-    private final Map<Reference, BufferedImage> fCache;
+
 
     public ImagePool() {
         fCache = Collections.synchronizedMap(new WeakHashMap<Reference, BufferedImage>(50));

@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2014 ICEsoft Technologies Inc.
+ * Copyright 2006-2015 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -31,10 +31,11 @@ import java.util.logging.Logger;
  */
 public class MetricsPageLoadingListener implements PageLoadingListener {
 
-    public static final DecimalFormat formatter = new DecimalFormat("#.###");
-    public static final DecimalFormat percentFormatter = new DecimalFormat("#");
     private static final Logger logger =
             Logger.getLogger(MetricsPageLoadingListener.class.toString());
+
+    public static final DecimalFormat formatter = new DecimalFormat("#.###");
+    public static final DecimalFormat percentFormatter = new DecimalFormat("#");
     private int pageIndex;
     private int pageCount;
 

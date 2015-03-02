@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2014 ICEsoft Technologies Inc.
+ * Copyright 2006-2015 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -43,15 +43,18 @@ public class PrintHelper implements Printable {
 
     private static final Logger logger =
             Logger.getLogger(PrintHelper.class.toString());
-    private static PrintService[] services;
+
     private PageTree pageTree;
     private Container container;
     private float userRotation;
+
     private boolean printFitToMargin;
     private int printingCurrentPage;
     private int totalPagesToPrint;
     private boolean paintAnnotation = true;
     private boolean paintSearchHighlight = true;
+
+    private static PrintService[] services;
     private PrintService printService;
     private HashDocAttributeSet docAttributeSet;
     private HashPrintRequestAttributeSet printRequestAttributeSet;

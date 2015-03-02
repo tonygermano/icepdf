@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2014 ICEsoft Technologies Inc.
+ * Copyright 2006-2015 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -67,52 +67,17 @@ import java.util.logging.Logger;
  */
 public class Page extends Dictionary {
 
+    private static final Logger logger =
+            Logger.getLogger(Page.class.toString());
+
     /**
      * Transparency value used to simulate text highlighting.
      */
     public static final float selectionAlpha = 0.3f;
-    public static final Name TYPE = new Name("Page");
-    public static final Name ANNOTS_KEY = new Name("Annots");
-    public static final Name CONTENTS_KEY = new Name("Contents");
-    public static final Name RESOURCES_KEY = new Name("Resources");
-    public static final Name THUMB_KEY = new Name("Thumb");
-    public static final Name PARENT_KEY = new Name("Parent");
-    public static final Name ROTATE_KEY = new Name("Rotate");
-    public static final Name MEDIABOX_KEY = new Name("MediaBox");
-    public static final Name CROPBOX_KEY = new Name("CropBox");
-    public static final Name ARTBOX_KEY = new Name("ArtBox");
-    public static final Name BLEEDBOX_KEY = new Name("BleedBox");
-    public static final Name TRIMBOX_KEY = new Name("TrimBox");
-    /**
-     * Defines the boundaries of the physical medium on which the page is
-     * intended to be displayed or printed.
-     */
-    public static final int BOUNDARY_MEDIABOX = 1;
-    /**
-     * Defines the visible region of the default user space. When the page
-     * is displayed or printed, its contents are to be clipped to this
-     * rectangle and then imposed on the output medium in some implementation
-     * defined manner.
-     */
-    public static final int BOUNDARY_CROPBOX = 2;
-    /**
-     * Defines the region to which the contents of the page should be clipped
-     * when output in a production environment (Mainly commercial printing).
-     */
-    public static final int BOUNDARY_BLEEDBOX = 3;
-    /**
-     * Defines the intended dimensions of the finished page after trimming.
-     */
-    public static final int BOUNDARY_TRIMBOX = 4;
-    /**
-     * Defines the extent of the page's meaningful content as intended by the
-     * page's creator.
-     */
-    public static final int BOUNDARY_ARTBOX = 5;
-    private static final Logger logger =
-            Logger.getLogger(Page.class.toString());
+
     // text selection colour
     public static Color selectionColor;
+
     static {
         // sets the shadow colour of the decorator.
         try {
@@ -128,8 +93,10 @@ public class Page extends Dictionary {
             }
         }
     }
+
     // text highlight colour
     public static Color highlightColor;
+
     static {
         // sets the shadow colour of the decorator.
         try {
@@ -145,18 +112,68 @@ public class Page extends Dictionary {
             }
         }
     }
-    // the collection of objects listening for page paint events
-    private final List<PaintPageListener> paintPageListeners = new ArrayList<PaintPageListener>(8);
-    // the collection of objects listening for page loading events
-    private final List<PageLoadingListener> pageLoadingListeners = new ArrayList<PageLoadingListener>();
+
+    public static final Name TYPE = new Name("Page");
+
+    public static final Name ANNOTS_KEY = new Name("Annots");
+    public static final Name CONTENTS_KEY = new Name("Contents");
+    public static final Name RESOURCES_KEY = new Name("Resources");
+    public static final Name THUMB_KEY = new Name("Thumb");
+    public static final Name PARENT_KEY = new Name("Parent");
+    public static final Name ROTATE_KEY = new Name("Rotate");
+    public static final Name MEDIABOX_KEY = new Name("MediaBox");
+    public static final Name CROPBOX_KEY = new Name("CropBox");
+    public static final Name ARTBOX_KEY = new Name("ArtBox");
+    public static final Name BLEEDBOX_KEY = new Name("BleedBox");
+    public static final Name TRIMBOX_KEY = new Name("TrimBox");
+
+    /**
+     * Defines the boundaries of the physical medium on which the page is
+     * intended to be displayed or printed.
+     */
+    public static final int BOUNDARY_MEDIABOX = 1;
+
+    /**
+     * Defines the visible region of the default user space. When the page
+     * is displayed or printed, its contents are to be clipped to this
+     * rectangle and then imposed on the output medium in some implementation
+     * defined manner.
+     */
+    public static final int BOUNDARY_CROPBOX = 2;
+
+    /**
+     * Defines the region to which the contents of the page should be clipped
+     * when output in a production environment (Mainly commercial printing).
+     */
+    public static final int BOUNDARY_BLEEDBOX = 3;
+
+    /**
+     * Defines the intended dimensions of the finished page after trimming.
+     */
+    public static final int BOUNDARY_TRIMBOX = 4;
+
+    /**
+     * Defines the extent of the page's meaningful content as intended by the
+     * page's creator.
+     */
+    public static final int BOUNDARY_ARTBOX = 5;
+
     // resources for page's parent pages, default fonts, etc.
     private Resources resources;
+
     // Vector of annotations
     private List<Annotation> annotations;
+
     // Contents
     private List<Stream> contents;
     // Container for all shapes stored on page
     private Shapes shapes = null;
+
+    // the collection of objects listening for page paint events
+    private final List<PaintPageListener> paintPageListeners = new ArrayList<PaintPageListener>(8);
+    // the collection of objects listening for page loading events
+    private final List<PageLoadingListener> pageLoadingListeners = new ArrayList<PageLoadingListener>();
+
     // Defines the boundaries of the physical medium on which the page is
     // intended to be displayed on.
     private PRectangle mediaBox;
@@ -222,7 +239,7 @@ public class Page extends Dictionary {
                 if (tmp instanceof Stream) {
                     Stream tmpStream = (Stream) tmp;
                     // prune any zero length streams,
-                    if (tmpStream != null && tmpStream.getRawBytes().length > 0) {
+                    if (tmpStream.getRawBytes().length > 0) {
                         tmpStream.setPObjectReference((Reference) conts.get(i));
                         contents.add(tmpStream);
                     }
@@ -262,7 +279,7 @@ public class Page extends Dictionary {
             org.icepdf.core.pobjects.annotations.Annotation a = null;
             for (int i = 0; i < v.size(); i++) {
 
-                if (Thread.currentThread().isInterrupted()) {
+                if ( Thread.currentThread().isInterrupted()) {
                     throw new InterruptedException(
                             "Page Annotation initialization thread interrupted");
                 }
@@ -377,6 +394,7 @@ public class Page extends Dictionary {
                     shapes = new Shapes();
                     logger.log(Level.FINE, "Error initializing Page.", e);
                 }
+
             }
             // empty page, nothing to do.
             else {
@@ -554,6 +572,7 @@ public class Page extends Dictionary {
     }
 
     private void paintPageContent(Graphics2D g2, int renderHintType, float userRotation, float userZoom, boolean paintAnnotations, boolean paintSearchHighlight) {
+
         // draw page content
         if (shapes != null) {
             pagePainted = false;
@@ -1537,10 +1556,6 @@ public class Page extends Dictionary {
         return pageIndex;
     }
 
-    protected void setPageIndex(int pageIndex) {
-        this.pageIndex = pageIndex;
-    }
-
     /**
      * Gets the xObject image cound for this page which does not include
      * any inline images.
@@ -1571,6 +1586,10 @@ public class Page extends Dictionary {
      */
     public boolean isPagePainted() {
         return pagePainted;
+    }
+
+    protected void setPageIndex(int pageIndex) {
+        this.pageIndex = pageIndex;
     }
 
     /**

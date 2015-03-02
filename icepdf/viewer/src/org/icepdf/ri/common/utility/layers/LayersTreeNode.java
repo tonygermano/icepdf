@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2014 ICEsoft Technologies Inc.
+ * Copyright 2006-2015 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -64,20 +64,16 @@ public class LayersTreeNode extends DefaultMutableTreeNode {
         super(userObject, allowsChildren);
     }
 
-    public int getSelectionMode() {
-        return selectionMode;
-    }
-
     public void setSelectionMode(int mode) {
         selectionMode = mode;
     }
 
-    public OptionalContentGroup getOptionalContentGroup() {
-        return (OptionalContentGroup) getUserObject();
+    public int getSelectionMode() {
+        return selectionMode;
     }
 
-    public boolean isSelected() {
-        return ((OptionalContentGroup) getUserObject()).isVisible();
+    public OptionalContentGroup getOptionalContentGroup() {
+        return (OptionalContentGroup) getUserObject();
     }
 
     public void setSelected(boolean isSelected) {
@@ -109,6 +105,10 @@ public class LayersTreeNode extends DefaultMutableTreeNode {
 
         }
 
+    }
+
+    public boolean isSelected() {
+        return ((OptionalContentGroup) getUserObject()).isVisible();
     }
 
     @Override

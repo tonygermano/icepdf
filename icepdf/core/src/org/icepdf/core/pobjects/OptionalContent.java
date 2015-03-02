@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2014 ICEsoft Technologies Inc.
+ * Copyright 2006-2015 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -33,6 +33,8 @@ import java.util.*;
  */
 public class OptionalContent extends Dictionary {
 
+    private Map<Reference, OptionalContentGroup> groups;
+
     public static final Name OCGs_KEY = new Name("OCGs");
     public static final Name OC_KEY = new Name("OC");
     public static final Name D_KEY = new Name("D");
@@ -49,7 +51,7 @@ public class OptionalContent extends Dictionary {
     public static final Name VIEW_VALUE = new Name("View");
     public static final Name DESIGN_VALUE = new Name("Design");
     public static final Name NONE_OC_FLAG = new Name("marked");
-    private Map<Reference, OptionalContentGroup> groups;
+
     private Name baseState = ON_vALUE;
 
     /**
@@ -136,7 +138,7 @@ public class OptionalContent extends Dictionary {
 
             // apply the base state ON|OFF|Unchanged
             Object tmp = library.getName(configurationDictionary, BASE_STATE_KEY);
-            if (tmp != null && tmp instanceof Name) {
+            if (tmp != null) {
                 baseState = (Name) tmp;
             }
 
@@ -169,11 +171,7 @@ public class OptionalContent extends Dictionary {
             // check for an intent entry
             tmp = library.getName(configurationDictionary, INTENT_KEY);
             if (tmp != null) {
-                if (tmp instanceof Name) {
-                    intent = Arrays.asList(new Name[]{(Name) tmp});
-                } else if (tmp instanceof List) {
-                    intent = (List) tmp;
-                }
+                intent = Arrays.asList((Name) tmp);
             }
             // ignore AS for now.
             /**

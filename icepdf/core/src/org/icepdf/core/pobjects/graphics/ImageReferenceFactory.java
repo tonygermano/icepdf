@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2014 ICEsoft Technologies Inc.
+ * Copyright 2006-2015 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -45,7 +45,12 @@ public class ImageReferenceFactory {
 
     // allow scaling of large images to improve clarity on screen
 
+    public enum ImageReference {
+        DEFAULT, SCALED, MIP_MAP, SMOOTH_SCALED // FLOYD_STEINBERG
+    }
+
     private static ImageReference scaleType;
+
     static {
         // decide if large images will be scaled
         String imageReferencetype =
@@ -96,10 +101,6 @@ public class ImageReferenceFactory {
             default:
                 return new ImageStreamReference(imageStream, fillColor, resources, imageIndex, page);
         }
-    }
-
-    public enum ImageReference {
-        DEFAULT, SCALED, MIP_MAP, SMOOTH_SCALED // FLOYD_STEINBERG
     }
 
 }

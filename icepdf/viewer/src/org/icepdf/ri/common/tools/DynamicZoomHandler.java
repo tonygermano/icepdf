@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2014 ICEsoft Technologies Inc.
+ * Copyright 2006-2015 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -34,8 +34,9 @@ public class DynamicZoomHandler implements ToolHandler, MouseWheelListener {
 
     private static final Logger logger =
             Logger.getLogger(ZoomOutPageHandler.class.toString());
-    protected JScrollPane documentScrollPane;
+
     private DocumentViewController documentViewController;
+    protected JScrollPane documentScrollPane;
 
     public DynamicZoomHandler(DocumentViewController documentViewController,
                               JScrollPane documentScrollPane) {

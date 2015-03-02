@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2014 ICEsoft Technologies Inc.
+ * Copyright 2006-2015 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -65,6 +65,10 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
     public static Color borderColor = new Color(153, 153, 153);
 
     protected PopupAnnotation popupAnnotation;
+
+    // layouts constraint
+    private GridBagConstraints constraints;
+
     protected JPanel commentPanel;
     protected JTextArea textArea;
     protected JLabel creationLabel;
@@ -72,6 +76,7 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
     protected JTree commentTree;
     protected JScrollPane commentTreeScrollPane;
     protected MarkupAnnotation selectedMarkupAnnotation;
+
     // add and remove commands
     protected JMenuItem replyMenuItem;
     protected JMenuItem deleteMenuItem;
@@ -84,9 +89,8 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
     // generic commands, open/minimize all
     protected JMenuItem openAllMenuItem;
     protected JMenuItem minimizeAllMenuItem;
+
     protected JPopupMenu contextMenu;
-    // layouts constraint
-    private GridBagConstraints constraints;
 
     public PopupAnnotationComponent(Annotation annotation, DocumentViewController documentViewController,
                                     AbstractPageViewComponent pageViewComponent, DocumentViewModel documentViewModel) {
@@ -577,10 +581,6 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
                 creationLabel.setText(selectedMarkupAnnotation.getCreationDate().toString());
             }
         }
-    }
-
-    public boolean isActive() {
-        return false;
     }
 
 

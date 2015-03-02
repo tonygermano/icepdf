@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2014 ICEsoft Technologies Inc.
+ * Copyright 2006-2015 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -42,12 +42,18 @@ import java.awt.event.AdjustmentListener;
 @SuppressWarnings("serial")
 public class ThumbnailsPanel extends JPanel {
 
-    protected static final int MAX_PAGE_SIZE_READ_AHEAD = 10;
     protected DocumentViewController documentViewController;
+
     protected Document currentDocument;
+
     protected PropertiesManager propertiesManager;
+
     protected DocumentViewModel documentViewModel;
+
     protected float thumbNailZoom = 0.1f; // default zoom is 10%
+
+    protected static final int MAX_PAGE_SIZE_READ_AHEAD = 10;
+
     private SwingController controller;
 
     public ThumbnailsPanel(SwingController controller,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2014 ICEsoft Technologies Inc.
+ * Copyright 2006-2015 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -35,7 +35,13 @@ import java.awt.image.BufferedImage;
  */
 public class FormDrawCmd extends AbstractDrawCmd {
 
+    private Form xForm;
+
+    private BufferedImage xFormBuffer;
+    private int x, y;
+
     private static boolean disableXObjectSMask;
+
     static {
         // decide if large images will be scaled
         disableXObjectSMask =
@@ -43,9 +49,6 @@ public class FormDrawCmd extends AbstractDrawCmd {
                         false);
 
     }
-    private Form xForm;
-    private BufferedImage xFormBuffer;
-    private int x, y;
 
     public FormDrawCmd(Form xForm) {
         this.xForm = xForm;

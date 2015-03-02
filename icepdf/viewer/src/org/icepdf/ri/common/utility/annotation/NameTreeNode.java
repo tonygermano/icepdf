@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2014 ICEsoft Technologies Inc.
+ * Copyright 2006-2015 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -106,16 +106,16 @@ public class NameTreeNode extends DefaultMutableTreeNode {
         return rootNode;
     }
 
-    public void setRootNode(boolean rootNode) {
-        this.rootNode = rootNode;
-    }
-
     public boolean isIntermidiatNode() {
         return intermidiatNode;
     }
 
     public boolean isLeaf() {
         return leaf;
+    }
+
+    public void setRootNode(boolean rootNode) {
+        this.rootNode = rootNode;
     }
 
     public int getChildCount() {

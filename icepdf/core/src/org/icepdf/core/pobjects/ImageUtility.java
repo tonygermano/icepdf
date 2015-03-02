@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2014 ICEsoft Technologies Inc.
+ * Copyright 2006-2015 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -46,20 +46,26 @@ import java.util.logging.Logger;
 @SuppressWarnings("serial")
 public class ImageUtility {
 
+    private static final Logger logger =
+            Logger.getLogger(ImageUtility.class.toString());
+
     protected static final int[] GRAY_1_BIT_INDEX_TO_RGB_REVERSED = new int[]{
             0xFFFFFFFF,
             0xFF000000
     };
+
     protected static final int[] GRAY_1_BIT_INDEX_TO_RGB = new int[]{
             0xFF000000,
             0xFFFFFFFF
     };
+
     protected static final int[] GRAY_2_BIT_INDEX_TO_RGB = new int[]{
             0xFF000000,
             0xFF555555,
             0xFFAAAAAA,
             0xFFFFFFFF
     }; // 0. 1 2 3 4 5. 6 7 8 9 A. B C D E F.     0/3, 1/3, 2/3, 3/3
+
     protected static final int[] GRAY_4_BIT_INDEX_TO_RGB = new int[]{
             0xFF000000,
             0xFF111111,
@@ -78,14 +84,15 @@ public class ImageUtility {
             0xFFEEEEEE,
             0xFFFFFFFF
     };
+
+
     protected static final int JPEG_ENC_UNKNOWN_PROBABLY_YCbCr = 0;
     protected static final int JPEG_ENC_RGB = 1;
     protected static final int JPEG_ENC_CMYK = 2;
     protected static final int JPEG_ENC_YCbCr = 3;
     protected static final int JPEG_ENC_YCCK = 4;
     protected static final int JPEG_ENC_GRAY = 5;
-    private static final Logger logger =
-            Logger.getLogger(ImageUtility.class.toString());
+
     private static boolean scaleQuality;
 
     static {
@@ -145,6 +152,7 @@ public class ImageUtility {
                         red >= maskMinRed && red <= maskMaxRed) {
                     alpha = 0x00;
                 }
+
                 if (alpha != 0xFF) {
                     argb = bi.getRGB(x, y);
                     argb &= 0x00FFFFFF;
@@ -244,7 +252,6 @@ public class ImageUtility {
 
 //        return new BufferedImage(raster.getWidth(), raster.getHeight(), BufferedImage.TYPE_INT_RGB);
     }
-
 
     protected static BufferedImage makeRGBBufferedImage(WritableRaster wr) {
         ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_sRGB);

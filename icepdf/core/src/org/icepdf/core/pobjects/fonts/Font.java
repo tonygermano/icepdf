@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2014 ICEsoft Technologies Inc.
+ * Copyright 2006-2015 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -71,17 +71,107 @@ public abstract class Font extends Dictionary {
     public static final Name ENCODING_KEY = new Name("Encoding");
     public static final Name FIRST_CHAR_KEY = new Name("FirstChar");
     public static final Name LAST_CHAR_KEY = new Name("LastChar");
+
+    /**
+     * All glyphs have the same width (as opposed to proportional or
+     * variable-pitch fonts, which have different widths).
+     */
+    public static final int FONT_FLAG_FIXED_PITCH = 0x1;  // bit 1
+
+    /**
+     * Glyphs have serifs, which are short strokes drawn at an angle on the top
+     * and bottom of glyph stems. (Sans serif fonts do not have serifs.)
+     */
+    public static final int FONT_FLAG_SERIF = 0x2;  // bit 2
+
+    /**
+     * Font contains glyphs outside the Adobe standard Latin character set.
+     * This flag and the Nonsymbolic flag shall not both be set or both be clear.
+     */
+    public static final int FONT_FLAG_SYMBOLIC = 0x4; // bit 3
+
+    /**
+     * Glyphs resemble cursive handwriting.
+     */
+    public static final int FONT_FLAG_SCRIPT = 0x8;  // bit 4
+
+    /**
+     * Font uses the Adobe standard Latin character set or a subset of it.
+     */
+    public static final int FONT_FLAG_NON_SYMBOLIC = 0x20;   // bit 6
+
+    /**
+     * Glyphs have dominant vertical strokes that are slanted.
+     */
+    public static final int FONT_FLAG_ITALIC = 0x40;  // bit 7
+
+    /**
+     * Font contains no lowercase letters; typically used for display purposes,
+     * such as for titles or headlines.
+     */
+    public static final int FONT_FLAG_ALL_CAP = 0x10000;   // bit 17
+
+    /**
+     * Glyphs have dominant vertical strokes that are slanted.
+     */
+    public static final int FONT_FLAG_SMALL_CAP = 0x20000;   // bit 18
+
+    /**
+     * Font contains no lowercase letters; typically used for display purposes,
+     * such as for titles or headlines.
+     */
+    public static final int FONT_FLAG_FORCE_BOLD = 0x40000;   // bit 19
+
+    // Object name always "Font"
+    protected Name name;
+
+    // The name of the object, Font
+    protected String basefont;
+
+    // The font subtype, type 0, 1, 2 etc.
+    protected Name subtype;
+
     /**
      * <p>Indicates that the font used to render this String object is in the
      * Simple Font family and thus each glyph is represented by one byte.</p>
      */
     public static final int SIMPLE_FORMAT = 1;
+
     /**
      * <p>Indicates that the font used to render this String object is in the
      * Composite Font family and thus each glyph is represented by at least
      * one byte.</p>
      */
     public static final int CID_FORMAT = 2;
+
+    // supType Format, either simple or CID.
+    protected int subTypeFormat = SIMPLE_FORMAT;
+
+    // The actual Java font that will be used to display the Glyphs
+    protected FontFile font;
+
+    // The first character code defined in the font's Widths array.
+    protected int firstchar = 32;
+    protected int lastchar = 255;
+
+    // Font Descriptor used
+    protected FontDescriptor fontDescriptor;
+
+    // initiated flag
+    protected boolean inited;
+
+    // AFM flag
+    protected boolean isAFMFont;
+
+    // vertical writing flag;
+    protected boolean isVerticalWriting;
+
+    // font substitution being used
+    protected boolean isFontSubstitution;
+
+    // parent resource, needed by some type3 fonts to access resources.
+    protected Resources parentResource;
+
     /**
      * Map named CMap to Unicode mapping.
      */
@@ -111,6 +201,7 @@ public abstract class Font extends Dictionary {
             {"UniKS-UCS2-H", "KSC-EUC-H"},
             {"UniKS-UCS2-V", "KSC-EUC-V"}
     };
+
     // core 14 AFM names
     protected static final String[] CORE14 = {
             "Times-Roman", "Times-Bold", "Times-Italic", "Times-BoldItalic",
@@ -119,6 +210,7 @@ public abstract class Font extends Dictionary {
             "Symbol",
             "ZapfDingbats"
     };
+
     // type1 font names.
     protected static final String[][] TYPE1_FONT_NAME = {
             {"Times-Roman", "Times New Roman", "TimesNewRoman", "TimesNewRomanPS", "TimesNewRomanPSMT"},
@@ -136,31 +228,6 @@ public abstract class Font extends Dictionary {
             {"Symbol"},
             {"ZapfDingbats", "Zapf-Dingbats", "Dingbats"}
     };
-    // Object name always "Font"
-    protected Name name;
-    // The name of the object, Font
-    protected String basefont;
-    // The font subtype, type 0, 1, 2 etc.
-    protected Name subtype;
-    // supType Format, either simple or CID.
-    protected int subTypeFormat = SIMPLE_FORMAT;
-    // The actual Java font that will be used to display the Glyphs
-    protected FontFile font;
-    // The first character code defined in the font's Widths array.
-    protected int firstchar = 32;
-    protected int lastchar = 255;
-    // Font Descriptor used
-    protected FontDescriptor fontDescriptor;
-    // initiated flag
-    protected boolean inited;
-    // AFM flag
-    protected boolean isAFMFont;
-    // vertical writing flag;
-    protected boolean isVerticalWriting;
-    // font substitution being used
-    protected boolean isFontSubstitution;
-    // parent resource, needed by some type3 fonts to access resources.
-    protected Resources parentResource;
 
     /**
      * Creates a new instance of a PDF Font.

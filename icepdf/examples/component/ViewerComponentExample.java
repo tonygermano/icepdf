@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2014 ICEsoft Technologies Inc.
+ * Copyright 2006-2015 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -46,7 +46,7 @@ public class ViewerComponentExample {
                         System.getProperties(),
                         ResourceBundle.getBundle(PropertiesManager.DEFAULT_MESSAGE_BUNDLE));
 
-                properties.set(PropertiesManager.PROPERTY_DEFAULT_ZOOM_LEVEL, "1.75");
+                properties.set(PropertiesManager.PROPERTY_DEFAULT_ZOOM_LEVEL, "1.25");
 
                 SwingViewBuilder factory = new SwingViewBuilder(controller, properties);
 

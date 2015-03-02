@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2014 ICEsoft Technologies Inc.
+ * Copyright 2006-2015 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -122,6 +122,10 @@ public class LineText extends AbstractText implements TextSelect {
         this.words.addAll(words);
     }
 
+    protected void setWords(List<WordText> words) {
+        this.words = words;
+    }
+
     /**
      * Gets the current word, if there is none, one is created.
      *
@@ -142,10 +146,6 @@ public class LineText extends AbstractText implements TextSelect {
      */
     public List<WordText> getWords() {
         return words;
-    }
-
-    protected void setWords(List<WordText> words) {
-        this.words = words;
     }
 
     /**

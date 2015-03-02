@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2006-2014 ICEsoft Technologies Inc.
+  ~ Copyright 2006-2015 ICEsoft Technologies Inc.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the
@@ -32,7 +32,7 @@
         <dependency>
             <groupId>org.icepdf</groupId>
             <artifactId>icepdf-core</artifactId>
-            <version>5.1.1</version>
+            <version>5.0.1</version>
         </dependency>
 
         <dependency>
