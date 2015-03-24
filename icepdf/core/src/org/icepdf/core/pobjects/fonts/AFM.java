@@ -29,22 +29,28 @@ import java.util.logging.Logger;
  */
 public class AFM {
 
+    private static final Logger logger =
+            Logger.getLogger(AFM.class.toString());
+
     public static final int COURIER = 0;
     public static final int COURIER_BOLD = 1;
     public static final int COURIER_OBLIQUE = 2;
     public static final int COURIER_BOLD_OBLIQUE = 3;
+
     public static final int HELVETICA = 4;
     public static final int HELVETICA_BOLD = 5;
     public static final int HELVETICA_OBLIQUE = 6;
     public static final int HELVETICA_BOLD_OBLIQUE = 7;
+
     public static final int TIMES_ROMAN = 8;
     public static final int TIMES_BOLD = 9;
     public static final int TIMES_ITALIC = 10;
     public static final int TIMES_BOLD_ITALIC = 11;
+
     public static final int ZAPF_DINGBATS = 12;
     public static final int SYMBOL = 13;
-    private static final Logger logger =
-            Logger.getLogger(AFM.class.toString());
+
+
     public static String[] AFMnames = {
             "Courier.afm",
             "Courier-Bold.afm",
@@ -64,7 +70,6 @@ public class AFM {
             "ZapfDingbats.afm",
             "Symbol.afm"
     };
-    public static HashMap<String, AFM> AFMs = new HashMap<String, AFM>(14);
     /**
      * <p>The value of the <b>Flags</b> entry in a font descriptor is an
      * unsized 32-bit integer containg flags specifying various characteristics
@@ -152,6 +157,11 @@ public class AFM {
             4, //   0x100     "ZapfDingbats.afm",
             4  //   0x100     "Symbol.afm"
     };
+
+
+    public static HashMap<String, AFM> AFMs = new HashMap<String, AFM>(14);
+
+
     private String fontName;
     private String familyName;
     private String fullName;
@@ -179,9 +189,6 @@ public class AFM {
         }
     }
 
-    private AFM() {
-    }
-
     /**
      * Creates a new AFM file based on the
      *
@@ -201,6 +208,9 @@ public class AFM {
             }
             return null;
         }
+    }
+
+    private AFM() {
     }
 
     public String getFontName() {

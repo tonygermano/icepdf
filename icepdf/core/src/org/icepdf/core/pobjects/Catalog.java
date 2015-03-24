@@ -15,7 +15,6 @@
  */
 package org.icepdf.core.pobjects;
 
-import org.icepdf.core.pobjects.acroform.InteractiveForm;
 import org.icepdf.core.util.Library;
 
 import java.util.ArrayList;
@@ -55,7 +54,6 @@ public class Catalog extends Dictionary {
     public static final Name PAGES_KEY = new Name("Pages");
     public static final Name PAGELAYOUT_KEY = new Name("PageLayout");
     public static final Name PAGEMODE_KEY = new Name("PageMode");
-    public static final Name ACRO_FORM_KEY = new Name("AcroForm");
     public static final Name COLLECTION_KEY = new Name("Collection");
     public static final Name METADATA_KEY = new Name("Metadata");
 
@@ -63,7 +61,7 @@ public class Catalog extends Dictionary {
     private Outlines outlines;
     private Names names;
     private OptionalContent optionalContent;
-    private Dictionary dests;
+    private NamedDestinations dests;
     private ViewerPreferences viewerPref;
 
     private boolean outlinesInited = false;
@@ -125,15 +123,6 @@ public class Catalog extends Dictionary {
             names = new Names(library, (HashMap) tmp);
             names.init();
         }
-
-        // load the Acroform data.
-        tmp = library.getObject(entries, ACRO_FORM_KEY);
-        if (tmp instanceof HashMap) {
-            InteractiveForm interactiveForm = new InteractiveForm(library, (HashMap) tmp);
-            interactiveForm.init();
-        }
-        // todo namesTree contains forms javascript, might need to be initialized here
-
     }
 
     /**
@@ -182,13 +171,12 @@ public class Catalog extends Dictionary {
      * @return A Dictionary of Destinations; if none, null is returned.
      */
     @SuppressWarnings("unchecked")
-    public Dictionary getDestinations() {
+    public NamedDestinations getDestinations() {
         if (!destsInited) {
             destsInited = true;
             Object o = library.getObject(entries, DESTS_KEY);
             if (o != null) {
-                dests = new Dictionary(library, (HashMap<Object, Object>) o);
-                dests.init();
+                dests = new NamedDestinations(library, (HashMap<Object, Object>) o);
             }
         }
         return dests;

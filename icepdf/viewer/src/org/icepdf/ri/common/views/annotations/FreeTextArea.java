@@ -1,3 +1,5 @@
+package org.icepdf.ri.common.views.annotations;
+
 /*
  * Copyright 2006-2015 ICEsoft Technologies Inc.
  *
@@ -13,8 +15,6 @@
  * express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-
-package org.icepdf.ri.common.views.annotations;
 
 import org.icepdf.ri.util.jxlayer.JXLayer;
 import org.icepdf.ri.util.jxlayer.plaf.LayerUI;
@@ -35,8 +35,13 @@ import java.awt.geom.AffineTransform;
 @SuppressWarnings("serial")
 public class FreeTextArea extends JTextArea {
 
+    public interface ZoomProvider {
+        public float getZoom();
+    }
+
     private ZoomProvider zoomProvider;
     private boolean active;
+
     public FreeTextArea(final ZoomProvider zoomProvider) {
         super();
         this.zoomProvider = zoomProvider;
@@ -113,10 +118,6 @@ public class FreeTextArea extends JTextArea {
 
     public void setActive(boolean active) {
         this.active = active;
-    }
-
-    public interface ZoomProvider {
-        public float getZoom();
     }
 }
 

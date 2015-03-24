@@ -29,22 +29,26 @@ import java.io.OutputStream;
  */
 public class BitStream {
 
+    // Input stream
+    InputStream in;
+    // Output stream
+    OutputStream out;
+
+    // bits left in stream
+    int bits;
+    // number of bits left in a byte
+    int bits_left;
+
+    boolean readEOF;
+
     // making value
     private static final int masks[] = new int[32];
+
     static {
         for (int i = 0; i < 32; i++) {
             masks[i] = ((1 << i) - 1);
         }
     }
-    // Input stream
-    InputStream in;
-    // Output stream
-    OutputStream out;
-    // bits left in stream
-    int bits;
-    // number of bits left in a byte
-    int bits_left;
-    boolean readEOF;
 
     /**
      * Create a new instance of a <code>BitStream</code> from the given

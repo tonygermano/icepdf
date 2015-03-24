@@ -35,7 +35,13 @@ import java.awt.image.BufferedImage;
  */
 public class FormDrawCmd extends AbstractDrawCmd {
 
+    private Form xForm;
+
+    private BufferedImage xFormBuffer;
+    private int x, y;
+
     private static boolean disableXObjectSMask;
+
     static {
         // decide if large images will be scaled
         disableXObjectSMask =
@@ -43,9 +49,6 @@ public class FormDrawCmd extends AbstractDrawCmd {
                         false);
 
     }
-    private Form xForm;
-    private BufferedImage xFormBuffer;
-    private int x, y;
 
     public FormDrawCmd(Form xForm) {
         this.xForm = xForm;
