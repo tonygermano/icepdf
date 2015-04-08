@@ -53,7 +53,9 @@ public class TextAnnotationHandler extends CommonToolHandler implements ToolHand
 
     private static final Logger logger =
             Logger.getLogger(TextAnnotationHandler.class.toString());
+
     protected static Color defaultFillColor;
+
     static {
 
         // sets annotation text fill colour

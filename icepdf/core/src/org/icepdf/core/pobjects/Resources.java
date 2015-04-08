@@ -58,6 +58,7 @@ public class Resources extends Dictionary {
     HashMap shading;
     HashMap extGStates;
     HashMap properties;
+
     /**
      * @param l
      * @param h
@@ -187,10 +188,10 @@ public class Resources extends Dictionary {
 
     /**
      * @param s
-     * @param graphicsState
+     * @param fill
      * @return
      */
-    public Image getImage(Name s, GraphicsState graphicsState) {
+    public Image getImage(Name s, Color fill) {
 
         // check xobjects for stream
         ImageStream st = (ImageStream) library.getObject(xobjects, s);
@@ -204,7 +205,7 @@ public class Resources extends Dictionary {
         // lastly return the images.
         Image image = null;
         try {
-            image = st.getImage(graphicsState, this);
+            image = st.getImage(fill, this);
         } catch (Exception e) {
             logger.log(Level.FINE, "Error getting image by name: " + s, e);
         }

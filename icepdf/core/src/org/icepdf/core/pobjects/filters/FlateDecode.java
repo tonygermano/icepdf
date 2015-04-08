@@ -144,10 +144,8 @@ public class FlateDecode extends ChunkingInputStream {
             if (numRead <= 0) return -1;
             return numRead;
         }
-
         return -1;
     }
-
 
     public String toString() {
         StringBuilder sb = new StringBuilder();

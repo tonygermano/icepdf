@@ -76,6 +76,7 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
     protected JTree commentTree;
     protected JScrollPane commentTreeScrollPane;
     protected MarkupAnnotation selectedMarkupAnnotation;
+
     // add and remove commands
     protected JMenuItem replyMenuItem;
     protected JMenuItem deleteMenuItem;
@@ -88,6 +89,7 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
     // generic commands, open/minimize all
     protected JMenuItem openAllMenuItem;
     protected JMenuItem minimizeAllMenuItem;
+
     protected JPopupMenu contextMenu;
 
     public PopupAnnotationComponent(Annotation annotation, DocumentViewController documentViewController,
@@ -579,10 +581,6 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
                 creationLabel.setText(selectedMarkupAnnotation.getCreationDate().toString());
             }
         }
-    }
-
-    public boolean isActive() {
-        return false;
     }
 
 

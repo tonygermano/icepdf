@@ -114,21 +114,25 @@ public class FontManager {
                     {"ZapfChancery-MediumItalic", "URWChanceryL-MediItal", "Arial"},
                     {"ZapfDingbats", "Dingbats", "Zapf-Dingbats"}
             };
+
     private static final String[] JAPANESE_FONT_NAMES = {
             "Arial Unicode MS", "PMingLiU", "MingLiU",
             "MS PMincho", "MS Mincho", "Kochi Mincho", "Hiragino Mincho Pro",
             "KozMinPro Regular Acro", "HeiseiMin W3 Acro", "Adobe Ming Std Acro"
     };
+
     private static final String[] CHINESE_SIMPLIFIED_FONT_NAMES = {
             "Arial Unicode MS", "PMingLiU", "MingLiU",
             "SimSun", "NSimSun", "Kochi Mincho", "STFangsong", "STSong Light Acro",
             "Adobe Song Std Acro"
     };
+
     private static final String[] CHINESE_TRADITIONAL_FONT_NAMES = {
             "Arial Unicode MS", "PMingLiU", "MingLiU",
             "SimSun", "NSimSun", "Kochi Mincho", "BiauKai", "MSungStd Light Acro",
             "Adobe Song Std Acro"
     };
+
     private static final String[] KOREAN_FONT_NAMES = {
             "Arial Unicode MS", "Gulim", "Batang",
             "BatangChe", "HYSMyeongJoStd Medium Acro", "Adobe Myungjo Std Acro"
@@ -335,6 +339,7 @@ public class FontManager {
             throw new IllegalArgumentException(errorString);
         }
     }
+
 
     /**
      * Clears internal font list of items. Used to clean list while constructing

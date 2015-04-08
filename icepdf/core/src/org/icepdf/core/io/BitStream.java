@@ -33,10 +33,12 @@ public class BitStream {
     InputStream in;
     // Output stream
     OutputStream out;
+
     // bits left in stream
     int bits;
     // number of bits left in a byte
     int bits_left;
+
     boolean readEOF;
 
     // making value

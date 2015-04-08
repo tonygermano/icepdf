@@ -19,9 +19,7 @@ import org.icepdf.core.events.PaintPageEvent;
 import org.icepdf.core.events.PaintPageListener;
 import org.icepdf.core.pobjects.Page;
 import org.icepdf.core.pobjects.PageTree;
-import org.icepdf.core.pobjects.annotations.ChoiceWidgetAnnotation;
 import org.icepdf.core.pobjects.annotations.FreeTextAnnotation;
-import org.icepdf.core.pobjects.annotations.TextWidgetAnnotation;
 import org.icepdf.core.pobjects.graphics.text.PageText;
 import org.icepdf.core.search.DocumentSearchController;
 import org.icepdf.core.util.*;
@@ -146,9 +144,12 @@ public class PageViewComponentImpl extends
     private static double verticalScaleFactor;
     // horizontal  scale factor to extend buffer
     private static double horizontalScaleFactor;
+
     private static int scrollInitThreshold = 250;
+
     // graphics configuration
     private static GraphicsConfiguration gc;
+
     static {
         // default value have been assigned.  Keep in mind that larger ratios will
         // result in more memory usage.
@@ -419,7 +420,6 @@ public class PageViewComponentImpl extends
             if (pageBufferImage != null && !isPageStateDirty()) {
                 // block, if copy area is being done in painter thread
 //                synchronized (paintCopyAreaLock) {
-
                 g.drawImage(pageBufferImage, bufferedPageImageBounds.x,
                         bufferedPageImageBounds.y, this);
 //                }
@@ -522,13 +522,9 @@ public class PageViewComponentImpl extends
                 AnnotationComponent annotation;
                 for (int i = 0, max = annotationComponents.size(); i < max; i++) {
                     annotation = annotationComponents.get(i);
-                    if (annotation != null &&((Component) annotation).isVisible() &&
+                    if (((Component) annotation).isVisible() &&
                             !(annotation.getAnnotation() instanceof FreeTextAnnotation
-                                    && ((AbstractAnnotationComponent) annotation).isActive()) &&
-                            !(annotation.getAnnotation() instanceof TextWidgetAnnotation
-                                    && ((AbstractAnnotationComponent) annotation).isActive()) &&
-                            !(annotation.getAnnotation() instanceof ChoiceWidgetAnnotation
-                                    && ((AbstractAnnotationComponent) annotation).isActive())) {
+                                    && ((FreeTextAnnotationComponent) annotation).isActive())) {
                         annotation.getAnnotation().render(gg2,
                                 GraphicsRenderingHints.SCREEN,
                                 documentViewModel.getViewRotation(),
@@ -889,7 +885,6 @@ public class PageViewComponentImpl extends
                         !pagePainter.isLastPaintDirty() &&
                         pagePainter.isBufferDirty() &&
                         bufferedPageImageBounds.intersects(oldBufferedPageImageBounds)) {
-
                     // calculate intersection for buffer copy of a visible area, as we
                     // can only copy graphics that are visible.
                     copyRect = bufferedPageImageBounds.intersection(oldBufferedPageImageBounds);
@@ -1012,6 +1007,7 @@ public class PageViewComponentImpl extends
         private boolean isLastPaintDirty;
         private boolean isBufferyDirty;
         private boolean isStopRequested;
+
         private Page page;
 
         private final Object isRunningLock = new Object();
@@ -1216,7 +1212,6 @@ public class PageViewComponentImpl extends
                 isDirtyTimer.removeActionListener(dirtyTimerAction);
                 isActionListenerRegistered = false;
                 page = null;
-
                 // stop painting and mark buffer as dirty
                 if (pagePainter.isRunning()) {
                     pagePainter.stopPaintingPage();

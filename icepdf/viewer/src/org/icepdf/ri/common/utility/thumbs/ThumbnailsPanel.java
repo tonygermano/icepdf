@@ -43,9 +43,13 @@ import java.awt.event.AdjustmentListener;
 public class ThumbnailsPanel extends JPanel {
 
     protected DocumentViewController documentViewController;
+
     protected Document currentDocument;
+
     protected PropertiesManager propertiesManager;
+
     protected DocumentViewModel documentViewModel;
+
     protected float thumbNailZoom = 0.1f; // default zoom is 10%
 
     protected static final int MAX_PAGE_SIZE_READ_AHEAD = 10;
