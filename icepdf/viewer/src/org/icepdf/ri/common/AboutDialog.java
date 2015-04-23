@@ -39,6 +39,7 @@ public class AboutDialog extends JDialog implements ActionListener, WindowListen
 
     public static final int NO_BUTTONS = 0;
     public static final int OK = 2;
+
     public static final int NO_TIMER = 0;
     public static final int DISAPPEAR = 4;
 

@@ -39,19 +39,25 @@ public class SearchTextTask {
 
     // total length of task (total page count), used for progress bar
     private int lengthOfTask;
+
     // current progress, used for the progress bar
     private int current = 0;
+
     // message displayed on progress bar
     private String dialogMessage;
+
     // canned internationalized messages.
     private MessageFormat searchingMessageForm;
     private MessageFormat searchResultMessageForm;
     private MessageFormat searchCompletionMessageForm;
+
     // flags for threading
     private boolean done = false;
     private boolean canceled = false;
+
     // keep track of total hits
     private int totalHitCount = 0;
+
     // String to search for and parameters from gui
     private String pattern = "";
     private boolean wholeWord;

@@ -141,6 +141,7 @@ public class Function_0 extends Function {
      * @return array of ouput value n.
      */
     public float[] calculate(float[] x) {
+
         // length of output array
         int n = range.length / 2;
         // ready output array

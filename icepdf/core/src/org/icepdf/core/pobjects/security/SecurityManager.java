@@ -63,6 +63,7 @@ public class SecurityManager {
 
     // flag for detecting JCE
     private static boolean foundJCE = false;
+
     // Add security provider of choice before Sun RSA provider (if any)
     static {
         // Load security handler from system property if possible

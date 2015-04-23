@@ -47,6 +47,7 @@ public class PrintHelper implements Printable {
     private PageTree pageTree;
     private Container container;
     private float userRotation;
+
     private boolean printFitToMargin;
     private int printingCurrentPage;
     private int totalPagesToPrint;
@@ -349,8 +350,8 @@ public class PrintHelper implements Printable {
         PDimension pageDim = currentPage.getSize(userRotation);
 
         // Grab default page width and height
-        float pageWidth = (float) pageDim.getWidth();
-        float pageHeight = (float) pageDim.getHeight();
+        float pageWidth = pageDim.getWidth();
+        float pageHeight = pageDim.getHeight();
 
         // Default zoom factor
         float zoomFactor = 1.0f;

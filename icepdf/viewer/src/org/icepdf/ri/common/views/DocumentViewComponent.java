@@ -38,8 +38,6 @@ import java.lang.ref.SoftReference;
  */
 public class DocumentViewComponent extends JComponent implements MouseListener, Runnable {
 
-    private static final long serialVersionUID = -8881023489246309889L;
-   
     private Library parentLibrary;
     private Reference fileReference;
     private String fileName;
@@ -87,7 +85,7 @@ public class DocumentViewComponent extends JComponent implements MouseListener, 
 
             // calculate how big/small the thumbnail needs to be
             PDimension defaultSize = page.getSize(Page.BOUNDARY_CROPBOX, 0, 1f);
-            float scale = minimumThumbHeight / (float) defaultSize.getHeight();
+            float scale = minimumThumbHeight / defaultSize.getHeight();
             pageSize = page.getSize(Page.BOUNDARY_CROPBOX, 0, scale).toDimension();
 
             int pageWidth = (int) pageSize.getWidth();

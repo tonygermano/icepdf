@@ -57,10 +57,13 @@ public class SearchPanel extends JPanel implements ActionListener,
 
     // layouts constraint
     private GridBagConstraints constraints;
+
     // input for a search pattern
     private JTextField searchTextField;
+
     // pointer to document which will be searched
     private Document document;
+
     private SwingController controller;
 
     // tree view of the groups and panels
@@ -70,15 +73,18 @@ public class SearchPanel extends JPanel implements ActionListener,
     private JTree tree;
     private DefaultMutableTreeNode rootTreeNode;
     private DefaultTreeModel treeModel;
+
     // search start button
     private JButton searchButton;
     // clear search
     private JButton clearSearchButton;
+
     // search option check boxes.
     private JCheckBox caseSensitiveCheckbox;
     private JCheckBox wholeWordCheckbox;
     private JCheckBox cumulativeCheckbox;
     private JCheckBox showPagesCheckbox;
+
     // page index of the last added node.
     private int lastNodePageIndex;
 

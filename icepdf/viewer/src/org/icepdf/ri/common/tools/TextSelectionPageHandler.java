@@ -438,6 +438,7 @@ public class TextSelectionPageHandler extends SelectionBoxHandler
 //        }
     }
 
+
     /**
      * Simple left to right, top down type selection model, not perfect.
      *

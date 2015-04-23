@@ -77,7 +77,9 @@ public class Document {
 
     private static final String INCREMENTAL_UPDATER =
             "org.icepdf.core.util.IncrementalUpdater";
+
     public static boolean foundIncrementalUpdater;
+
     static {
         // check class bath for NFont library, and declare results.
         try {
@@ -120,7 +122,9 @@ public class Document {
 
     // repository of all PDF object associated with this document.
     private Library library = null;
+
     private SeekableInput documentSeekableInput;
+
     static {
         // sets if file caching is enabled or disabled.
         isCachingEnabled =

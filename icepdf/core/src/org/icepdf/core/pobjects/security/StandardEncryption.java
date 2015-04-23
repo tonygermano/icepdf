@@ -48,13 +48,16 @@ class StandardEncryption {
      * to the security handler for decryption (NO SUPPORT)
      */
     public static final String ENCRYPTION_TYPE_NONE = "None";
+
     /**
      * The application shall ask the security handler for the encryption key and
      * shall implicitly decrypt data with "Algorithm 1: Encryption of data using
      * the RC4 or AES algorithms", using the RC4 algorithm.
      */
     public static final String ENCRYPTION_TYPE_V2 = "V2";
+
     public static final String ENCRYPTION_TYPE_V3 = "V3";
+
     /**
      * (PDF 1.6) The application shall ask the security handler for the
      * encryption key and shall implicitly decrypt data with "Algorithm 1:

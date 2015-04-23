@@ -47,6 +47,7 @@ import java.util.logging.Logger;
  */
 @SuppressWarnings("serial")
 public class ImagePool {
+
     private static final Logger log =
             Logger.getLogger(ImagePool.class.toString());
 
@@ -55,6 +56,7 @@ public class ImagePool {
 
 
     private static boolean enabled;
+
     static {
         // enable/disable the image pool all together.
         enabled = Defs.booleanProperty("org.icepdf.core.views.imagePoolEnabled", true);
