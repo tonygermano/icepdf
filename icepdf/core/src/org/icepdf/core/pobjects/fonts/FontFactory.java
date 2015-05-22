@@ -66,16 +66,22 @@ public class FontFactory {
             "org.icepdf.core.pobjects.fonts.nfont.Font";
     private static final String NFONT_CLASS =
             "org.icepdf.core.pobjects.fonts.nfont.NFont";
+
     private static final String NFONT_OPEN_TYPE =
             "org.icepdf.core.pobjects.fonts.nfont.NFontOpenType";
+
     private static final String NFONT_TRUE_TYPE =
             "org.icepdf.core.pobjects.fonts.nfont.NFontTrueType";
+
     private static final String NFONT_TRUE_TYPE_0 =
             "org.icepdf.core.pobjects.fonts.nfont.NFontType0";
+
     private static final String NFONT_TRUE_TYPE_1 =
             "org.icepdf.core.pobjects.fonts.nfont.NFontType1";
+
     private static final String NFONT_TRUE_TYPE_3 =
             "org.icepdf.core.pobjects.fonts.nfont.NFontType3";
+
     static {
         // check class bath for NFont library, and declare results.
         try {
@@ -147,7 +153,7 @@ public class FontFactory {
                     }
                 }
             } catch (Throwable e) {
-                logger.log(Level.FINE, "Could not create instance of font file " + fontType, e);
+                logger.log(Level.FINE, "Could not create instance of font file " + fontType);
                 if (fontType == FONT_TRUE_TYPE) {
                     // we might have a very rare corner case where the file2 definition is actually a Open type font
                     if (logger.isLoggable(Level.FINE)) {
@@ -169,7 +175,7 @@ public class FontFactory {
                             }
                         }
                     } catch (Exception ex) {
-                        logger.log(Level.FINE, "Could not create instance of font file as OpenType." + fontType, ex);
+                        logger.log(Level.FINE, "Could not create instance of font file as OpenType." + fontType);
                     }
                 }
             }

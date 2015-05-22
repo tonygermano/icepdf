@@ -34,6 +34,8 @@ public class BareBonesBrowserLaunch {
 
     private static final Logger logger =
             Logger.getLogger(BareBonesBrowserLaunch.class.toString());
+
+
     private static final String errMsg =
             "Error attempting to launch web browser";
 

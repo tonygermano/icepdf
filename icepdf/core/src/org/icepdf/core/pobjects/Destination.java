@@ -60,6 +60,7 @@ public class Destination {
             Logger.getLogger(Destination.class.toString());
 
     public static final Name D_KEY = new Name("D");
+
     // Vector destination type formats.
     public static final Name TYPE_XYZ = new Name("XYZ");
     public static final Name TYPE_FIT = new Name("Fit");

@@ -45,7 +45,7 @@ public class Procedure extends Operator {
         return previousProcedure;
     }
 
-    public Stack<Object> getProc() {
+    public Stack getProc() {
         return stack;
     }
 

@@ -92,10 +92,12 @@ public class Library {
 
     // new incremental file loader class.
     private LazyObjectLoader lazyObjectLoader;
+
     private ConcurrentHashMap<Reference, WeakReference<Object>> refs =
             new ConcurrentHashMap<Reference, WeakReference<Object>>(1024);
     private ConcurrentHashMap<Reference, WeakReference<ICCBased>> lookupReference2ICCBased =
             new ConcurrentHashMap<Reference, WeakReference<ICCBased>>(256);
+
     // Instead of keeping Names names, Dictionary dests, we keep
     //   a reference to the Catalog, which actually owns them
     private Catalog catalog;

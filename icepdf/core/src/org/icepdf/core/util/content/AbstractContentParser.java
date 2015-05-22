@@ -45,8 +45,10 @@ import java.util.logging.Logger;
 public abstract class AbstractContentParser implements ContentParser {
     private static final Logger logger =
             Logger.getLogger(AbstractContentParser.class.toString());
+
     private static boolean disableTransparencyGroups;
     private static boolean enabledOverPrint;
+
     static {
         // decide if large images will be scaled
         disableTransparencyGroups =
@@ -339,6 +341,7 @@ public abstract class AbstractContentParser implements ContentParser {
             graphicState.setStrokeColor(graphicState.getStrokeColorSpace().getColor(f, isTint));
         }
     }
+
 
     protected static void consume_sc(GraphicsState graphicState, Stack stack,
                                      Library library, Resources resources, boolean isTint) {
@@ -642,7 +645,7 @@ public abstract class AbstractContentParser implements ContentParser {
 
                 // create an ImageReference for future decoding
                 ImageReference imageReference = ImageReferenceFactory.getImageReference(
-                        imageStream, resources, graphicState,
+                        imageStream, resources, graphicState.getFillColor(),
                         imageIndex.get(), page);
                 imageIndex.incrementAndGet();
 
