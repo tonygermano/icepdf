@@ -36,6 +36,7 @@ public class Lexer {
     private char[] buf = new char[2056];
     private int pos = 0, numRead = 0, startTokenPos = 0;
     private int tokenType = 0;
+
     // expression depth count used to properly differ if and elseif operands.
     private int expressionDepth;
 

@@ -341,6 +341,7 @@ public class FontManager {
         }
     }
 
+
     /**
      * Clears internal font list of items. Used to clean list while constructing
      * a new list.

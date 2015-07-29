@@ -61,6 +61,7 @@ public class FreeTextAnnotation extends MarkupAnnotation {
      * over the DA entry; see Table 168 and 12.5.5, “Appearance Streams.”
      */
     public static final Name DA_KEY = new Name("DA");
+
     /**
      * (Optional; PDF 1.4) A code specifying the form of quadding
      * (justification) that shall be used in displaying the annotation’s text:
@@ -70,11 +71,14 @@ public class FreeTextAnnotation extends MarkupAnnotation {
      * Default value: 0 (left-justified).
      */
     public static final Name Q_KEY = new Name("Q");
+
+
     /**
      * (Optional; PDF 1.5) A default style string, as described in 12.7.3.4,
      * “Rich Text Strings.”
      */
     public static final Name DS_KEY = new Name("DS");
+
     /**
      * (Optional; meaningful only if IT is FreeTextCallout; PDF 1.6) An array of
      * four or six numbers specifying a callout line attached to the free text
@@ -124,6 +128,7 @@ public class FreeTextAnnotation extends MarkupAnnotation {
      * shall be less than the width of Rect.
      */
     public static final Name RD_KEY = new Name("RD");
+
     /**
      * (Optional; PDF 1.6) A border style dictionary (see Table 166) specifying
      * the line width and dash pattern that shall be used in drawing the
@@ -133,6 +138,7 @@ public class FreeTextAnnotation extends MarkupAnnotation {
      * the BS entry; see Table 164 and 12.5.5, “Appearance Streams”.
      */
     public static final Name BS_KEY = new Name("BS");
+
     /**
      * (Optional; meaningful only if CL is present; PDF 1.6) A name specifying
      * the line ending style that shall be used in drawing the callout line
@@ -143,23 +149,28 @@ public class FreeTextAnnotation extends MarkupAnnotation {
      * Default value: None.
      */
     public static final Name LE_KEY = new Name("LE");
+
     /**
      * Left-justified quadding
      */
     public static final int QUADDING_LEFT_JUSTIFIED = 0;
+
     /**
      * Right-justified quadding
      */
     public static final int QUADDING_CENTER_JUSTIFIED = 1;
+
     /**
      * Center-justified quadding
      */
     public static final int QUADDING_RIGHT_JUSTIFIED = 2;
+
     public static final Name EMBEDDED_FONT_NAME = new Name("ice1");
 
     protected static Color defaultFontColor;
     protected static Color defaultFillColor;
     protected static int defaultFontSize;
+
     static {
 
         // sets annotation free text font colour
@@ -200,10 +211,14 @@ public class FreeTextAnnotation extends MarkupAnnotation {
             }
         }
     }
+
     protected String defaultAppearance;
+
     protected int quadding = QUADDING_LEFT_JUSTIFIED;
+
     protected String defaultStylingString;
     protected boolean hideRenderedOutput;
+
     protected String richText;
 
     // appearance properties not to be confused with annotation properties,
@@ -232,12 +247,8 @@ public class FreeTextAnnotation extends MarkupAnnotation {
 
     public void init() {
         super.init();
-
-        Appearance appearance = appearances.get(APPEARANCE_STREAM_NORMAL_KEY);
-        Shapes shapes = null;
-        if (appearance != null) {
-            AppearanceState appearanceState = appearance.getSelectedAppearanceState();
-            shapes = appearanceState.getShapes();
+        if (matrix == null) {
+            matrix = new AffineTransform();
         }
 
         // reget colour so we can check for a null entry
@@ -371,23 +382,13 @@ public class FreeTextAnnotation extends MarkupAnnotation {
 
     @Override
     public void resetAppearanceStream(double dx, double dy, AffineTransform pageTransform) {
-
-        Appearance appearance = appearances.get(currentAppearance);
-        AppearanceState appearanceState = appearance.getSelectedAppearanceState();
-        Rectangle2D bbox = appearanceState.getBbox();
-        AffineTransform matrix = appearanceState.getMatrix();
-        Shapes shapes = appearanceState.getShapes();
-
+        matrix = new AffineTransform();
         if (shapes == null) {
             shapes = new Shapes();
-            appearanceState.setShapes(shapes);
-        } else {
-            // remove any previous text
-            appearanceState.getShapes().getShapes().clear();
         }
 
         // remove any previous text
-        shapes.getShapes().clear();
+        this.shapes.getShapes().clear();
 
         // setup the space for the AP content stream.
         AffineTransform af = new AffineTransform();
@@ -395,7 +396,7 @@ public class FreeTextAnnotation extends MarkupAnnotation {
         af.translate(-bbox.getMinX(), -bbox.getMaxY());
         // adjust of the border offset, offset is define in viewer,
         // so we can't use the constant because of dependency issues.
-        double insets = 5 * pageTransform.getScaleX();
+        double insets = 5;
         af.translate(insets, -insets);
         shapes.add(new TransformDrawCmd(af));
 
@@ -493,10 +494,10 @@ public class FreeTextAnnotation extends MarkupAnnotation {
                 form.setRawBytes(stream.getDecodedStreamBytes());
                 form.init();
             }
-        }// else a stream, we won't support this for annotations.
-        else {
+            // else a stream, we won't support this for annotations.
+        } else {
             // create a new xobject/form object
-            HashMap<Name, Object> formEntries = new HashMap<Name, Object>();
+            HashMap<Object, Object> formEntries = new HashMap<Object, Object>();
             formEntries.put(Form.TYPE_KEY, Form.TYPE_VALUE);
             formEntries.put(Form.SUBTYPE_KEY, Form.SUB_TYPE_VALUE);
             form = new Form(library, formEntries, null);
@@ -552,7 +553,7 @@ public class FreeTextAnnotation extends MarkupAnnotation {
                 resources.put(new Name("Font"), fontResources);
                 // and finally add it to the form.
                 form.getEntries().put(new Name("Resources"), resources);
-                form.setRawBytes("".getBytes());
+                form.setRawBytes(new String().getBytes());
                 form.init();
             } else {
                 form.init();
@@ -622,9 +623,7 @@ public class FreeTextAnnotation extends MarkupAnnotation {
     }
 
     public void clearShapes() {
-        Appearance appearance = appearances.get(currentAppearance);
-        AppearanceState appearanceState = appearance.getSelectedAppearanceState();
-        appearanceState.setShapes(null);
+        shapes = null;
     }
 
     public void setDocument(DefaultStyledDocument document) {

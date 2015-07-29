@@ -53,16 +53,19 @@ public class ImageUtility {
             0xFFFFFFFF,
             0xFF000000
     };
+
     protected static final int[] GRAY_1_BIT_INDEX_TO_RGB = new int[]{
             0xFF000000,
             0xFFFFFFFF
     };
+
     protected static final int[] GRAY_2_BIT_INDEX_TO_RGB = new int[]{
             0xFF000000,
             0xFF555555,
             0xFFAAAAAA,
             0xFFFFFFFF
     }; // 0. 1 2 3 4 5. 6 7 8 9 A. B C D E F.     0/3, 1/3, 2/3, 3/3
+
     protected static final int[] GRAY_4_BIT_INDEX_TO_RGB = new int[]{
             0xFF000000,
             0xFF111111,
@@ -81,6 +84,8 @@ public class ImageUtility {
             0xFFEEEEEE,
             0xFFFFFFFF
     };
+
+
     protected static final int JPEG_ENC_UNKNOWN_PROBABLY_YCbCr = 0;
     protected static final int JPEG_ENC_RGB = 1;
     protected static final int JPEG_ENC_CMYK = 2;
@@ -147,6 +152,7 @@ public class ImageUtility {
                         red >= maskMinRed && red <= maskMaxRed) {
                     alpha = 0x00;
                 }
+
                 if (alpha != 0xFF) {
                     argb = bi.getRGB(x, y);
                     argb &= 0x00FFFFFF;
@@ -246,7 +252,6 @@ public class ImageUtility {
 
 //        return new BufferedImage(raster.getWidth(), raster.getHeight(), BufferedImage.TYPE_INT_RGB);
     }
-
 
     protected static BufferedImage makeRGBBufferedImage(WritableRaster wr) {
         ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_sRGB);
@@ -493,52 +498,6 @@ public class ImageUtility {
                 }
             }
             argbImage.setRGB(0, i, baseWidth, 1, maskBnd, 0, baseWidth);
-        }
-        baseImage.flush();
-        baseImage = argbImage;
-
-        return baseImage;
-    }
-
-    /**
-     * Blending mode colour transparency test.
-     *
-     * @param baseImage
-     * @param blendingMode
-     * @param blendColor
-     * @return
-     */
-    public static BufferedImage applyBlendingMode(BufferedImage baseImage, Name blendingMode, Color blendColor) {
-
-//        extGState.getBlendingMode().equals("Multiply")
-
-
-        // check to make sure the mask and the image are the same size.
-
-        // apply the mask by simply painting white to the base image where
-        // the mask specified no colour.
-        int baseWidth = baseImage.getWidth();
-        int baseHeight = baseImage.getHeight();
-
-        BufferedImage argbImage = new BufferedImage(baseWidth,
-                baseHeight, BufferedImage.TYPE_INT_ARGB);
-        int[] srcBand = new int[baseWidth];
-        int[] blendBand = new int[baseWidth];
-        int blendColorValue = blendColor.getRGB();
-        // iterate over each band to apply the mask
-        for (int i = 0; i < baseHeight; i++) {
-            baseImage.getRGB(0, i, baseWidth, 1, srcBand, 0, baseWidth);
-            // apply the soft mask blending
-            for (int j = 0; j < baseWidth; j++) {
-
-                if (srcBand[j] == blendColorValue || srcBand[j] == 0xffffff || srcBand[j] == 0xffff) {
-                    //  set the pixel as transparent
-                    blendBand[j] = 0xff;
-                } else {
-                    blendBand[j] = srcBand[j];
-                }
-            }
-            argbImage.setRGB(0, i, baseWidth, 1, blendBand, 0, baseWidth);
         }
         baseImage.flush();
         baseImage = argbImage;
@@ -986,7 +945,7 @@ public class ImageUtility {
 
     protected static BufferedImage makeImageWithRasterFromBytes(
             PColorSpace colourSpace,
-            GraphicsState graphicsState,
+            Color fill,
             int width, int height,
             int colorSpaceCompCount,
             int bitsPerComponent,
@@ -1026,7 +985,6 @@ public class ImageUtility {
                 boolean defaultDecode = decode[0] == 0.0f;
                 //int a = Color.white.getRGB();
                 int a = 0x00FFFFFF; // Clear if alpha supported, else white
-                Color fill = graphicsState.getFillColor();
                 int[] cmap = new int[]{
                         (defaultDecode ? fill.getRGB() : a),
                         (defaultDecode ? a : fill.getRGB())
@@ -1235,8 +1193,8 @@ public class ImageUtility {
                         break;
                     haveRead += currRead;
                 }
-                Y = (int)rgb[0] & 0xff;
-                Y = defaultDecode ? Y : 255- Y;
+                Y = (int) rgb[0] & 0xff;
+                Y = defaultDecode ? Y : 255 - Y;
                 argb |= (Y << 16) & 0x00FF0000;
                 argb |= (Y << 8) & 0x0000FF00;
                 argb |= (Y & 0x000000FF);

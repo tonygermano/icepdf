@@ -50,6 +50,7 @@ public class TextAnnotation extends MarkupAnnotation {
      * displayed open. Default value: false (closed).
      */
     public static final Name OPEN_KEY = new Name("Open");
+
     /**
      * Optional) The name of an icon that shall be used in displaying the annotation.
      * Conforming readers shall provide predefined icon appearances for at least
@@ -63,6 +64,7 @@ public class TextAnnotation extends MarkupAnnotation {
      * over the Name entry; see Table 168 and 12.5.5, “Appearance Streams.”
      */
     public static final Name NAME_KEY = new Name("Name");
+
     /**
      * (Optional; PDF 1.5) The state to which the original annotation shall be
      * set; see 12.5.6.3, “Annotation States.”
@@ -70,11 +72,13 @@ public class TextAnnotation extends MarkupAnnotation {
      * Default: “Unmarked” if StateModel is “Marked”; “None” if StateModel is “Review”.
      */
     public static final Name STATE_KEY = new Name("State");
+
     /**
      * (Required if State is present, otherwise optional; PDF 1.5) The state model
      * corresponding to State; see 12.5.6.3, “Annotation States.”
      */
     public static final Name STATE_MODEL_KEY = new Name("StateModel");
+
     /**
      * Named text icon times.
      */
@@ -95,11 +99,13 @@ public class TextAnnotation extends MarkupAnnotation {
     public static final Name STAR_ICON = new Name("Star");
     public static final Name UP_ARROW_ICON = new Name("UpArrow");
     public static final Name UP_LEFT_ARROW_ICON = new Name("UpLeftArrow");
+
     /**
      * State Models
      */
     public static final String STATE_MODEL_MARKED = "Marked";
     public static final String STATE_MODEL_REVIEW = "Review";
+
     /**
      * State names.
      */
@@ -115,6 +121,7 @@ public class TextAnnotation extends MarkupAnnotation {
     protected Name iconName = COMMENT_ICON;
     protected String state;
     protected String stateModel;
+
     public TextAnnotation(Library l, HashMap h) {
         super(l, h);
     }
@@ -196,15 +203,8 @@ public class TextAnnotation extends MarkupAnnotation {
      */
     public void resetAppearanceStream(double dx, double dy, AffineTransform pageTransform) {
         // setup the context
-        Appearance appearance = appearances.get(currentAppearance);
-        AppearanceState appearanceState = appearance.getSelectedAppearanceState();
-
-        appearanceState.setMatrix(new AffineTransform());
-        appearanceState.setShapes(new Shapes());
-
-        Rectangle2D bbox = appearanceState.getBbox();
-        AffineTransform matrix = appearanceState.getMatrix();
-        Shapes shapes;
+        matrix = new AffineTransform();
+        shapes = new Shapes();
 
         String iconContentString;
         // get the correct icon content

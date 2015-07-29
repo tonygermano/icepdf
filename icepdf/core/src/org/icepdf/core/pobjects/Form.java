@@ -198,7 +198,6 @@ public class Form extends Stream {
         entries.put(RESOURCES_KEY, resources.getEntries());
     }
 
-
     /**
      * Gets the shapes that where parsed from the content stream.
      *

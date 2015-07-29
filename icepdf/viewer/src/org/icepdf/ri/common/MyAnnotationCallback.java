@@ -24,7 +24,6 @@ import org.icepdf.core.pobjects.annotations.Annotation;
 import org.icepdf.core.pobjects.annotations.LinkAnnotation;
 import org.icepdf.core.pobjects.annotations.MarkupAnnotation;
 import org.icepdf.ri.common.views.*;
-import org.icepdf.ri.common.views.annotations.AbstractAnnotationComponent;
 import org.icepdf.ri.common.views.annotations.PopupAnnotationComponent;
 import org.icepdf.ri.util.BareBonesBrowserLaunch;
 
@@ -116,10 +115,6 @@ public class MyAnnotationCallback implements AnnotationCallback {
                 } else if (action instanceof URIAction) {
                     BareBonesBrowserLaunch.openURL(
                             ((URIAction) action).getURI());
-                } else if (action instanceof SubmitFormAction) {
-                    ((FormAction) action).executeFormAction();
-                } else if (action instanceof ResetFormAction) {
-                    ((ResetFormAction) action).executeFormAction();
                 }
             }
         }
@@ -194,7 +189,7 @@ public class MyAnnotationCallback implements AnnotationCallback {
             if (markupAnnotation.getPopupAnnotation() != null) {
                 page.deleteAnnotation(markupAnnotation.getPopupAnnotation());
                 // find and remove the popup component
-                ArrayList<AbstractAnnotationComponent> annotationComponents =
+                ArrayList<AnnotationComponent> annotationComponents =
                         ((AbstractPageViewComponent) pageComponent).getAnnotationComponents();
                 Reference compReference;
                 Reference popupReference = markupAnnotation.getPopupAnnotation().getPObjectReference();

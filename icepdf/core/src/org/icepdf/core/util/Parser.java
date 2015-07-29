@@ -1071,6 +1071,7 @@ public class Parser {
         reader.reset();
     }
 
+
     public int getIntSurroundedByWhitespace() {
         int num = 0;
         boolean makeNegative = false;
@@ -1134,6 +1135,7 @@ public class Parser {
                 break;
             }
         }
+
         if (singed) {
             if (isDecimal) {
                 return -(digit + decimal);

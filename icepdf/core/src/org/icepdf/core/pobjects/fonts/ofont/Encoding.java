@@ -86,6 +86,7 @@ public class Encoding implements org.icepdf.core.pobjects.fonts.Encoding {
             {80, 8364}  // euro
     };
     public static int[] registeredAlaises = {182};
+
     static {
         h = new HashMap<String, Integer>(1046);
         h.put("A", 65);

@@ -94,11 +94,17 @@ public class SwingController
             Logger.getLogger(SwingController.class.toString());
 
     public static final int CURSOR_OPEN_HAND = 1;
+
     public static final int CURSOR_CLOSE_HAND = 2;
+
     public static final int CURSOR_ZOOM_IN = 3;
+
     public static final int CURSOR_ZOOM_OUT = 4;
+
     public static final int CURSOR_WAIT = 6;
+
     public static final int CURSOR_SELECT = 7;
+
     public static final int CURSOR_DEFAULT = 8;
 
     private static final int MAX_SELECT_ALL_PAGE_COUNT = 250;
@@ -114,12 +120,16 @@ public class SwingController
     private JMenuItem printSetupMenuItem;
     private JMenuItem printMenuItem;
     private JMenuItem exitMenuItem;
+
     private JMenuItem undoMenuItem;
     private JMenuItem redoMenuItem;
+
     private JMenuItem copyMenuItem;
     private JMenuItem deleteMenuItem;
+
     private JMenuItem selectAllMenuItem;
     private JMenuItem deselectAllMenuItem;
+
     private JMenuItem fitActualSizeMenuItem;
     private JMenuItem fitPageMenuItem;
     private JMenuItem fitWidthMenuItem;
@@ -129,47 +139,60 @@ public class SwingController
     private JMenuItem rotateRightMenuItem;
     private JMenuItem showHideToolBarMenuItem;
     private JMenuItem showHideUtilityPaneMenuItem;
+
     private JMenuItem firstPageMenuItem;
     private JMenuItem previousPageMenuItem;
     private JMenuItem nextPageMenuItem;
     private JMenuItem lastPageMenuItem;
     private JMenuItem searchMenuItem;
     private JMenuItem goToPageMenuItem;
+
     private JMenuItem minimiseAllMenuItem;
     private JMenuItem bringAllToFrontMenuItem;
     private List windowListMenuItems;
+
     private JMenuItem aboutMenuItem;
+
     private JButton openFileButton;
     private JButton saveAsFileButton;
     private JButton printButton;
     private JButton searchButton;
     private JToggleButton showHideUtilityPaneButton;
+
     private JButton firstPageButton;
     private JButton previousPageButton;
     private JButton nextPageButton;
     private JButton lastPageButton;
     private JTextField currentPageNumberTextField;
     private JLabel numberOfPagesLabel;
+
     private JButton zoomInButton;
     private JButton zoomOutButton;
     private JComboBox zoomComboBox;
+
     private JToggleButton fitActualSizeButton;
     private JToggleButton fitHeightButton;
     private JToggleButton fitWidthButton;
+
     private JToggleButton fontEngineButton;
+
     private JToggleButton facingPageViewContinuousButton;
     private JToggleButton singlePageViewContinuousButton;
     private JToggleButton facingPageViewNonContinuousButton;
     private JToggleButton singlePageViewNonContinuousButton;
+
     private JButton rotateLeftButton;
     private JButton rotateRightButton;
+
     private JToggleButton panToolButton;
     private JToggleButton textSelectToolButton;
     private JToggleButton zoomInToolButton;
     private JToggleButton zoomDynamicToolButton;
+
     private JToggleButton selectToolButton;
     private JToggleButton highlightAnnotationToolButton;
     private JToggleButton textAnnotationToolButton;
+
     private JToggleButton linkAnnotationToolButton;
     private JToggleButton highlightAnnotationUtilityToolButton;
     private JToggleButton strikeOutAnnotationToolButton;
@@ -181,10 +204,13 @@ public class SwingController
     private JToggleButton inkAnnotationToolButton;
     private JToggleButton freeTextAnnotationToolButton;
     private JToggleButton textAnnotationUtilityToolButton;
+
     private JToolBar completeToolBar;
+
     // Printing in background thread monitors
     private ProgressMonitor printProgressMonitor;
     private Timer printActivityMonitor;
+
     private JTree outlinesTree;
     private JScrollPane outlinesScrollPane;
     private SearchPanel searchPanel;
@@ -192,13 +218,19 @@ public class SwingController
     private LayersPanel layersPanel;
     private AnnotationPanel annotationPanel;
     private JTabbedPane utilityTabbedPane;
+
     private JSplitPane utilityAndDocumentSplitPane;
     private int utilityAndDocumentSplitPaneLastDividerLocation;
+
     private JLabel statusLabel;
+
     private JFrame viewer;
+
+
     private WindowManagementCallback windowManagementCallback;
     // simple model for swing controller, mainly printer and  file loading state.
     private ViewModel viewModel;
+
     // subcontroller for document view or document page views.
     private DocumentViewControllerImpl documentViewController;
 
@@ -209,6 +241,7 @@ public class SwingController
 
 
     private Document document;
+
     private boolean disposed;
 
     // internationalization messages, loads message for default JVM locale.
@@ -593,6 +626,7 @@ public class SwingController
         mi.addActionListener(this);
     }
 
+
     /**
      * Called by SwingViewerBuilder, so that SwingController can setup event handling
      */
@@ -892,6 +926,7 @@ public class SwingController
         btn.addItemListener(this);
     }
 
+
     /**
      * Called by SwingViewerBuilder, so that SwingController can setup event handling
      */
@@ -906,6 +941,7 @@ public class SwingController
     public void setCompleteToolBar(JToolBar toolbar) {
         completeToolBar = toolbar;
     }
+
 
     /**
      * Called by SwingViewerBuilder, so that SwingController can setup event handling

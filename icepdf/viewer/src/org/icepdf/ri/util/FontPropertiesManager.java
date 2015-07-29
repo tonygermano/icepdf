@@ -108,7 +108,7 @@ public class FontPropertiesManager {
                 readDefaulFontPaths(null);
                 // save the file
                 saveProperties();
-            }else{
+            } else {
                 loadProperties();
             }
         }
@@ -119,7 +119,7 @@ public class FontPropertiesManager {
      * Create a new instance of the FontPropertiesManager class.  This constructor will not scan
      * the system for fonts.  The users must call one of the following methods to scan for fonts;
      * {@ling #readFontPaths} or {@ling #readSystemFonts}
-     *
+     * <p/>
      * <p/>
      * Typical usage would look like this:<br />
      * <ul>
