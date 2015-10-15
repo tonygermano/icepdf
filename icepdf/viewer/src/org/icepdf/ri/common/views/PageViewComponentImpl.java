@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2015 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -19,15 +19,14 @@ import org.icepdf.core.events.PaintPageEvent;
 import org.icepdf.core.events.PaintPageListener;
 import org.icepdf.core.pobjects.Page;
 import org.icepdf.core.pobjects.PageTree;
-import org.icepdf.core.pobjects.annotations.ChoiceWidgetAnnotation;
 import org.icepdf.core.pobjects.annotations.FreeTextAnnotation;
-import org.icepdf.core.pobjects.annotations.TextWidgetAnnotation;
 import org.icepdf.core.pobjects.graphics.text.PageText;
 import org.icepdf.core.search.DocumentSearchController;
 import org.icepdf.core.util.*;
 import org.icepdf.ri.common.tools.SelectionBoxHandler;
 import org.icepdf.ri.common.tools.TextSelectionPageHandler;
 import org.icepdf.ri.common.views.annotations.AbstractAnnotationComponent;
+import org.icepdf.ri.common.views.annotations.FreeTextAnnotationComponent;
 import org.icepdf.ri.common.views.annotations.PopupAnnotationComponent;
 import org.icepdf.ri.common.views.listeners.DefaultPageViewLoadingListener;
 import org.icepdf.ri.common.views.listeners.PageViewLoadingListener;
@@ -145,9 +144,12 @@ public class PageViewComponentImpl extends
     private static double verticalScaleFactor;
     // horizontal  scale factor to extend buffer
     private static double horizontalScaleFactor;
+
     private static int scrollInitThreshold = 250;
+
     // graphics configuration
     private static GraphicsConfiguration gc;
+
     static {
         // default value have been assigned.  Keep in mind that larger ratios will
         // result in more memory usage.
@@ -231,9 +233,9 @@ public class PageViewComponentImpl extends
     public void addAnnotation(AnnotationComponent annotation) {
         // delegate to handler.
         if (annotationComponents == null) {
-            annotationComponents = new ArrayList<AbstractAnnotationComponent>();
+            annotationComponents = new ArrayList<AnnotationComponent>();
         }
-        annotationComponents.add((AbstractAnnotationComponent)annotation);
+        annotationComponents.add(annotation);
         if (annotation instanceof PopupAnnotationComponent) {
             this.add((AbstractAnnotationComponent) annotation, JLayeredPane.POPUP_LAYER);
         } else {
@@ -353,12 +355,6 @@ public class PageViewComponentImpl extends
     public void validate() {
         // calculate real size of page.
         calculatePageSize(pageSize);
-        // validate annotation field components.
-        if (annotationComponents != null){
-            for (AbstractAnnotationComponent comp: annotationComponents){
-                comp.validate();
-            }
-        }
         super.validate();
     }
 
@@ -382,10 +378,6 @@ public class PageViewComponentImpl extends
         // make sure the initiate the pages size
         if (!isPageSizeCalculated) {
             calculatePageSize(pageSize);
-            // revalidate the parent PageDecorator.
-            // in todo 1.6 we can use revalidate.
-            getParent().invalidate();
-            getParent().validate();
             pagePainter.setIsBufferDirty(true);
         } else if (isPageStateDirty()) {
             if (pagePainter.isRunning()) {
@@ -428,7 +420,6 @@ public class PageViewComponentImpl extends
             if (pageBufferImage != null && !isPageStateDirty()) {
                 // block, if copy area is being done in painter thread
 //                synchronized (paintCopyAreaLock) {
-
                 g.drawImage(pageBufferImage, bufferedPageImageBounds.x,
                         bufferedPageImageBounds.y, this);
 //                }
@@ -482,9 +473,7 @@ public class PageViewComponentImpl extends
                     // want to paint search text and text selection if text selection tool is selected.
                     (searchController.isSearchHighlightRefreshNeeded(pageIndex, null) ||
                             documentViewModel.isViewToolModeSelected(DocumentViewModel.DISPLAY_TOOL_TEXT_SELECTION) ||
-                            documentViewModel.isViewToolModeSelected(DocumentViewModel.DISPLAY_TOOL_HIGHLIGHT_ANNOTATION) ||
-                            documentViewModel.isViewToolModeSelected(DocumentViewModel.DISPLAY_TOOL_STRIKEOUT_ANNOTATION) ||
-                            documentViewModel.isViewToolModeSelected(DocumentViewModel.DISPLAY_TOOL_UNDERLINE_ANNOTATION))
+                            documentViewModel.isViewToolModeSelected(DocumentViewModel.DISPLAY_TOOL_HIGHLIGHT_ANNOTATION))
                     ) {
                 PageText pageText = currentPage.getViewText();
                 if (pageText != null) {
@@ -533,13 +522,9 @@ public class PageViewComponentImpl extends
                 AnnotationComponent annotation;
                 for (int i = 0, max = annotationComponents.size(); i < max; i++) {
                     annotation = annotationComponents.get(i);
-                    if (annotation != null &&((Component) annotation).isVisible() &&
+                    if (((Component) annotation).isVisible() &&
                             !(annotation.getAnnotation() instanceof FreeTextAnnotation
-                                    && ((AbstractAnnotationComponent) annotation).isActive()) &&
-                            !(annotation.getAnnotation() instanceof TextWidgetAnnotation
-                                    && ((AbstractAnnotationComponent) annotation).isActive()) &&
-                            !(annotation.getAnnotation() instanceof ChoiceWidgetAnnotation
-                                    && ((AbstractAnnotationComponent) annotation).isActive())) {
+                                    && ((FreeTextAnnotationComponent) annotation).isActive())) {
                         annotation.getAnnotation().render(gg2,
                                 GraphicsRenderingHints.SCREEN,
                                 documentViewModel.getViewRotation(),
@@ -900,7 +885,6 @@ public class PageViewComponentImpl extends
                         !pagePainter.isLastPaintDirty() &&
                         pagePainter.isBufferDirty() &&
                         bufferedPageImageBounds.intersects(oldBufferedPageImageBounds)) {
-
                     // calculate intersection for buffer copy of a visible area, as we
                     // can only copy graphics that are visible.
                     copyRect = bufferedPageImageBounds.intersection(oldBufferedPageImageBounds);
@@ -1023,6 +1007,7 @@ public class PageViewComponentImpl extends
         private boolean isLastPaintDirty;
         private boolean isBufferyDirty;
         private boolean isStopRequested;
+
         private Page page;
 
         private final Object isRunningLock = new Object();
@@ -1227,7 +1212,6 @@ public class PageViewComponentImpl extends
                 isDirtyTimer.removeActionListener(dirtyTimerAction);
                 isActionListenerRegistered = false;
                 page = null;
-
                 // stop painting and mark buffer as dirty
                 if (pagePainter.isRunning()) {
                     pagePainter.stopPaintingPage();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2015 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -74,9 +74,6 @@ public class Resources extends Dictionary {
         properties = library.getDictionary(entries, PROPERTIES_KEY);
     }
 
-    public HashMap getFonts() {
-        return fonts;
-    }
 
     /**
      * @param o
@@ -161,9 +158,7 @@ public class Resources extends Dictionary {
                         }
                         if (ob instanceof org.icepdf.core.pobjects.fonts.Font) {
                             font = (org.icepdf.core.pobjects.fonts.Font) ob;
-                            String baseFont = font.getBaseFont();
-                            if (s.getName().equals(baseFont) ||
-                                    baseFont.contains(s.getName())) {
+                            if (s.getName().equals(font.getBaseFont())) {
                                 // cache the font for later use.
                                 library.addObject(font, (Reference) tmp);
                                 font.setPObjectReference((Reference) tmp);
@@ -193,10 +188,10 @@ public class Resources extends Dictionary {
 
     /**
      * @param s
-     * @param graphicsState
+     * @param fill
      * @return
      */
-    public Image getImage(Name s, GraphicsState graphicsState) {
+    public Image getImage(Name s, Color fill) {
 
         // check xobjects for stream
         ImageStream st = (ImageStream) library.getObject(xobjects, s);
@@ -210,7 +205,7 @@ public class Resources extends Dictionary {
         // lastly return the images.
         Image image = null;
         try {
-            image = st.getImage(graphicsState, this);
+            image = st.getImage(fill, this);
         } catch (Exception e) {
             logger.log(Level.FINE, "Error getting image by name: " + s, e);
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2015 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -60,6 +60,7 @@ public class Destination {
             Logger.getLogger(Destination.class.toString());
 
     public static final Name D_KEY = new Name("D");
+
     // Vector destination type formats.
     public static final Name TYPE_XYZ = new Name("XYZ");
     public static final Name TYPE_FIT = new Name("Fit");

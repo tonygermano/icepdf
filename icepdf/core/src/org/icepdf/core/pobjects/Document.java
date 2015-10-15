@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2015 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -20,9 +20,6 @@ import org.icepdf.core.application.ProductInfo;
 import org.icepdf.core.exceptions.PDFException;
 import org.icepdf.core.exceptions.PDFSecurityException;
 import org.icepdf.core.io.*;
-import org.icepdf.core.pobjects.acroform.FieldDictionary;
-import org.icepdf.core.pobjects.acroform.InteractiveForm;
-import org.icepdf.core.pobjects.annotations.AbstractWidgetAnnotation;
 import org.icepdf.core.pobjects.graphics.WatermarkCallback;
 import org.icepdf.core.pobjects.graphics.text.PageText;
 import org.icepdf.core.pobjects.security.SecurityManager;
@@ -80,7 +77,9 @@ public class Document {
 
     private static final String INCREMENTAL_UPDATER =
             "org.icepdf.core.util.IncrementalUpdater";
+
     public static boolean foundIncrementalUpdater;
+
     static {
         // check class bath for NFont library, and declare results.
         try {
@@ -120,21 +119,17 @@ public class Document {
 
     // disable/enable file caching, overrides fileCachingSize.
     private static boolean isCachingEnabled;
-    private static boolean isFileCachingEnabled;
-    private static int fileCacheMaxSize;
 
     // repository of all PDF object associated with this document.
     private Library library = null;
+
     private SeekableInput documentSeekableInput;
+
     static {
         // sets if file caching is enabled or disabled.
         isCachingEnabled =
                 Defs.sysPropertyBoolean("org.icepdf.core.streamcache.enabled",
-                        false);
-
-        isFileCachingEnabled = Defs.sysPropertyBoolean("org.icepdf.core.filecache.enabled",
-                true);
-        fileCacheMaxSize = Defs.intProperty("org.icepdf.core.filecache.size", 200000000);
+                        true);
     }
 
     /**
@@ -202,22 +197,28 @@ public class Document {
     public void setFile(String filepath)
             throws PDFException, PDFSecurityException, IOException {
         setDocumentOrigin(filepath);
-        File file = new File(filepath);
-        FileInputStream inputStream = new FileInputStream(file);
-        int fileLength = inputStream.available();
-        if (isFileCachingEnabled && file.length() > 0 && fileLength <= fileCacheMaxSize) {
-            // copy the file contents into byte[], for direct memory mapping.
-            byte[] data = new byte[fileLength];
-            inputStream.read(data);
-            setByteArray(data, 0, fileLength, filepath);
-        }else{
-            RandomAccessFileInputStream rafis =
-                    RandomAccessFileInputStream.build(new File(filepath));
-            setInputStream(rafis);
+        RandomAccessFileInputStream rafis =
+                RandomAccessFileInputStream.build(new File(filepath));
+        /*
+        // Test code for setByteArray(-)
+        if( true ) {
+            byte[] buffer = new byte[4096];
+            int read = buffer.length;
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream( 40960 );
+            while ((read = rafis.read(buffer, 0, buffer.length)) > 0){
+                byteArrayOutputStream.write(buffer, 0, read);
+            }
+            byteArrayOutputStream.flush();
+            byteArrayOutputStream.close();
+            rafis.close();
+            int length = byteArrayOutputStream.size();
+            byte[] data = byteArrayOutputStream.toByteArray();
+            setByteArray( data, 0, length, null );
+            return;
         }
-        if (inputStream != null) {
-            inputStream.close();
-        }
+        */
+
+        setInputStream(rafis);
     }
 
     /**
@@ -409,7 +410,7 @@ public class Document {
     /**
      * Sets the input stream of the PDF file to be rendered.
      *
-     * @param in inputStream containing PDF data stream
+     * @param in inputstream containing PDF data stream
      * @throws PDFException         if error occurs
      * @throws PDFSecurityException security error
      * @throws IOException          io error during stream handling
@@ -809,7 +810,7 @@ public class Document {
      */
     private boolean makeSecurityManager(PTrailer documentTrailer) throws PDFSecurityException {
         /**
-         * Before a security manager can be created or needs to be created
+         * Before a securtiy manager can be created or needs to be created
          * we need the following
          *      1.  The trailer object must have an encrypt entry
          *      2.  The trailer object must have an ID entry
@@ -817,15 +818,6 @@ public class Document {
         boolean madeSecurityManager = false;
         HashMap<Object, Object> encryptDictionary = documentTrailer.getEncrypt();
         List fileID = documentTrailer.getID();
-        // check for a missing file ID.
-        if (fileID == null) {
-            // we have a couple malformed documents that don't specify a FILE ID.
-            // but proving two empty string allows the document to be decrypted.
-            fileID = new ArrayList(2);
-            fileID.add(new LiteralStringObject(""));
-            fileID.add(new LiteralStringObject(""));
-        }
-
         if (encryptDictionary != null && fileID != null) {
             // create new security manager
             library.securityManager = new SecurityManager(
@@ -1203,54 +1195,6 @@ public class Document {
         if (pTrailer == null)
             return null;
         return pTrailer.getInfo();
-    }
-
-    /**
-     * Enables or disables the form widget annotation highlighting.  Generally not use for print but can be very
-     * useful for highlight input fields in a Viewer application.
-     *
-     * @param highlight true to enable highlight mode, otherwise; false.
-     */
-    public void setFormHighlight(boolean highlight){
-        // iterate over the document annotations and set the appropriate highlight value.
-        if (catalog != null && catalog.getInteractiveForm() != null){
-            InteractiveForm interactiveForm = catalog.getInteractiveForm();
-            ArrayList<Object> widgets = interactiveForm.getFields();
-            if (widgets != null) {
-                for (Object widget : widgets) {
-                    descendFormTree(widget, highlight);
-                }
-            }
-        }
-    }
-
-    /**
-     * Recursively set highlight on all the form fields.
-     *
-     * @param formNode root form node.
-     */
-    private  void descendFormTree(Object formNode, boolean highLight) {
-        if (formNode instanceof AbstractWidgetAnnotation) {
-            ((AbstractWidgetAnnotation) formNode).setEnableHighlightedWidget(highLight);
-        } else if (formNode instanceof FieldDictionary) {
-            // iterate over the kid's array.
-            FieldDictionary child = (FieldDictionary) formNode;
-            formNode = child.getKids();
-            if (formNode != null) {
-                ArrayList kidsArray = (ArrayList) formNode;
-                for (Object kid : kidsArray) {
-                    if (kid instanceof Reference) {
-                        kid = library.getObject((Reference) kid);
-                    }
-                    if (kid instanceof AbstractWidgetAnnotation) {
-                        ((AbstractWidgetAnnotation) kid).setEnableHighlightedWidget(highLight);
-                    } else if (kid instanceof FieldDictionary) {
-                        descendFormTree(kid, highLight);
-                    }
-                }
-            }
-
-        }
     }
 
     /**

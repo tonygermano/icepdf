@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2015 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -16,8 +16,6 @@
 package org.icepdf.core.pobjects;
 
 import java.awt.*;
-import java.awt.geom.Dimension2D;
-
 
 /**
  * <p>This class represents a dimension similar to java.awt.geom.Dimension2D.Dimension
@@ -25,7 +23,7 @@ import java.awt.geom.Dimension2D;
  *
  * @since 2.0
  */
-public class PDimension extends Dimension2D {
+public class PDimension {
     private float width;
     private float height;
 
@@ -76,7 +74,7 @@ public class PDimension extends Dimension2D {
      *
      * @return width
      */
-    public double getWidth() {
+    public float getWidth() {
         return width;
     }
 
@@ -85,7 +83,7 @@ public class PDimension extends Dimension2D {
      *
      * @return height
      */
-    public double getHeight() {
+    public float getHeight() {
         return height;
     }
 
@@ -107,11 +105,5 @@ public class PDimension extends Dimension2D {
      */
     public String toString() {
         return "PDimension { width=" + width + ", height=" + height + " }";
-    }
-
-    @Override
-    public void setSize(double width, double height) {
-        this.width = (float) width;
-        this.height = (float) height;
     }
 }

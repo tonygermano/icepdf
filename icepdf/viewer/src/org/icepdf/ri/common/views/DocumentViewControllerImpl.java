@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2015 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -65,6 +65,7 @@ public class DocumentViewControllerImpl
      * Displays a the pages in one column.
      */
     public static final int ONE_COLUMN_VIEW = 2;
+
     /**
      * Displays the pages two at a time, with odd-numbered pages on the left.
      */
@@ -73,6 +74,7 @@ public class DocumentViewControllerImpl
      * Displays the pages in two columns, with odd-numbered pages on the left.
      */
     public static final int TWO_COLUMN_LEFT_VIEW = 4;
+
     /**
      * Displays the pages two at a time, with event-numbered pages on the left.
      */
@@ -81,14 +83,17 @@ public class DocumentViewControllerImpl
      * Displays the pages in two columns, with even-numbered pages on the left.
      */
     public static final int TWO_COLUMN_RIGHT_VIEW = 6;
+
     /**
      * Displays the pages in two columns, with even-numbered pages on the left.
      */
     public static final int USE_ATTACHMENTS_VIEW = 7;
+
     /**
      * Zoom factor used when zooming in or out.
      */
     public static final float ZOOM_FACTOR = 1.2F;
+
     /**
      * Rotation factor used with rotating document.
      */
@@ -125,11 +130,16 @@ public class DocumentViewControllerImpl
     protected int viewportWidth, oldViewportWidth;
     protected int viewportHeight, oldViewportHeight;
     protected int viewType, oldViewType;
+
     protected int viewportFitMode, oldViewportFitMode;
+
     protected int cursorType;
+
     protected SwingController viewerController;
+
     protected AnnotationCallback annotationCallback;
     protected SecurityCallback securityCallback;
+
     protected PropertyChangeSupport changes = new PropertyChangeSupport(this);
 
 

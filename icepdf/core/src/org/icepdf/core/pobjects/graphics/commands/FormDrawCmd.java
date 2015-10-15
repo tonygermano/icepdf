@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2015 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -41,6 +41,7 @@ public class FormDrawCmd extends AbstractDrawCmd {
     private int x, y;
 
     private static boolean disableXObjectSMask;
+
     static {
         // decide if large images will be scaled
         disableXObjectSMask =
@@ -137,12 +138,6 @@ public class FormDrawCmd extends AbstractDrawCmd {
         BufferedImage bi = new BufferedImage(width, height,
                 BufferedImage.TYPE_INT_ARGB);
         Graphics2D canvas = bi.createGraphics();
-        if (graphicsState.getFillAlpha() < 1.0f && !xForm.getResources().isShading()) {
-            AlphaComposite alphaComposite =
-                    AlphaComposite.getInstance(graphicsState.getAlphaRule(),
-                            graphicsState.getFillAlpha());
-            canvas.setComposite(alphaComposite);
-        }
         // copy over the rendering hints
         canvas.setRenderingHints(renderingHints);
         // get shapes and paint them.
@@ -151,12 +146,12 @@ public class FormDrawCmd extends AbstractDrawCmd {
             xFormShapes.setPageParent(parentPage);
             // translate the coordinate system as we'll paint the g
             // graphic at the correctly location later.
-//            if (!xForm.getResources().isShading()) {
+            if (!xForm.getResources().isShading()) {
                 canvas.translate(-(int) bBox.getX(), -(int) bBox.getY());
                 canvas.setClip(bBox);
                 xFormShapes.paint(canvas);
                 xFormShapes.setPageParent(null);
-//            }
+            }
             // gradient define smask, this still needs some work to get the
             // coord system correct, but basically smask defines pattern but
             // doesn't actually paint/fill a shape, it's assumed that its done

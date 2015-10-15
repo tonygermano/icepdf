@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2015 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -51,6 +51,7 @@ public abstract class AbstractDocumentViewModel implements DocumentViewModel {
     private Timer isDirtyTimer;
     // dirty refresh timer call interval
     private static int dirtyTimerInterval = 5;
+
     static {
         try {
             dirtyTimerInterval =
@@ -65,16 +66,21 @@ public abstract class AbstractDocumentViewModel implements DocumentViewModel {
     private ArrayList<WeakReference<AbstractPageViewComponent>> selectedPageText;
     // select all state flag, optimization for painting select all state lazily
     private boolean selectAll;
+
     protected List<AbstractPageViewComponent> pageComponents;
+
     // annotation memento caretaker
     protected UndoCaretaker undoCaretaker;
+
     // currently selected annotation
     protected AnnotationComponent currentAnnotation;
+
     // page view settings
     protected float userZoom = 1.0f, oldUserZoom = 1.0f;
     protected float userRotation, oldUserRotation;
     protected int currentPageIndex, oldPageIndex;
     protected int pageBoundary = Page.BOUNDARY_CROPBOX;
+
     // page tool settings
     protected int userToolModeFlag, oldUserToolModeFlag;
 

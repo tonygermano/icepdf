@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2015 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -52,7 +52,6 @@ public class TextSprite {
 
     // space reference for where glyph
     private AffineTransform graphicStateTransform;
-    private AffineTransform tmTransform;
 
     // stroke color
     private Color strokeColor;
@@ -70,11 +69,10 @@ public class TextSprite {
      * @param font font used when painting glyphs.
      * @param size size of the font in user space
      */
-    public TextSprite(FontFile font, int size, AffineTransform graphicStateTransform, AffineTransform tmTransform) {
+    public TextSprite(FontFile font, int size, AffineTransform graphicStateTransform) {
         glyphTexts = new ArrayList<GlyphText>(size);
         // all glyphs in text share this ctm
         this.graphicStateTransform = graphicStateTransform;
-        this.tmTransform = tmTransform;
         this.font = font;
         bounds = new Rectangle2D.Float();
     }
@@ -98,32 +96,22 @@ public class TextSprite {
 
         float h = (float) (font.getAscent() + font.getDescent());
 
-        double ascent = font.getAscent();
-
         if (h <= 0.0f) {
             h = (float) (font.getMaxCharBounds().getHeight());
         }
         if (w <= 0.0f) {
             w = (float) font.getMaxCharBounds().getWidth();
         }
-        // zero height will not intersect with clip rectangle and maybe have visibility issues.
-        // we generally get here if the font.getAscent is zero and as a result must compensate.
+        // zero height will not intersect with clip rectangle
+        // todo: test if this can occur, might be legacy code from old bug...
         if (h <= 0.0f) {
-            Rectangle2D bounds = font.getEstringBounds(cid, 0, 1);
-            if (bounds != null) {
-                h = (float) font.getEstringBounds(cid, 0, 1).getHeight();
-            } else {
-                h = 1.0f;
-            }
-            if (ascent == 0) {
-                ascent = h;
-            }
+            h = 1.0f;
         }
         if (w <= 0.0f) {
             w = 1.0f;
         }
         Rectangle2D.Float glyphBounds =
-                new Rectangle2D.Float(x, y - (float) ascent, w, h);
+                new Rectangle2D.Float(x, y - (float) font.getAscent(), w, h);
 
         // add bounds to total text bounds.
         bounds.add(glyphBounds);
@@ -131,7 +119,7 @@ public class TextSprite {
         // create glyph and normalize bounds.
         GlyphText glyphText =
                 new GlyphText(x, y, glyphBounds, cid, unicode);
-        glyphText.normalizeToUserSpace(graphicStateTransform, tmTransform);
+        glyphText.normalizeToUserSpace(graphicStateTransform);
         glyphTexts.add(glyphText);
         return glyphText;
     }
@@ -150,7 +138,7 @@ public class TextSprite {
     }
 
     /**
-     * Set the graphic state transform on all child sprites, This is used for
+     * Set the graphic state transorm on all child sprites, This is used for
      * xForm object parsing and text selection.  There is no need to do this
      * outside of the context parser.
      *
@@ -159,7 +147,7 @@ public class TextSprite {
     public void setGraphicStateTransform(AffineTransform graphicStateTransform) {
         this.graphicStateTransform = graphicStateTransform;
         for (GlyphText sprite : glyphTexts) {
-            sprite.normalizeToUserSpace(this.graphicStateTransform, tmTransform);
+            sprite.normalizeToUserSpace(this.graphicStateTransform);
         }
     }
 

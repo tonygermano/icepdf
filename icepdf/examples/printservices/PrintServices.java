@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2015 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -90,6 +90,14 @@ public class PrintServices {
         PrintService[] services =
                 PrintServiceLookup.lookupPrintServices(
                         DocFlavor.SERVICE_FORMATTED.PAGEABLE, null);
+
+        MultiDocPrintService mdps[] =
+                PrintServiceLookup.lookupMultiDocPrintServices(
+                        new DocFlavor[]{DocFlavor.SERVICE_FORMATTED.PAGEABLE}, null);
+
+        MultiDocPrintJob mdpj = mdps[0].createMultiDocPrintJob();
+        System.out.println(mdpj);
+
 
         int selectedPrinter = 0;
         // ask the user which printer they want, only quite when they type

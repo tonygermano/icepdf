@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2015 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -16,7 +16,6 @@
 package org.icepdf.core.util.content;
 
 import org.icepdf.core.io.ByteDoubleArrayInputStream;
-import org.icepdf.core.io.SequenceInputStream;
 import org.icepdf.core.pobjects.*;
 import org.icepdf.core.pobjects.graphics.*;
 import org.icepdf.core.pobjects.graphics.commands.GlyphOutlineDrawCmd;
@@ -29,8 +28,9 @@ import org.icepdf.core.util.PdfOps;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.NoninvertibleTransformException;
-import java.io.*;
-import java.util.ArrayList;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Stack;
@@ -107,11 +107,7 @@ public class OContentParser extends AbstractContentParser {
         Parser parser;
 
         // test case for progress bar
-        java.util.List<InputStream> in = new ArrayList<InputStream>();
-        for (int i = 0; i < streamBytes.length; i++) {
-            in.add(new ByteArrayInputStream(streamBytes[i]));
-        }
-        parser = new Parser(new SequenceInputStream(in, ' '));
+        parser = new Parser(new ByteDoubleArrayInputStream(streamBytes));
 
         // text block y offset.
         float yBTstart = 0;
@@ -123,7 +119,7 @@ public class OContentParser extends AbstractContentParser {
             Object tok;
             while (true) {
 
-                if (Thread.currentThread().isInterrupted()) {
+                if (Thread.interrupted()) {
                     throw new InterruptedException("ContentParser thread interrupted");
                 }
 
@@ -1112,7 +1108,8 @@ public class OContentParser extends AbstractContentParser {
             // create the image stream
             ImageStream st = new ImageStream(library, iih, data);
             ImageReference imageStreamReference =
-                    new InlineImageStreamReference(st, graphicState, resources, 0, null);
+                    new InlineImageStreamReference(st, graphicState.getFillColor(),
+                            resources, 0, null);
 //            ImageUtility.displayImage(imageStreamReference.getImage(), "BI");
             AffineTransform af = new AffineTransform(graphicState.getCTM());
             graphicState.scale(1, -1);
