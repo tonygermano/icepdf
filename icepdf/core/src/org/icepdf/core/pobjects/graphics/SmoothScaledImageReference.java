@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2015 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -62,10 +62,10 @@ public class SmoothScaledImageReference extends CachedImageReference {
     private int width;
     private int height;
 
-    protected SmoothScaledImageReference(ImageStream imageStream, GraphicsState graphicsState,
+    protected SmoothScaledImageReference(ImageStream imageStream, Color fillColor,
                                          Resources resources, int imageIndex,
                                          Page page) {
-        super(imageStream, graphicsState, resources, imageIndex, page);
+        super(imageStream, fillColor, resources, imageIndex, page);
 
         // get eh original image width.
         width = imageStream.getWidth();
@@ -95,7 +95,7 @@ public class SmoothScaledImageReference extends CachedImageReference {
         try {
             // get the stream image if need, otherwise scale what you have.
             if (image == null) {
-                image = imageStream.getImage(graphicsState, resources);
+                image = imageStream.getImage(fillColor, resources);
                 if (width > maxImageWidth || height > maxImageHeight) {
                     return image;
                 }
@@ -247,6 +247,7 @@ public class SmoothScaledImageReference extends CachedImageReference {
         g2.drawImage(img2, 0, 0, null);
         g2.dispose();
     }
+
 
     /**
      * Utility to apply image scaling using the g2.drawImage() method.

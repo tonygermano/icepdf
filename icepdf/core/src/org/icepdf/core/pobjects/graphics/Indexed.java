@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2015 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -75,11 +75,9 @@ public class Indexed extends PColorSpace {
             // make sure the colors array is the correct length, so we'll copy
             // over the data from the stream just to be sure.
             Stream lookup = (Stream) (library.getObject((Reference) (dictionary.get(3))));
-            if (lookup != null) {
-                byte[] colorStream = lookup.getDecodedStreamBytes(0);
-                int length = colors.length < colorStream.length ? colors.length : colorStream.length;
-                System.arraycopy(colorStream, 0, colors, 0, length);
-            }
+            byte[] colorStream = lookup.getDecodedStreamBytes(0);
+            int length = colors.length < colorStream.length ? colors.length : colorStream.length;
+            System.arraycopy(colorStream, 0, colors, 0, length);
         }
     }
 
@@ -128,13 +126,11 @@ public class Indexed extends PColorSpace {
      */
     public Color getColor(float[] f, boolean fillAndStroke) {
         init();
-        int index = (int) f[0];//(int) (f[0] * (cols.length - 1));
-        if (index >= 0 && index <= hival) {
+        int index = (int) (f[0] * (cols.length - 1));
+        if (index < cols.length) {
             return cols[index];
-        } else if (index > hival) {
-            return cols[hival];
         } else {
-            return cols[0];
+            return cols[(int) f[0]];
         }
 
     }

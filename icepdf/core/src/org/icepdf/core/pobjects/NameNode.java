@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2015 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -17,9 +17,9 @@ package org.icepdf.core.pobjects;
 
 import org.icepdf.core.util.Library;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Vector;
 
 /**
  * NameNode used in building a name tree.
@@ -37,11 +37,9 @@ public class NameNode extends Dictionary {
     private static Object NOT_FOUND_IS_GREATER = new Object();
 
     private boolean namesAreDecrypted;
-    // flat tree, names and values only.
     private List<String> namesAndValues;
-    // kids type of tree, need to build out the structure
     private List kidsReferences;
-    private List<NameNode> kidsNodes;
+    private Vector<NameNode> kidsNodes;
     private String lowerLimit;
     private String upperLimit;
 
@@ -52,34 +50,20 @@ public class NameNode extends Dictionary {
     @SuppressWarnings("unchecked")
     public NameNode(Library l, HashMap h) {
         super(l, h);
-        // root node can either be a Kids or Names
         Object o = library.getObject(entries, KIDS_KEY);
         if (o != null && o instanceof List) {
-            // we have a kids array which can be composed of an intermediary
-            // /limits/kids and or the leaf /limits/names
             kidsReferences = (List) o;
             int sz = kidsReferences.size();
             if (sz > 0) {
-                kidsNodes = new ArrayList<NameNode>(sz);
-                for (Object ref : kidsReferences) {
-                    if (ref instanceof Reference) {
-                        o = library.getObject((Reference) ref);
-                        kidsNodes.add(new NameNode(library, (HashMap) o));
-                    }
-                }
-
+                kidsNodes = new Vector<NameNode>(sz);
+                kidsNodes.setSize(sz);
             }
         }
-        // if no kids[] then we must have a names array which is only one leaf.
-        else if (o == null) {
-            // process the names
-            namesAreDecrypted = false;
-            o = library.getObject(entries, NAMES_KEY);
-            if (o != null && o instanceof List) {
-                namesAndValues = (List) o;
-            }
+        namesAreDecrypted = false;
+        o = library.getObject(entries, NAMES_KEY);
+        if (o != null && o instanceof List) {
+            namesAndValues = (List) o;
         }
-        // assign the upper and lower limits if any.
         o = library.getObject(entries, LIMITS_KEY);
         if (o != null && o instanceof List) {
             List limits = (List) o;
@@ -106,7 +90,7 @@ public class NameNode extends Dictionary {
         return kidsReferences;
     }
 
-    public List<NameNode> getKidsNodes() {
+    public List getKidsNodes() {
         return kidsNodes;
     }
 

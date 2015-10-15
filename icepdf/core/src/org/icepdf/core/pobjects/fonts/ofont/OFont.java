@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2015 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -29,7 +29,6 @@ import java.awt.font.TextLayout;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -385,8 +384,8 @@ public class OFont implements FontFile {
         return String.valueOf(c);
     }
 
-    public ByteEncoding getByteEncoding() {
-        return ByteEncoding.ONE_BYTE;
+    public boolean isOneByteEncoding() {
+        return false;
     }
 
     public Shape getEstringOutline(String displayText, float x, float y) {
@@ -421,9 +420,5 @@ public class OFont implements FontFile {
         }
 
         return glyphVector.getOutline();
-    }
-
-    public URL getSource() {
-        return null;
     }
 }

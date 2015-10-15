@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2015 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -256,7 +256,7 @@ public class ExtGState extends Dictionary {
      * @return the line width with Number value.  If the line width was not
      *         specified in the dictionary null is returned.
      */
-    public Number getLineWidth() {
+    Number getLineWidth() {
         return getNumber(LW_KEY);
     }
 
@@ -266,7 +266,7 @@ public class ExtGState extends Dictionary {
      * @return the line cap style Number value.  If the cap style was not
      *         specified in the dictionary null is returned.
      */
-    public Number getLineCapStyle() {
+    Number getLineCapStyle() {
         return getNumber(LC_KEY);
     }
 
@@ -275,7 +275,7 @@ public class ExtGState extends Dictionary {
      *
      * @return
      */
-    public Name getBlendingMode() {
+    Name getBlendingMode() {
         return library.getName(entries, BM_KEY);
     }
 
@@ -285,7 +285,7 @@ public class ExtGState extends Dictionary {
      * @return the line join style Number value.  If the join style was not
      *         specified in the dictionary null is returned.
      */
-    public Number getLineJoinStyle() {
+    Number getLineJoinStyle() {
         return getNumber(LJ_KEY);
     }
 
@@ -305,7 +305,7 @@ public class ExtGState extends Dictionary {
      * @return the line dash array [dashArray dashPhase].  If the dash pattern
      *         is not specified the dictionary null is returned.
      */
-    public List getLineDashPattern() {
+    List getLineDashPattern() {
         List<Object> dashPattern = null;
         Number dashPhase;
         float[] dashArray = null;
@@ -347,7 +347,7 @@ public class ExtGState extends Dictionary {
      * @return the stroking alpha constant value.  If the stroking alpha constant
      *         was not specified in the dictionary null is returned.
      */
-    public Number getStrokingAlphConstant() {
+    Number getStrokingAlphConstant() {
         return getNumber(CA_KEY);
     }
 
@@ -357,7 +357,7 @@ public class ExtGState extends Dictionary {
      * @return the vstroking alpha constant value.  If the non-stroking alpha constant
      *         was not specified in the dictionary null is returned.
      */
-    public Number getNonStrokingAlphConstant() {
+    Number getNonStrokingAlphConstant() {
         return getNumber(ca_KEY);
     }
 
@@ -373,7 +373,7 @@ public class ExtGState extends Dictionary {
      *
      * @return true if OP is enabled.
      */
-    public Boolean getOverprint() {
+    Boolean getOverprint() {
         Object o = getObject(OP_KEY);
         if (o instanceof String)
             return Boolean.valueOf((String) o);
@@ -390,7 +390,7 @@ public class ExtGState extends Dictionary {
      *
      * @return true if enabled, false otherwise.
      */
-    public Boolean getOverprintFill() {
+    Boolean getOverprintFill() {
         Object o = getObject(op_KEY);
         if (o instanceof String)
             return Boolean.valueOf((String) o);
@@ -405,7 +405,7 @@ public class ExtGState extends Dictionary {
      *
      * @return
      */
-    public Number getOverprintMode() {
+    Number getOverprintMode() {
         return getNumber(OPM_KEY);
     }
 

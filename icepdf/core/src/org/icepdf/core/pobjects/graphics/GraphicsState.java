@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2015 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -217,15 +217,10 @@ public class GraphicsState {
     // enabled buy default but can be turned off if required.
     private static boolean enabledOverpaint;
 
-    private static boolean enableQuickClip;
-
     static {
         enabledOverpaint =
                 Defs.sysPropertyBoolean("org.icepdf.core.overpaint",
                         true);
-        enableQuickClip =
-                Defs.sysPropertyBoolean("org.icepdf.core.quickclip",
-                        false);
     }
 
 
@@ -272,7 +267,6 @@ public class GraphicsState {
     // Normally it is simply a SRC_OVER rule but the group can also have isolated
     // and knockout values that directly affect which rule is used for the
     // transparency.
-    private ExtGState extGState;
     private int alphaRule = AlphaComposite.SRC_OVER;
 
     private boolean transparencyGroup;
@@ -296,7 +290,7 @@ public class GraphicsState {
 
     // current clipping area.
     private Area clip;
-    private boolean clipChange;
+    private boolean clipChange = false;
 
     // over print mode
     private int overprintMode;
@@ -332,11 +326,13 @@ public class GraphicsState {
         miterLimit = parentGraphicsState.miterLimit;
         lineJoin = parentGraphicsState.lineJoin;
 
+        fillColor = new Color(parentGraphicsState.fillColor.getRed(),
+                parentGraphicsState.fillColor.getGreen(),
+                parentGraphicsState.fillColor.getBlue());
 
-        fillColor = new Color(parentGraphicsState.fillColor.getRGB(), true);
-
-        strokeColor = new Color(parentGraphicsState.strokeColor.getRGB(), true);
-
+        strokeColor = new Color(parentGraphicsState.strokeColor.getRed(),
+                parentGraphicsState.strokeColor.getGreen(),
+                parentGraphicsState.strokeColor.getBlue());
         shapes = parentGraphicsState.shapes;
         if (parentGraphicsState.clip != null) {
             clip = (Area) parentGraphicsState.clip.clone();
@@ -360,9 +356,6 @@ public class GraphicsState {
 
         // smaks
         softMask = parentGraphicsState.getSoftMask();
-
-        // copy the parent too.
-        this.parentGraphicState = parentGraphicsState.parentGraphicState;
 
     }
 
@@ -440,9 +433,8 @@ public class GraphicsState {
      * @see org.icepdf.core.pobjects.graphics.ExtGState
      */
     public void concatenate(ExtGState extGState) {
-        // keep a reference for our partial Transparency group support.
-        this.extGState = extGState;
         // Map over extGState attributes if present.
+
         // line width
         if (extGState.getLineWidth() != null) {
             setLineWidth(extGState.getLineWidth().floatValue());
@@ -542,26 +534,13 @@ public class GraphicsState {
             parentGraphicState.set(parentGraphicState.CTM);
             // Add the parents clip to the stack
             if (parentGraphicState.clipChange || clipChange) {
-                if (enableQuickClip) {
-                    if (parentGraphicState.clip != null && clip != null) {
-                        // quick version but will drop potentially complex clips
-                        Rectangle rect = parentGraphicState.clip.getBounds();
-                        if (rect != null && !rect.equals(clip.getBounds())) {
-                            parentGraphicState.shapes.add(new ShapeDrawCmd(new Area(parentGraphicState.clip)));
-                            parentGraphicState.shapes.add(clipDrawCmd);
-                        }
-                    } else {
-                        parentGraphicState.shapes.add(noClipDrawCmd);
+                if (parentGraphicState.clip != null) {
+                    if (!parentGraphicState.clip.equals(clip)) {
+                        parentGraphicState.shapes.add(new ShapeDrawCmd(new Area(parentGraphicState.clip)));
+                        parentGraphicState.shapes.add(clipDrawCmd);
                     }
-                }else{
-                    if (parentGraphicState.clip != null) {
-                        if (!parentGraphicState.clip.equals(clip)) {
-                            parentGraphicState.shapes.add(new ShapeDrawCmd(new Area(parentGraphicState.clip)));
-                            parentGraphicState.shapes.add(clipDrawCmd);
-                        }
-                    } else {
-                        parentGraphicState.shapes.add(noClipDrawCmd);
-                    }
+                } else {
+                    parentGraphicState.shapes.add(noClipDrawCmd);
                 }
             }
             // Update the stack with the parentGraphicsState stack.
@@ -726,9 +705,6 @@ public class GraphicsState {
     }
 
     public void setStrokeAlpha(float alpha) {
-        if (alpha > 1.0f) {
-            alpha = alpha / 255.0f;
-        }
         strokeAlpha = alpha;
     }
 
@@ -737,9 +713,6 @@ public class GraphicsState {
     }
 
     public void setFillAlpha(float alpha) {
-        if (alpha > 1.0f) {
-            alpha = alpha / 255.0f;
-        }
         fillAlpha = alpha;
     }
 
@@ -837,10 +810,6 @@ public class GraphicsState {
 
     public void setSoftMask(SoftMask softMask) {
         this.softMask = softMask;
-    }
-
-    public ExtGState getExtGState() {
-        return extGState;
     }
 }
 

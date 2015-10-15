@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2015 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -56,6 +56,7 @@ public abstract class ShadingPattern extends Dictionary implements Pattern {
     public static final Name COORDS_KEY = new Name("Coords");
     public static final Name EXTEND_KEY = new Name("Extend");
     public static final Name FUNCTION_KEY = new Name("Function");
+
     // pattern types by number.
     public static final int SHADING_PATTERN_TYPE_1 = 1;
     public static final int SHADING_PATTERN_TYPE_2 = 2;

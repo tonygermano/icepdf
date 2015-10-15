@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2015 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -16,6 +16,7 @@
 package org.icepdf.core.util.content;
 
 import org.icepdf.core.pobjects.*;
+import org.icepdf.core.pobjects.fonts.FontFactory;
 import org.icepdf.core.pobjects.fonts.FontFile;
 import org.icepdf.core.pobjects.graphics.*;
 import org.icepdf.core.pobjects.graphics.commands.*;
@@ -44,8 +45,10 @@ import java.util.logging.Logger;
 public abstract class AbstractContentParser implements ContentParser {
     private static final Logger logger =
             Logger.getLogger(AbstractContentParser.class.toString());
+
     private static boolean disableTransparencyGroups;
     private static boolean enabledOverPrint;
+
     static {
         // decide if large images will be scaled
         disableTransparencyGroups =
@@ -175,7 +178,7 @@ public abstract class AbstractContentParser implements ContentParser {
 
     protected static void consume_g(GraphicsState graphicState, Stack stack,
                                     Library library) {
-        float gray = Math.abs(((Number) stack.pop()).floatValue());
+        float gray = ((Number) stack.pop()).floatValue();
         // Fill Color Gray
         graphicState.setFillColorSpace(
                 PColorSpace.getColorSpace(library, DeviceGray.DEVICEGRAY_KEY));
@@ -338,6 +341,7 @@ public abstract class AbstractContentParser implements ContentParser {
             graphicState.setStrokeColor(graphicState.getStrokeColorSpace().getColor(f, isTint));
         }
     }
+
 
     protected static void consume_sc(GraphicsState graphicState, Stack stack,
                                      Library library, Resources resources, boolean isTint) {
@@ -585,10 +589,11 @@ public abstract class AbstractContentParser implements ContentParser {
                 // slightly different then a regular xObject as we
                 // need to capture the alpha which is only possible
                 // by paint the xObject to an image.
-                if (!disableTransparencyGroups &&
-                        ((formXObject.getGraphicsState() != null &&
-                                formXObject.getGraphicsState().getSoftMask() != null) ||
-                                (formXObject.isTransparencyGroup())) &&
+                if ((!disableTransparencyGroups ||
+                        (formXObject.getGraphicsState() != null &&
+                                formXObject.getGraphicsState().getSoftMask() != null)) &&
+                        formXObject.isTransparencyGroup() &&
+//                        graphicState.getFillAlpha() < 1.0f &&
                         // limit size, as buffer is needed
                         (formXObject.getBBox().getWidth() < Short.MAX_VALUE &&
                                 formXObject.getBBox().getHeight() < Short.MAX_VALUE)) {
@@ -641,7 +646,7 @@ public abstract class AbstractContentParser implements ContentParser {
 
                 // create an ImageReference for future decoding
                 ImageReference imageReference = ImageReferenceFactory.getImageReference(
-                        imageStream, resources, graphicState,
+                        imageStream, resources, graphicState.getFillColor(),
                         imageIndex.get(), page);
                 imageIndex.incrementAndGet();
 
@@ -669,16 +674,12 @@ public abstract class AbstractContentParser implements ContentParser {
             java.util.List dashVector = (java.util.List) stack.pop();
             // if the dash vector size is zero we have a default none dashed
             // line and thus we skip out
-            if (!dashVector.isEmpty() && dashVector.get(0) != null) {
+            if (dashVector.size() > 0) {
                 // convert dash vector to a array of floats
                 final int sz = dashVector.size();
                 dashArray = new float[sz];
-                Object tmp;
                 for (int i = 0; i < sz; i++) {
-                    tmp = dashVector.get(i);
-                    if (tmp != null && tmp instanceof Number) {
-                        dashArray[i] = Math.abs(((Number) dashVector.get(i)).floatValue());
-                    }
+                    dashArray[i] = Math.abs(((Number) dashVector.get(i)).floatValue());
                 }
                 // corner case check to see if the dash array contains a first element
                 // that is very different then second which is likely the result of
@@ -760,14 +761,13 @@ public abstract class AbstractContentParser implements ContentParser {
         float size = ((Number) stack.pop()).floatValue();
         Name name2 = (Name) stack.pop();
         // build the new font and initialize it.
-
         graphicState.getTextState().font = resources.getFont(name2);
         // in the rare case that the font can't be found then we try and build
         // one so the document can be rendered in some shape or form.
         if (graphicState.getTextState().font == null ||
                 graphicState.getTextState().font.getFont() == null) {
             // turn on the old awt font engine, as we have a null font
-//            FontFactory fontFactory = FontFactory.getInstance();
+            FontFactory fontFactory = FontFactory.getInstance();
 //            boolean awtState = fontFactory.isAwtFontSubstitution();
 //            fontFactory.setAwtFontSubstitution(true);
             try {
@@ -805,12 +805,6 @@ public abstract class AbstractContentParser implements ContentParser {
         if (graphicState.getTextState().font != null) {
             graphicState.getTextState().currentfont =
                     graphicState.getTextState().font.getFont().deriveFont(size);
-        }else{
-            // not font found which is a problem,  so we need to check for interactive form dictionary
-            graphicState.getTextState().font = resources.getLibrary().getInteractiveFormFont(name2.getName());
-            graphicState.getTextState().currentfont = graphicState.getTextState().font.getFont();
-            graphicState.getTextState().currentfont =
-                    graphicState.getTextState().font.getFont().deriveFont(size);
         }
     }
 
@@ -843,8 +837,8 @@ public abstract class AbstractContentParser implements ContentParser {
         AffineTransform af = new AffineTransform(textBlockBase);
 
         // grab old values.
-//        double oldTransY = graphicState.getCTM().getTranslateY();
-//        double oldScaleY = graphicState.getCTM().getScaleY();
+        double oldTransY = graphicState.getCTM().getTranslateY();
+        double oldScaleY = graphicState.getCTM().getScaleY();
 
         // apply the transform
         graphicState.getTextState().tmatrix = new AffineTransform(tm);
@@ -1132,7 +1126,7 @@ public abstract class AbstractContentParser implements ContentParser {
                                       Resources resources) {
         Object properties = stack.pop();// properties
         // try and process the Optional content.
-        if (properties instanceof Name && resources != null) {
+        if (properties instanceof Name) {
             OptionalContents optionalContents =
                     resources.getPropertyEntry((Name) properties);
             // make sure the reference is valid, no point
@@ -1415,12 +1409,12 @@ public abstract class AbstractContentParser implements ContentParser {
                     glyphOutlineClip,
                     graphicState, oCGs);
             graphicState.set(tmp);
-//            graphicState.translate(textMetrics.getAdvance().x, 0);
-//            float shift = textMetrics.getShift();
-//            shift += textMetrics.getAdvance().x;
-//            textMetrics.setShift(shift);
-//            textMetrics.setPreviousAdvance(0);
-//            textMetrics.getAdvance().setLocation(0, 0);
+            graphicState.translate(textMetrics.getAdvance().x, 0);
+            float shift = textMetrics.getShift();
+            shift += textMetrics.getAdvance().x;
+            textMetrics.setShift(shift);
+            textMetrics.setPreviousAdvance(0);
+            textMetrics.getAdvance().setLocation(0, 0);
         }
     }
 
@@ -1481,8 +1475,7 @@ public abstract class AbstractContentParser implements ContentParser {
         TextSprite textSprites =
                 new TextSprite(currentFont,
                         textLength,
-                        new AffineTransform(graphicState.getCTM()),
-                        new AffineTransform(textState.tmatrix));
+                        new AffineTransform(graphicState.getCTM()));
 
         // glyph placement params
         float currentX, currentY;
@@ -1494,7 +1487,6 @@ public abstract class AbstractContentParser implements ContentParser {
             // Position of the specified glyph relative to the origin of glyphVector
             // advance is handled by the particular font implementation.
             newAdvanceX = (float) currentFont.echarAdvance(currentChar).getX();
-
             newAdvanceY = newAdvanceX;
             if (!isVerticalWriting) {
                 // add fonts rise to the to glyph position (sup,sub scripts)

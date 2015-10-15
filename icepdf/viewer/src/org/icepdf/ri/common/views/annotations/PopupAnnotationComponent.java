@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2015 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -76,6 +76,7 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
     protected JTree commentTree;
     protected JScrollPane commentTreeScrollPane;
     protected MarkupAnnotation selectedMarkupAnnotation;
+
     // add and remove commands
     protected JMenuItem replyMenuItem;
     protected JMenuItem deleteMenuItem;
@@ -88,6 +89,7 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
     // generic commands, open/minimize all
     protected JMenuItem openAllMenuItem;
     protected JMenuItem minimizeAllMenuItem;
+
     protected JPopupMenu contextMenu;
 
     public PopupAnnotationComponent(Annotation annotation, DocumentViewController documentViewController,
@@ -470,7 +472,7 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
     }
 
     private void showHidePopupAnnotations(boolean visible) {
-        ArrayList<AbstractAnnotationComponent> annotationComponents =
+        ArrayList<AnnotationComponent> annotationComponents =
                 pageViewComponent.getAnnotationComponents();
         for (AnnotationComponent annotationComponent : annotationComponents) {
             if (annotationComponent instanceof PopupAnnotationComponent) {
@@ -581,10 +583,6 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
         }
     }
 
-    public boolean isActive() {
-        return false;
-    }
-
 
     /**
      * Gridbag constructor helper
@@ -628,7 +626,7 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
         MarkupAnnotation currentMarkup = (MarkupAnnotation) root.getUserObject();
         Reference reference = currentMarkup.getPObjectReference();
         for (Annotation annotation : annotations) {
-            if (annotation != null && annotation instanceof MarkupAnnotation) {
+            if (annotation instanceof MarkupAnnotation) {
                 MarkupAnnotation markupAnnotation = (MarkupAnnotation) annotation;
                 MarkupAnnotation inReplyToAnnotation =
                         markupAnnotation.getInReplyToAnnotation();
@@ -649,7 +647,7 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
 
     private void removeMarkupInReplyTo(Reference reference) {
         if (reference != null) {
-            ArrayList<AbstractAnnotationComponent> annotationComponents =
+            ArrayList<AnnotationComponent> annotationComponents =
                     pageViewComponent.getAnnotationComponents();
             MarkupAnnotationComponent markupAnnotationComponent;
             MarkupAnnotation markupAnnotation;
@@ -714,7 +712,7 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
     }
 
     private AnnotationComponent findAnnotationComponent(Annotation annotation) {
-        ArrayList<AbstractAnnotationComponent> annotationComponents =
+        ArrayList<AnnotationComponent> annotationComponents =
                 pageViewComponent.getAnnotationComponents();
         Reference compReference;
         Reference annotationReference = annotation.getPObjectReference();

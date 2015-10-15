@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2015 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -57,7 +57,9 @@ public class SoftMask extends Dictionary {
     public static final Name S_KEY = new Name("S");
     public static final Name G_KEY = new Name("G");
     public static final Name BC_KEY = new Name("BC");
+
     public static final String SOFT_MASK_TYPE_ALPHA = "Alpha";
+
     public static final String SOFT_MASK_TYPE_LUMINOSITY = "Luminosity";
 
     public SoftMask(Library library, HashMap dictionary) {

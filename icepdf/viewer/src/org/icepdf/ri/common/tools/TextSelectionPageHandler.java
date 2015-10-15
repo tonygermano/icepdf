@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2015 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -437,6 +437,7 @@ public class TextSelectionPageHandler extends SelectionBoxHandler
 //            }
 //        }
     }
+
 
     /**
      * Simple left to right, top down type selection model, not perfect.

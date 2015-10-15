@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2015 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -60,6 +60,7 @@ public class TilingPattern extends Stream implements Pattern {
 
     // change the the interpolation and anti-aliasing settings.
     private static RenderingHints renderingHints;
+
     static {
         Object antiAliasing = RenderingHints.VALUE_ANTIALIAS_OFF;
         Object interpolation = RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR;
@@ -91,8 +92,10 @@ public class TilingPattern extends Stream implements Pattern {
 
     // A code identifying the type of pattern that this dictionary describes
     private int patternType;
+
     // A code that determines how the color of the pattern cell is to be specified
     private int paintType;
+
     // uncolored tiling pattern colour, if specified.
     private Color unColored;
 
@@ -118,6 +121,7 @@ public class TilingPattern extends Stream implements Pattern {
     // A code that controls adjustments to the spacing of tiles relative to the
     // device pixel grid
     private int tilingType;
+
     // type of PObject, should always be "Pattern"
     private Name type;
 
@@ -151,26 +155,31 @@ public class TilingPattern extends Stream implements Pattern {
     // pattern cell.
     private Rectangle2D bBox;
     private Rectangle2D bBoxMod;
+
     // The desired horizontal spacing between pattern cells, measured in the
     // pattern coordinate system.
     private float xStep;
+
     // The desired vertical spacing between pattern cells, measured in the
     // pattern coordinate system. Note that XStep and YStep may differ from the
     // dimensions of the pattern cell implied by the BBox entry. This allows
     // tiling with irregularly shaped figures. XStep and YStep may be either
     // positive or negative, but not zero.
     private float yStep;
+
     // A resource dictionary containing all of the named resources required by
     // the pattern's content stream
     private Resources resources;
+
     // An array of six numbers specifying the pattern matrix. The default value
     // is the identity matrix [1 0 0 1 0 0].
     private AffineTransform matrix;
+
     // Parsed resource data is stored here.
     private Shapes shapes;
 
     // Fill colour
-    public Color fillColour;
+    public Color fillColour = null;
 
     //  initiated flag
     private boolean inited;
@@ -295,18 +304,18 @@ public class TilingPattern extends Stream implements Pattern {
         }
 
         // some encoders set the step to 2^15
-        if (xStep >= Short.MAX_VALUE) {
+        if (xStep == Short.MAX_VALUE) {
             xStep = (float) bBox.getWidth();
         }
-        if (yStep >= Short.MAX_VALUE) {
+        if (yStep == Short.MAX_VALUE) {
             yStep = (float) bBox.getHeight();
         }
         // adjust the bBox so that xStep and yStep can be applied
         // for tile spacing.
         bBoxMod = new Rectangle2D.Double(
                 bBox.getX(), bBox.getY(),
-                bBox.getWidth() == xStep ? bBox.getWidth() : Math.round(xStep),
-                bBox.getHeight() == yStep ? bBox.getHeight() : Math.round(yStep));
+                bBox.getWidth() == xStep ? bBox.getWidth() : xStep,
+                bBox.getHeight() == yStep ? bBox.getHeight() : yStep);
     }
 
     /**
