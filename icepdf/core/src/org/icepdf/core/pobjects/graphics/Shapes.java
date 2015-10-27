@@ -17,7 +17,6 @@ package org.icepdf.core.pobjects.graphics;
 
 import org.icepdf.core.pobjects.Page;
 import org.icepdf.core.pobjects.graphics.commands.DrawCmd;
-import org.icepdf.core.pobjects.graphics.commands.FormDrawCmd;
 import org.icepdf.core.pobjects.graphics.commands.ImageDrawCmd;
 import org.icepdf.core.pobjects.graphics.commands.ShapesDrawCmd;
 import org.icepdf.core.pobjects.graphics.text.PageText;
@@ -59,6 +58,7 @@ public class Shapes {
     // stack already has the needed state,  more ops take longer to paint.
     private int rule;
     private float alpha;
+
     private boolean interrupted;
 
     // Graphics stack for a page's content.
@@ -102,13 +102,8 @@ public class Shapes {
         parentPage = parent;
     }
 
-    public void add(DrawCmd drawCmd){
-
-        if (!(drawCmd instanceof FormDrawCmd)){
-            shapes.add(drawCmd);
-        }else{
-            shapes.add(drawCmd);
-        }
+    public void add(DrawCmd drawCmd) {
+        shapes.add(drawCmd);
     }
 
     public boolean isPaintAlpha() {

@@ -17,7 +17,6 @@ package org.icepdf.core.pobjects;
 
 import org.icepdf.core.pobjects.fonts.Font;
 import org.icepdf.core.pobjects.fonts.FontFile;
-import org.icepdf.core.pobjects.fonts.ofont.OFont;
 import org.icepdf.core.pobjects.security.SecurityManager;
 import org.icepdf.core.util.Utils;
 
@@ -73,8 +72,8 @@ public class LiteralStringObject implements StringObject {
 
     /**
      * <p>Creates a new literal string object so that it represents the same
-     * sequence of character data specified by the arguments.  The string
-     * value is assumed to be unencrypted and will be encrypted.  The
+     * sequence of character data specifed by the arguments.  The string
+     * value is assumed to be unencrypted and will be encrytped.  The
      * method #LiteralStringObject(String string) should be used if the string
      * is all ready encrypted. This method is used for creating new
      * LiteralStringObject's that are created post document parse. </p>
@@ -88,8 +87,7 @@ public class LiteralStringObject implements StringObject {
                                SecurityManager securityManager) {
         // append string data
         this.reference = reference;
-        // decrypt the string.
-//        stringData = new StringBuilder(string.replaceAll("(?=[()\\\\])", "\\\\"));
+        // decrypt the string. 
         stringData = new StringBuilder(
                 encryption(string, false, securityManager));
     }
@@ -206,19 +204,20 @@ public class LiteralStringObject implements StringObject {
      */
     public StringBuilder getLiteralStringBuffer(final int fontFormat, FontFile font) {
 
-        if (fontFormat == Font.SIMPLE_FORMAT
-                || (font.getByteEncoding() == FontFile.ByteEncoding.ONE_BYTE && !(font instanceof OFont))) {
+        if (fontFormat == Font.SIMPLE_FORMAT || font.isOneByteEncoding()) {
             return stringData;
         } else if (fontFormat == Font.CID_FORMAT) {
+            int charOffset = 1;
             int length = getLength();
             int charValue;
             StringBuilder tmp = new StringBuilder(length);
-            if (font.getByteEncoding() == FontFile.ByteEncoding.MIXED_BYTE) {
-                int charOffset = 1;
-                for (int i = 0; i < length; i += charOffset) {
+            // try to detect for mulibyte encoded characters.
+            for (int i = 0; i < length; i += charOffset) {
+                if (stringData.charAt(0) != 0) {
+                    //String first = stringData.substring(i,i+1);
                     // check range for possible 2 byte char.
                     charValue = getUnsignedInt(i, 1);
-                    if (font.canDisplayEchar((char) charValue)) {
+                    if (charValue < 128 && font.getSource() != null) {
                         tmp.append((char) charValue);
                     } else {
                         int charValue2 = getUnsignedInt(i, 2);
@@ -227,14 +226,11 @@ public class LiteralStringObject implements StringObject {
                             i += 1;
                         }
                     }
-                }
-            } else {
-                // we have default 2bytes.
-                int charOffset = 2;
-                for (int i = 0; i < length; i += charOffset) {
+                } else {
                     int charValue2 = getUnsignedInt(i, 2);
                     if (font.canDisplayEchar((char) charValue2)) {
                         tmp.append((char) charValue2);
+                        i += 1;
                     }
                 }
             }
@@ -298,7 +294,7 @@ public class LiteralStringObject implements StringObject {
     }
 
     /**
-     * Decrypts or encrypts a string.
+     * Decryptes or encrtypes a string.
      *
      * @param string          string to encrypt or decrypt
      * @param decrypt         true to decrypt string, false otherwise;

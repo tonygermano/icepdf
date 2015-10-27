@@ -58,6 +58,7 @@ public class PageViewDecorator extends JComponent {
     private static Color pageBorderColor;
     private static Color pageShadowColor;
     private static Color pageColor;
+
     static {
         // sets the shadow colour of the decorator.
         try {

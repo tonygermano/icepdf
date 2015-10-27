@@ -393,7 +393,6 @@ public class PageText implements TextSelect {
 
             }
 
-
             // sort each line by x coordinate.
             if (sortedPageLines.size() > 0) {
                 for (LineText lineText : sortedPageLines) {

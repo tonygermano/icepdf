@@ -41,8 +41,6 @@ import java.util.HashMap;
  */
 public class CollectionDocumentView extends AbstractDocumentView {
 
-    private static final long serialVersionUID = 7220521612114533227L;
-
     private JPanel collectionDocumentPanel;
 
     public CollectionDocumentView(DocumentViewController documentViewController,

@@ -51,7 +51,7 @@ public abstract class ImageReference implements Callable<BufferedImage> {
     protected FutureTask<BufferedImage> futureTask;
 
     protected ImageStream imageStream;
-    protected GraphicsState graphicsState;
+    protected Color fillColor;
     protected Resources resources;
     protected BufferedImage image;
     protected Reference reference;
@@ -59,10 +59,10 @@ public abstract class ImageReference implements Callable<BufferedImage> {
     protected int imageIndex;
     protected Page parentPage;
 
-    protected ImageReference(ImageStream imageStream, GraphicsState graphicsState,
+    protected ImageReference(ImageStream imageStream, Color fillColor,
                              Resources resources, int imageIndex, Page parentPage) {
         this.imageStream = imageStream;
-        this.graphicsState = graphicsState;
+        this.fillColor = fillColor;
         this.resources = resources;
         this.imageIndex = imageIndex;
         this.parentPage = parentPage;

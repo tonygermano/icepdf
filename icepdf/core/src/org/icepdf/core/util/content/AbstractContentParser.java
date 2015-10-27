@@ -16,6 +16,7 @@
 package org.icepdf.core.util.content;
 
 import org.icepdf.core.pobjects.*;
+import org.icepdf.core.pobjects.fonts.FontFactory;
 import org.icepdf.core.pobjects.fonts.FontFile;
 import org.icepdf.core.pobjects.graphics.*;
 import org.icepdf.core.pobjects.graphics.commands.*;
@@ -44,8 +45,10 @@ import java.util.logging.Logger;
 public abstract class AbstractContentParser implements ContentParser {
     private static final Logger logger =
             Logger.getLogger(AbstractContentParser.class.toString());
+
     private static boolean disableTransparencyGroups;
     private static boolean enabledOverPrint;
+
     static {
         // decide if large images will be scaled
         disableTransparencyGroups =
@@ -338,6 +341,7 @@ public abstract class AbstractContentParser implements ContentParser {
             graphicState.setStrokeColor(graphicState.getStrokeColorSpace().getColor(f, isTint));
         }
     }
+
 
     protected static void consume_sc(GraphicsState graphicState, Stack stack,
                                      Library library, Resources resources, boolean isTint) {
@@ -641,7 +645,7 @@ public abstract class AbstractContentParser implements ContentParser {
 
                 // create an ImageReference for future decoding
                 ImageReference imageReference = ImageReferenceFactory.getImageReference(
-                        imageStream, resources, graphicState,
+                        imageStream, resources, graphicState.getFillColor(),
                         imageIndex.get(), page);
                 imageIndex.incrementAndGet();
 
@@ -760,14 +764,13 @@ public abstract class AbstractContentParser implements ContentParser {
         float size = ((Number) stack.pop()).floatValue();
         Name name2 = (Name) stack.pop();
         // build the new font and initialize it.
-
         graphicState.getTextState().font = resources.getFont(name2);
         // in the rare case that the font can't be found then we try and build
         // one so the document can be rendered in some shape or form.
         if (graphicState.getTextState().font == null ||
                 graphicState.getTextState().font.getFont() == null) {
             // turn on the old awt font engine, as we have a null font
-//            FontFactory fontFactory = FontFactory.getInstance();
+            FontFactory fontFactory = FontFactory.getInstance();
 //            boolean awtState = fontFactory.isAwtFontSubstitution();
 //            fontFactory.setAwtFontSubstitution(true);
             try {
@@ -803,12 +806,6 @@ public abstract class AbstractContentParser implements ContentParser {
             // if no fonts found then we just bail and accept the null pointer
         }
         if (graphicState.getTextState().font != null) {
-            graphicState.getTextState().currentfont =
-                    graphicState.getTextState().font.getFont().deriveFont(size);
-        }else{
-            // not font found which is a problem,  so we need to check for interactive form dictionary
-            graphicState.getTextState().font = resources.getLibrary().getInteractiveFormFont(name2.getName());
-            graphicState.getTextState().currentfont = graphicState.getTextState().font.getFont();
             graphicState.getTextState().currentfont =
                     graphicState.getTextState().font.getFont().deriveFont(size);
         }
@@ -1132,7 +1129,7 @@ public abstract class AbstractContentParser implements ContentParser {
                                       Resources resources) {
         Object properties = stack.pop();// properties
         // try and process the Optional content.
-        if (properties instanceof Name && resources != null) {
+        if (properties instanceof Name) {
             OptionalContents optionalContents =
                     resources.getPropertyEntry((Name) properties);
             // make sure the reference is valid, no point
@@ -1415,12 +1412,12 @@ public abstract class AbstractContentParser implements ContentParser {
                     glyphOutlineClip,
                     graphicState, oCGs);
             graphicState.set(tmp);
-//            graphicState.translate(textMetrics.getAdvance().x, 0);
-//            float shift = textMetrics.getShift();
-//            shift += textMetrics.getAdvance().x;
-//            textMetrics.setShift(shift);
-//            textMetrics.setPreviousAdvance(0);
-//            textMetrics.getAdvance().setLocation(0, 0);
+            graphicState.translate(textMetrics.getAdvance().x, 0);
+            float shift = textMetrics.getShift();
+            shift += textMetrics.getAdvance().x;
+            textMetrics.setShift(shift);
+            textMetrics.setPreviousAdvance(0);
+            textMetrics.getAdvance().setLocation(0, 0);
         }
     }
 
@@ -1494,7 +1491,6 @@ public abstract class AbstractContentParser implements ContentParser {
             // Position of the specified glyph relative to the origin of glyphVector
             // advance is handled by the particular font implementation.
             newAdvanceX = (float) currentFont.echarAdvance(currentChar).getX();
-
             newAdvanceY = newAdvanceX;
             if (!isVerticalWriting) {
                 // add fonts rise to the to glyph position (sup,sub scripts)

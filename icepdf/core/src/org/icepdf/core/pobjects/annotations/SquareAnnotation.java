@@ -16,7 +16,6 @@
 package org.icepdf.core.pobjects.annotations;
 
 import org.icepdf.core.pobjects.*;
-import org.icepdf.core.pobjects.Dictionary;
 import org.icepdf.core.pobjects.graphics.Shapes;
 import org.icepdf.core.pobjects.graphics.commands.*;
 import org.icepdf.core.util.Library;
@@ -24,7 +23,9 @@ import org.icepdf.core.util.Library;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Rectangle2D;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.logging.Logger;
 
 /**
@@ -82,9 +83,6 @@ public class SquareAnnotation extends MarkupAnnotation {
             fillColor = new Color(red, green, blue);
             isFillColor = true;
         }
-
-        // try and generate an appearance stream.
-        resetNullAppearanceStream();
     }
 
     /**
@@ -132,15 +130,8 @@ public class SquareAnnotation extends MarkupAnnotation {
      */
     public void resetAppearanceStream(double dx, double dy, AffineTransform pageTransform) {
 
-        Appearance appearance = appearances.get(currentAppearance);
-        AppearanceState appearanceState = appearance.getSelectedAppearanceState();
-
-        appearanceState.setMatrix(new AffineTransform());
-        appearanceState.setShapes(new Shapes());
-
-        Rectangle2D bbox = appearanceState.getBbox();
-        AffineTransform matrix = appearanceState.getMatrix();
-        Shapes shapes = appearanceState.getShapes();
+        matrix = new AffineTransform();
+        shapes = new Shapes();
 
         // setup the AP stream.
         setModifiedDate(PDate.formatDateTime(new Date()));
@@ -163,7 +154,7 @@ public class SquareAnnotation extends MarkupAnnotation {
         // setup the space for the AP content stream.
         AffineTransform af = new AffineTransform();
         af.scale(1, -1);
-        af.translate(-bbox.getMinX(), -bbox.getMaxY());
+        af.translate(-this.bbox.getMinX(), -this.bbox.getMaxY());
 
         BasicStroke stroke;
         if (borderStyle.isStyleDashed()) {

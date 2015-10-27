@@ -69,6 +69,7 @@ public class ImageStream extends Stream {
     public static final Name COLUMNS_KEY = new Name("Columns");
     public static final Name ROWS_KEY = new Name("Rows");
     public static final Name BLACKIS1_KEY = new Name("BlackIs1");
+
     // filter names
     protected static final String[] CCITTFAX_DECODE_FILTERS = new String[]{"CCITTFaxDecode", "/CCF", "CCF"};
     protected static final String[] DCT_DECODE_FILTERS = new String[]{"DCTDecode", "/DCT", "DCT"};
@@ -85,6 +86,7 @@ public class ImageStream extends Stream {
     private final Object colorSpaceAssignmentLock = new Object();
 
     private static boolean isLevigoJBIG2ImageReaderClass;
+
     static {
         // define alternate page size ration w/h, default Legal.
         pageRatio =
@@ -146,18 +148,19 @@ public class ImageStream extends Stream {
         return height;
     }
 
+
     /**
      * Gets the image object for the given resource.  This method can optionally
      * scale an image to reduce the total memory foot print or to increase the
      * perceived render quality on screen at low zoom levels.
      *
-     * @param graphicsState      graphic state for image or parent form
+     * @param fill      color value of image
      * @param resources resources containing image reference
      * @return new image object
      */
     // was synchronized, not think it is needed?
     @SuppressWarnings("unchecked")
-    public synchronized BufferedImage getImage(GraphicsState graphicsState, Resources resources) {
+    public synchronized BufferedImage getImage(Color fill, Resources resources) {
         // check the pool encase we already parse this image.
 
         if (pObjectReference != null) {
@@ -228,7 +231,7 @@ public class ImageStream extends Stream {
         if (smaskObj instanceof Stream) {
             ImageStream smaskStream = (ImageStream) smaskObj;
             if (smaskStream.isImageSubtype()) {
-                smaskImage = smaskStream.getImage(graphicsState, resources);
+                smaskImage = smaskStream.getImage(fill, resources);
             }
         }
 
@@ -239,7 +242,7 @@ public class ImageStream extends Stream {
             if (maskObj instanceof Stream) {
                 ImageStream maskStream = (ImageStream) maskObj;
                 if (maskStream.isImageSubtype()) {
-                    maskImage = maskStream.getImage(graphicsState, resources);
+                    maskImage = maskStream.getImage(fill, resources);
                 }
             } else if (maskObj instanceof List) {
                 List maskVector = (List) maskObj;
@@ -286,7 +289,7 @@ public class ImageStream extends Stream {
         }
 
         BufferedImage image = getImage(
-                colourSpace, graphicsState, width, height,
+                colourSpace, fill, width, height,
                 colorSpaceCompCount, bitsPerComponent,
                 isImageMask,
                 decode,
@@ -305,7 +308,7 @@ public class ImageStream extends Stream {
      * image decoding.
      *
      * @param colourSpace         colour space of image.
-     * @param graphicsState       graphic state used to render image.
+     * @param fill                fill color to aply to image from current graphics context.
      * @param width               width of image.
      * @param height              heigth of image
      * @param colorSpaceCompCount colour space component count, 1, 3, 4 etc.
@@ -321,8 +324,7 @@ public class ImageStream extends Stream {
      * @return buffered image of decoded image stream, null if an error occured.
      */
     private BufferedImage getImage(
-            PColorSpace colourSpace,
-            GraphicsState graphicsState,
+            PColorSpace colourSpace, Color fill,
             int width, int height,
             int colorSpaceCompCount,
             int bitsPerComponent,
@@ -372,7 +374,7 @@ public class ImageStream extends Stream {
                     // will not happen.
                     try {
                         decodedImage = CCITTFax.attemptDeriveBufferedImageFromBytes(
-                                this, library, entries, graphicsState.getFillColor());
+                                this, library, entries, fill);
                     } catch (Throwable e1) {
                         // fall back on ccittfax code.
                         data = ccittFaxDecode(data, width, height);
@@ -381,13 +383,11 @@ public class ImageStream extends Stream {
                     return decodedImage;
                 }
             }
-
             // finally push the bytes though the common image processor to try
             // and build a a Buffered image.
             try {
                 decodedImage = ImageUtility.makeImageWithRasterFromBytes(
-                        colourSpace,
-                        graphicsState,
+                        colourSpace, fill,
                         width, height,
                         colorSpaceCompCount,
                         bitsPerComponent,
@@ -417,7 +417,7 @@ public class ImageStream extends Stream {
                     height,
                     colourSpace,
                     isImageMask,
-                    graphicsState,
+                    fill,
                     bitsPerComponent,
                     decode,
                     data);
@@ -425,7 +425,7 @@ public class ImageStream extends Stream {
         if (decodedImage != null) {
             //        ImageUtility.displayImage(decodedImage, pObjectReference.toString());
             if (isImageMask) {
-                decodedImage = ImageUtility.applyExplicitMask(decodedImage, graphicsState.getFillColor());
+                decodedImage = ImageUtility.applyExplicitMask(decodedImage, fill);
             }
 
             // apply common mask and sMask processing
@@ -435,12 +435,6 @@ public class ImageStream extends Stream {
             if (maskImage != null) {
                 decodedImage = ImageUtility.applyExplicitMask(decodedImage, maskImage);
             }
-
-            // experimental check for different blending modes and apply a basic white = transparent,
-//            ExtGState extGState = graphicsState.getExtGState();
-//            if (extGState != null && extGState.getBlendingMode() != null ) {
-//                decodedImage = ImageUtility.applyBlendingMode(decodedImage, extGState.getBlendingMode(), Color.WHITE);
-//            }
             //        ImageUtility.displayImage(decodedImage, pObjectReference.toString());
 
             // with  little luck the image is ready for viewing.
@@ -448,6 +442,7 @@ public class ImageStream extends Stream {
         }
         return null;
     }
+
 
     /**
      * The DCTDecode filter decodes grayscale or color image data that has been
@@ -723,7 +718,6 @@ public class ImageStream extends Stream {
                     colourSpace = iccBased.getAlternate();
                 }
             }
-
             // apply respective colour models to the JPEG2000 image.
             if (colourSpace instanceof DeviceRGB && bitsPerComponent == 8) {
                 tmpImage = ImageUtility.convertSpaceToRgb(wr, colourSpace, decode);
@@ -747,7 +741,6 @@ public class ImageStream extends Stream {
         } catch (IOException e) {
             logger.log(Level.FINE, "Problem loading JPEG2000 image: ", e);
         }
-
         return tmpImage;
     }
 
@@ -812,6 +805,7 @@ public class ImageStream extends Stream {
         return decodedStreamData;
     }
 
+
     /**
      * Parses the image stream and creates a Java Images object based on the
      * the given stream and the supporting paramaters.
@@ -829,7 +823,7 @@ public class ImageStream extends Stream {
             int height,
             PColorSpace colorSpace,
             boolean imageMask,
-            GraphicsState graphicsState,
+            Color fill,
             int bitsPerColour,
             float[] decode,
             byte[] baCCITTFaxData) {
@@ -838,10 +832,7 @@ public class ImageStream extends Stream {
         int[] imageBits = new int[width];
 
         // RGB value for colour used as fill for image
-        int fillRGB = 1;
-        if (graphicsState != null){
-            fillRGB = graphicsState.getFillColor().getRGB();
-        }
+        int fillRGB = fill.getRGB();
 
         // Number of colour components in image, should be 3 for RGB or 4
         // for ARGB.

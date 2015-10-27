@@ -36,14 +36,17 @@ public class AFM {
     public static final int COURIER_BOLD = 1;
     public static final int COURIER_OBLIQUE = 2;
     public static final int COURIER_BOLD_OBLIQUE = 3;
+
     public static final int HELVETICA = 4;
     public static final int HELVETICA_BOLD = 5;
     public static final int HELVETICA_OBLIQUE = 6;
     public static final int HELVETICA_BOLD_OBLIQUE = 7;
+
     public static final int TIMES_ROMAN = 8;
     public static final int TIMES_BOLD = 9;
     public static final int TIMES_ITALIC = 10;
     public static final int TIMES_BOLD_ITALIC = 11;
+
     public static final int ZAPF_DINGBATS = 12;
     public static final int SYMBOL = 13;
 
