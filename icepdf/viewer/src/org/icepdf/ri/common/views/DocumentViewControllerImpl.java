@@ -18,7 +18,6 @@ package org.icepdf.ri.common.views;
 import org.icepdf.core.SecurityCallback;
 import org.icepdf.core.pobjects.Destination;
 import org.icepdf.core.pobjects.Document;
-import org.icepdf.core.pobjects.NamedDestinations;
 import org.icepdf.core.pobjects.PageTree;
 import org.icepdf.core.search.DocumentSearchController;
 import org.icepdf.core.util.ColorUtil;
@@ -66,6 +65,7 @@ public class DocumentViewControllerImpl
      * Displays a the pages in one column.
      */
     public static final int ONE_COLUMN_VIEW = 2;
+
     /**
      * Displays the pages two at a time, with odd-numbered pages on the left.
      */
@@ -74,6 +74,7 @@ public class DocumentViewControllerImpl
      * Displays the pages in two columns, with odd-numbered pages on the left.
      */
     public static final int TWO_COLUMN_LEFT_VIEW = 4;
+
     /**
      * Displays the pages two at a time, with event-numbered pages on the left.
      */
@@ -82,14 +83,17 @@ public class DocumentViewControllerImpl
      * Displays the pages in two columns, with even-numbered pages on the left.
      */
     public static final int TWO_COLUMN_RIGHT_VIEW = 6;
+
     /**
      * Displays the pages in two columns, with even-numbered pages on the left.
      */
     public static final int USE_ATTACHMENTS_VIEW = 7;
+
     /**
      * Zoom factor used when zooming in or out.
      */
     public static final float ZOOM_FACTOR = 1.2F;
+
     /**
      * Rotation factor used with rotating document.
      */
@@ -126,11 +130,16 @@ public class DocumentViewControllerImpl
     protected int viewportWidth, oldViewportWidth;
     protected int viewportHeight, oldViewportHeight;
     protected int viewType, oldViewType;
+
     protected int viewportFitMode, oldViewportFitMode;
+
     protected int cursorType;
+
     protected SwingController viewerController;
+
     protected AnnotationCallback annotationCallback;
     protected SecurityCallback securityCallback;
+
     protected PropertyChangeSupport changes = new PropertyChangeSupport(this);
 
 
@@ -377,15 +386,6 @@ public class DocumentViewControllerImpl
 
         if (documentView == null || documentViewModel == null) {
             return;
-        }
-
-        // check for a named destination def, and if so do the lookup.
-        NamedDestinations namedDestinations = document.getCatalog().getDestinations();
-        if (namedDestinations != null) {
-            Destination tmp = namedDestinations.getDestination(destination.getNamedDestination());
-            if (tmp != null) {
-                destination = tmp;
-            }
         }
 
         if (destination == null || destination.getPageReference() == null) {

@@ -42,8 +42,6 @@ public class ViewModel {
 
     private PrintHelper printHelper;
 
-    private boolean isWidgetAnnotationHighlight;
-
     static File getDefaultFile() {
         return defaultFile;
     }
@@ -123,22 +121,5 @@ public class ViewModel {
      */
     public void setPrintCopies(int printCopies) {
         this.printCopies = printCopies;
-    }
-
-    /**
-     * Indicates that widget highlighting is enabled.
-     * @return true if enabled, otherwise false.
-     */
-    public boolean isWidgetAnnotationHighlight() {
-        return isWidgetAnnotationHighlight;
-    }
-
-    /**
-     * Sets the value of widgetAnnotation highlight model.
-     *
-     * @param isWidgetAnnotationHighlight true to enable highlight, otherwise false.
-     */
-    public void setIsWidgetAnnotationHighlight(boolean isWidgetAnnotationHighlight) {
-        this.isWidgetAnnotationHighlight = isWidgetAnnotationHighlight;
     }
 }

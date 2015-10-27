@@ -98,32 +98,22 @@ public class TextSprite {
 
         float h = (float) (font.getAscent() + font.getDescent());
 
-        double ascent = font.getAscent();
-
         if (h <= 0.0f) {
             h = (float) (font.getMaxCharBounds().getHeight());
         }
         if (w <= 0.0f) {
             w = (float) font.getMaxCharBounds().getWidth();
         }
-        // zero height will not intersect with clip rectangle and maybe have visibility issues.
-        // we generally get here if the font.getAscent is zero and as a result must compensate.
+        // zero height will not intersect with clip rectangle
+        // todo: test if this can occur, might be legacy code from old bug...
         if (h <= 0.0f) {
-            Rectangle2D bounds = font.getEstringBounds(cid, 0, 1);
-            if (bounds != null) {
-                h = (float) font.getEstringBounds(cid, 0, 1).getHeight();
-            } else {
-                h = 1.0f;
-            }
-            if (ascent == 0) {
-                ascent = h;
-            }
+            h = 1.0f;
         }
         if (w <= 0.0f) {
             w = 1.0f;
         }
         Rectangle2D.Float glyphBounds =
-                new Rectangle2D.Float(x, y - (float) ascent, w, h);
+                new Rectangle2D.Float(x, y - (float) font.getAscent(), w, h);
 
         // add bounds to total text bounds.
         bounds.add(glyphBounds);

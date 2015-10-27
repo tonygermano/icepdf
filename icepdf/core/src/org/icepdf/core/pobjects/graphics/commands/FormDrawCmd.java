@@ -41,6 +41,7 @@ public class FormDrawCmd extends AbstractDrawCmd {
     private int x, y;
 
     private static boolean disableXObjectSMask;
+
     static {
         // decide if large images will be scaled
         disableXObjectSMask =

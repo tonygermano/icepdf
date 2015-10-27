@@ -160,6 +160,7 @@ public class WordText extends AbstractText implements TextSelect {
         Rectangle.Float bounds2 = sprite.getTextExtractionBounds();
         float space = bounds2.x - (bounds1.x + bounds1.width);
 
+
         // max width of previous and next glyph, average can be broken by l or i etc.
         float maxWidth = Math.max(bounds1.width, bounds2.width) / 2f;
         int spaces = (int) (space / maxWidth);

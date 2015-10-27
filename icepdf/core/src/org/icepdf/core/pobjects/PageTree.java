@@ -67,6 +67,7 @@ public class PageTree extends Dictionary {
     // loaded resource flag, we can't use null check as some trees don't have
     // resources. 
     private boolean loadedResources;
+
     private WatermarkCallback watermarkCallback;
 
     /**

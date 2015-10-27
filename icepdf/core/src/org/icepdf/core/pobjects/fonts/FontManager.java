@@ -23,7 +23,6 @@ import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.security.AccessControlException;
 import java.util.*;
 import java.util.List;
 import java.util.logging.Level;
@@ -135,9 +134,8 @@ public class FontManager {
     };
 
     private static final String[] KOREAN_FONT_NAMES = {
-            "Arial Unicode MS", "Dotum", "Gulim", "New Gulim", "GulimChe", "Batang",
-            "BatangChe", "HYSMyeongJoStd Medium Acro", "Adobe Myungjo Std Acro",
-            "AppleGothic", "Malgun Gothic", "UnDotum", "UnShinmun", "Baekmuk Gulim"
+            "Arial Unicode MS", "Gulim", "Batang",
+            "BatangChe", "HYSMyeongJoStd Medium Acro", "Adobe Myungjo Std Acro"
     };
 
     private static String JAVA_FONT_PATHS = Defs.sysProperty("java.home") + "/lib/fonts";
@@ -276,7 +274,7 @@ public class FontManager {
         Properties fontProperites;
         // make sure we are initialized
         if (fontList == null) {
-            fontList = new ArrayList<Object[]>();
+            readSystemFonts(null);
         }
         // copy all data from fontList into the properties file
         fontProperites = new Properties();
@@ -342,6 +340,7 @@ public class FontManager {
         }
     }
 
+
     /**
      * Clears internal font list of items. Used to clean list while constructing
      * a new list.
@@ -353,24 +352,16 @@ public class FontManager {
     }
 
     /**
-     * <p>Reads font from the specified array of file paths only, no .  This font data is used to substitute fonts which are not
+     * <p>Searches all default system font paths and any font paths
+     * specified by the extraFontPaths parameter, and records data about all
+     * found fonts.  This font data is used to substitute fonts which are not
      * embedded inside a PDF document.</p>
      *
      * @param extraFontPaths array String object where each entry represents
      *                       a system directory path containing font programs.
      */
-    public synchronized void readFonts(String[] extraFontPaths) {
-        readSystemFonts(extraFontPaths, true);
-    }
+    public synchronized void readSystemFonts(String[] extraFontPaths) {
 
-    /**
-     * Reads system fonts as defined in SYSTEM_FONT_PATHS plush any extra fonts paths.  The reading
-     * of system fonts can be suspended with the param skipSystemFonts.
-     *
-     * @param extraFontPaths  optional, extra fonts path to read.
-     * @param skipSystemFonts true to skip system fonts, extraFontsPaths should not be null if skipSystemFonts=true.
-     */
-    private synchronized void readSystemFonts(String[] extraFontPaths, boolean skipSystemFonts) {
         // create a new font list if needed.
         if (fontList == null) {
             fontList = new ArrayList<Object[]>(150);
@@ -389,16 +380,12 @@ public class FontManager {
         if (extraFontPaths == null) {
             fontDirectories = SYSTEM_FONT_PATHS;
         } else {
-            if (!skipSystemFonts) {
-                int length = SYSTEM_FONT_PATHS.length + extraFontPaths.length;
-                fontDirectories = new String[length];
-                // copy the static list into the new list
-                System.arraycopy(SYSTEM_FONT_PATHS, 0, fontDirectories, 0, SYSTEM_FONT_PATHS.length);
-                // added any paths specified by the user
-                System.arraycopy(extraFontPaths, 0, fontDirectories, SYSTEM_FONT_PATHS.length, extraFontPaths.length);
-            } else {
-                fontDirectories = extraFontPaths;
-            }
+            int length = SYSTEM_FONT_PATHS.length + extraFontPaths.length;
+            fontDirectories = new String[length];
+            // copy the static list into the new list
+            System.arraycopy(SYSTEM_FONT_PATHS, 0, fontDirectories, 0, SYSTEM_FONT_PATHS.length);
+            // added any paths specified by the user
+            System.arraycopy(extraFontPaths, 0, fontDirectories, SYSTEM_FONT_PATHS.length, extraFontPaths.length);
         }
 
         if (logger.isLoggable(Level.FINER)) {
@@ -408,70 +395,47 @@ public class FontManager {
         // Iterate through SYSTEM_FONT_PATHS and load all readable fonts
         for (int i = fontDirectories.length - 1; i >= 0; i--) {
             path = fontDirectories[i];
-            // if the path is valid start reading fonts.
+            // if the path is valid start reading fonts. 
             if (path != null) {
                 loadSystemFont(new File(path));
             }
         }
         // read java font's lucida.
-        if (!skipSystemFonts) {
-            loadSystemFont(new File(JAVA_FONT_PATHS));
-        }
+        loadSystemFont(new File(JAVA_FONT_PATHS));
 
         sortFontListByName();
     }
 
-    /**
-     * <p>Searches all default system font paths and any font paths
-     * specified by the extraFontPaths parameter, and records data about all
-     * found fonts.  This font data is used to substitute fonts which are not
-     * embedded inside a PDF document.</p>
-     *
-     * @param extraFontPaths array String object where each entry represents
-     *                       a system directory path containing font programs.
-     */
-    public synchronized void readSystemFonts(String[] extraFontPaths) {
-        readSystemFonts(extraFontPaths, false);
-    }
-
     private void loadSystemFont(File directory) {
-        try {
-            // can read seems to be redundant on some system as the security exception read access is denied.
-            if (directory.canRead()) {
-                FontFile font;
-                StringBuilder fontPath;
-                String fontName;
-                String[] fontPaths = directory.list();
-                for (int j = fontPaths.length - 1; j >= 0; j--) {
-                    fontName = fontPaths[j];
-                    fontPath = new StringBuilder(25);
-                    fontPath.append(directory.getAbsolutePath()).append(
-                            File.separatorChar).append(fontName);
+        if (directory.canRead()) {
+            FontFile font;
+            StringBuilder fontPath;
+            String fontName;
+            String[] fontPaths = directory.list();
+            for (int j = fontPaths.length - 1; j >= 0; j--) {
+                fontName = fontPaths[j];
+                fontPath = new StringBuilder(25);
+                fontPath.append(directory.getAbsolutePath()).append(
+                        File.separatorChar).append(fontName);
+                if (logger.isLoggable(Level.FINER)) {
+                    logger.finer("Trying to load font file: " + fontPath);
+                }
+                // try loading the font
+                font = buildFont(fontPath.toString());
+                // if a readable font was found
+                if (font != null) {
+                    // normalize name
+                    fontName = font.getName().toLowerCase();
+                    // Add new font data to the font list
+                    fontList.add(new Object[]{font.getName().toLowerCase(), // original PS name
+                            FontUtil.normalizeString(font.getFamily()), // family name
+                            guessFontStyle(fontName), // weight and decorations, mainly bold,italic
+                            fontPath.toString()});  // path to font on OS
                     if (logger.isLoggable(Level.FINER)) {
-                        logger.finer("Trying to load font file: " + fontPath);
-                    }
-                    // try loading the font
-                    font = buildFont(fontPath.toString());
-                    // if a readable font was found
-
-                    if (font != null) {
-                        // normalize name
-                        fontName = font.getName().toLowerCase();
-                        // Add new font data to the font list
-                        fontList.add(new Object[]{font.getName().toLowerCase(), // original PS name
-                                FontUtil.normalizeString(font.getFamily()), // family name
-                                guessFontStyle(fontName), // weight and decorations, mainly bold,italic
-                                fontPath.toString()});  // path to font on OS
-                        if (logger.isLoggable(Level.FINER)) {
-                            logger.finer("Adding system font: " + font.getName() + " " + fontPath.toString());
-                        }
+                        logger.finer("Adding system font: " + font.getName() + " " + fontPath.toString());
                     }
                 }
             }
-        } catch (AccessControlException e) {
-            logger.finer("SecurityException: failed to load fonts from directory: " + directory.getAbsolutePath());
-        } catch (Throwable e) {
-            logger.finer("Failed to load fonts from directory: " + directory.getAbsolutePath());
         }
     }
 
@@ -583,7 +547,7 @@ public class FontManager {
     private FontFile getAsianInstance(List<Object[]> fontList, String name, String[] list, int flags) {
 
         if (fontList == null) {
-            fontList = new ArrayList<Object[]>(150);
+            readSystemFonts(null);
         }
 
         FontFile font = null;
@@ -667,12 +631,12 @@ public class FontManager {
      * @param name  base name of font.
      * @param flags flags used to describe font.
      * @return a new instance of NFont which best approximates the font described
-     * by the name and flags attribute.
+     *         by the name and flags attribute.
      */
     public FontFile getInstance(String name, int flags) {
 
         if (fontList == null) {
-            fontList = new ArrayList<Object[]>();
+            readSystemFonts(null);
         }
 
         FontFile font;

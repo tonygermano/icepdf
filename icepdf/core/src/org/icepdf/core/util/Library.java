@@ -16,7 +16,6 @@
 package org.icepdf.core.util;
 
 import org.icepdf.core.pobjects.*;
-import org.icepdf.core.pobjects.acroform.InteractiveForm;
 import org.icepdf.core.pobjects.fonts.Font;
 import org.icepdf.core.pobjects.fonts.FontDescriptor;
 import org.icepdf.core.pobjects.graphics.ICCBased;
@@ -93,10 +92,12 @@ public class Library {
 
     // new incremental file loader class.
     private LazyObjectLoader lazyObjectLoader;
+
     private ConcurrentHashMap<Reference, WeakReference<Object>> refs =
             new ConcurrentHashMap<Reference, WeakReference<Object>>(1024);
     private ConcurrentHashMap<Reference, WeakReference<ICCBased>> lookupReference2ICCBased =
             new ConcurrentHashMap<Reference, WeakReference<ICCBased>>(256);
+
     // Instead of keeping Names names, Dictionary dests, we keep
     //   a reference to the Catalog, which actually owns them
     private Catalog catalog;
@@ -664,21 +665,6 @@ public class Library {
      */
     public void setCatalog(Catalog c) {
         catalog = c;
-    }
-
-    /**
-     * Checks the Catalog for an interactive Forms dictionary and if found the resources object
-     * is used for a font lookup.
-     * @param fontName font name to look for.
-     * @return font font,  null otherwise.
-     */
-    public Font getInteractiveFormFont(String fontName){
-        InteractiveForm form = getCatalog().getInteractiveForm();
-        if (form != null){
-            Resources resources = form.getResources();
-            return resources.getFont(new Name(fontName));
-        }
-        return null;
     }
 
     /**

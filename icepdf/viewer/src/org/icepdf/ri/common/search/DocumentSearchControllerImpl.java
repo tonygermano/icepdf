@@ -519,10 +519,9 @@ public class DocumentSearchControllerImpl implements DocumentSearchController {
         // found words. 
         ArrayList<String> words = new ArrayList<String>();
         char c;
-        char cPrev = 0;
         for (int start = 0, curs = 0, max = phrase.length(); curs < max; curs++) {
             c = phrase.charAt(curs);
-            if (WordText.isWhiteSpace(c) || (WordText.isPunctuation(c) && !WordText.isDigit(cPrev))) {
+            if (WordText.isWhiteSpace(c) || WordText.isPunctuation(c)) {
                 // add word segment
                 if (start != curs) {
                     words.add(phrase.substring(start, curs));
@@ -534,7 +533,6 @@ public class DocumentSearchControllerImpl implements DocumentSearchController {
             } else if (curs + 1 == max) {
                 words.add(phrase.substring(start, curs + 1));
             }
-            cPrev = c;
         }
         return words;
     }

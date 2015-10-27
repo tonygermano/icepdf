@@ -57,6 +57,7 @@ public class PopupAnnotation extends Annotation {
      * itself.
      */
     public static final Name PARENT_KEY = new Name("Parent");
+
     /**
      * (Optional) A flag specifying whether the pop-up annotation shall
      * initially be displayed open. Default value: false (closed).
