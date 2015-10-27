@@ -94,7 +94,7 @@ public class SquareAnnotationHandler extends SelectionBoxHandler implements Tool
             }
         }
 
-        strokeWidth = (float) Defs.doubleProperty("org.icepdf.core.views.page.annotation.squareCircle.stroke.width",
+        strokeWidth = (float)Defs.doubleProperty("org.icepdf.core.views.page.annotation.squareCircle.stroke.width",
                 DEFAULT_STROKE_WIDTH);
 
         // need to make the stroke cap, thickness configurable. Or potentially
@@ -180,7 +180,7 @@ public class SquareAnnotationHandler extends SelectionBoxHandler implements Tool
         annotation.setColor(lineColor);
         if (annotation.isFillColor() || useInternalColor) {
             annotation.setFillColor(internalColor);
-            if (!annotation.isFillColor()) {
+            if (!annotation.isFillColor()){
                 annotation.setFillColor(true);
             }
         }
