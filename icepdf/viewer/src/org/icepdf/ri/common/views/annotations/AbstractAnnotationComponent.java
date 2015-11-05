@@ -24,7 +24,6 @@ import org.icepdf.core.pobjects.actions.Action;
 import org.icepdf.core.pobjects.annotations.AbstractWidgetAnnotation;
 import org.icepdf.core.pobjects.annotations.Annotation;
 import org.icepdf.core.pobjects.annotations.Appearance;
-import org.icepdf.core.pobjects.annotations.LinkAnnotation;
 import org.icepdf.core.util.ColorUtil;
 import org.icepdf.core.util.Defs;
 import org.icepdf.core.util.PropertyConstants;

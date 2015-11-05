@@ -602,8 +602,10 @@ public abstract class Annotation extends Dictionary {
                     annot = new ChoiceWidgetAnnotation(library, hashMap);
                 } else if (FieldDictionaryFactory.TYPE_TEXT.equals(fieldType)) {
                     annot = new TextWidgetAnnotation(library, hashMap);
-                } else if (FieldDictionaryFactory.TYPE_SIGNATURE.equals(fieldType)) {
-                    annot = new SignatureWidgetAnnotation(library, hashMap);
+                }
+                // todo signatures widget.
+                else if (FieldDictionaryFactory.TYPE_SIGNATURE.equals(fieldType)) {
+                    annot = new WidgetAnnotation(library, hashMap);
                 } else {
                     annot = new WidgetAnnotation(library, hashMap);
                 }
@@ -1747,7 +1749,7 @@ public abstract class Annotation extends Dictionary {
             if (value == null)
                 sb.append("null");
             else if (value instanceof StringObject)
-                sb.append(((StringObject) value).getDecryptedLiteralString(library.getSecurityManager()));
+                sb.append(((StringObject) value).getDecryptedLiteralString(library.securityManager));
             else
                 sb.append(value.toString());
             sb.append(',');
