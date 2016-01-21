@@ -402,7 +402,7 @@ public class FreeTextAnnotation extends MarkupAnnotation {
         shapes.add(new TransformDrawCmd(af));
 
         // iterate over each line of text painting the strings.
-        if (content == null) {
+        if (content == null){
             content = "";
         }
 

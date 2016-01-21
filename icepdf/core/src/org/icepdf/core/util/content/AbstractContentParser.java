@@ -593,12 +593,12 @@ public abstract class AbstractContentParser implements ContentParser {
                 // need to capture the alpha which is only possible
                 // by paint the xObject to an image.
                 if (!disableTransparencyGroups &&
-                        (formXObject.getBBox().getWidth() < Short.MAX_VALUE && formXObject.getBBox().getHeight() < Short.MAX_VALUE
-                                && (formXObject.getExtGState() != null &&
-                                (formXObject.getExtGState().getSMask() != null || formXObject.getExtGState().getBlendingMode() != null
-                                        || (formXObject.getExtGState().getNonStrokingAlphConstant() < 1
-                                        && formXObject.getExtGState().getNonStrokingAlphConstant() > 0)))
-                        )) {
+                        (formXObject.getBBox().getWidth() < Short.MAX_VALUE  && formXObject.getBBox().getHeight() < Short.MAX_VALUE
+                        &&  (formXObject.getExtGState() != null &&
+                        (formXObject.getExtGState().getSMask() != null || formXObject.getExtGState().getBlendingMode() != null
+                          || (formXObject.getExtGState().getNonStrokingAlphConstant() < 1
+                                && formXObject.getExtGState().getNonStrokingAlphConstant() > 0)))
+                )) {
                     // add the hold form for further processing.
                     shapes.add(new FormDrawCmd(formXObject));
                 }

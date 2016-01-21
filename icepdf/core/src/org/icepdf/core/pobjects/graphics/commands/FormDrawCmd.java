@@ -85,7 +85,7 @@ public class FormDrawCmd extends AbstractDrawCmd {
             if (xForm.getGraphicsState().getExtGState().getSMask() != null) {
                 softMask = xForm.getGraphicsState().getExtGState().getSMask();
                 boolean isShading = softMask.getG().getResources().isShading();
-                if (isShading) {
+                if (isShading){
                     isShading = checkForShaddingFill(softMask.getG());
                     softMask.getG().setShading(isShading);
                 }
@@ -97,7 +97,7 @@ public class FormDrawCmd extends AbstractDrawCmd {
             if (xForm.getExtGState().getSMask() != null) {
                 formSoftMask = xForm.getExtGState().getSMask();
                 boolean isShading = formSoftMask.getG().getResources().isShading();
-                if (isShading) {
+                if (isShading){
                     isShading = checkForShaddingFill(formSoftMask.getG());
                     formSoftMask.getG().setShading(isShading);
                 }
@@ -235,9 +235,9 @@ public class FormDrawCmd extends AbstractDrawCmd {
                 HashMap tmp = xForm.getGroup();
                 Object cs = xForm.getLibrary().getObject(tmp, new Name("CS"));
                 // looking for additive colour spaces, if so we paint an background.
-                if (cs == null || cs instanceof ICCBased || cs instanceof Name &&
+                if (cs == null || cs instanceof ICCBased ||cs instanceof Name &&
                         (((Name) cs).equals(DeviceRGB.DEVICERGB_KEY)
-                                || ((Name) cs).equals(DeviceCMYK.DEVICECMYK_KEY))) {
+                                ||((Name) cs).equals(DeviceCMYK.DEVICECMYK_KEY))){
                     canvas.setColor(Color.WHITE);
                     canvas.fillRect(0, 0, width, height);
                 }
@@ -275,7 +275,7 @@ public class FormDrawCmd extends AbstractDrawCmd {
         return bi;
     }
 
-    private boolean checkForShaddingFill(Form xform) {
+    private boolean checkForShaddingFill(Form xform){
         boolean found = false;
         for (DrawCmd cmd : xform.getShapes().getShapes()) {
             if (cmd instanceof ShapeDrawCmd && ((ShapeDrawCmd) cmd).getShape() == null) {

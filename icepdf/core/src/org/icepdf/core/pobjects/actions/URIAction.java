@@ -60,7 +60,7 @@ public class URIAction extends Action {
      */
     public void setURI(String URI) {
         StringObject tmp = new LiteralStringObject(
-                URI, getPObjectReference(), library.getSecurityManager());
+                URI, getPObjectReference(), library.securityManager);
         // StringObject detection should allow writer to pick on encryption.
         entries.put(URIAction.URI_KEY, tmp);
         this.URI = tmp;
@@ -78,7 +78,7 @@ public class URIAction extends Action {
         if (actionURI instanceof StringObject) {
             URI = (StringObject) actionURI;
         }
-        return URI.getDecryptedLiteralString(library.getSecurityManager());
+        return URI.getDecryptedLiteralString(library.securityManager);
     }
 
     /**

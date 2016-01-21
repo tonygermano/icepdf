@@ -269,6 +269,7 @@ public class FontManager {
      * but only if the fontList is null or is empty.  Generally the fontManager
      * is used
      * </p>
+     *
      * @return instance of the singleton fontManager.
      */
     public FontManager initialize() {

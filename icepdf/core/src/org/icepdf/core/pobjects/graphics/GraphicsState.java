@@ -453,7 +453,7 @@ public class GraphicsState {
      */
     public void concatenate(ExtGState extGState) {
         // keep a reference for our partial Transparency group support.
-        this.extGState = new ExtGState(extGState.getLibrary(),
+        this.extGState =  new ExtGState(extGState.getLibrary(),
                 extGState.getEntries());
 
         // Map over extGState attributes if present.

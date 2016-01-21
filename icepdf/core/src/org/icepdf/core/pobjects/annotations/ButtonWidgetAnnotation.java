@@ -24,6 +24,7 @@ import org.icepdf.core.pobjects.acroform.FieldDictionary;
 import org.icepdf.core.util.Library;
 
 import java.awt.geom.AffineTransform;
+import java.lang.reflect.Field;
 import java.util.HashMap;
 
 /**

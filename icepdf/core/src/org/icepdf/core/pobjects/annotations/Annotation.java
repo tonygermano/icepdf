@@ -602,8 +602,10 @@ public abstract class Annotation extends Dictionary {
                     annot = new ChoiceWidgetAnnotation(library, hashMap);
                 } else if (FieldDictionaryFactory.TYPE_TEXT.equals(fieldType)) {
                     annot = new TextWidgetAnnotation(library, hashMap);
-                } else if (FieldDictionaryFactory.TYPE_SIGNATURE.equals(fieldType)) {
-                    annot = new SignatureWidgetAnnotation(library, hashMap);
+                }
+                // todo signatures widget.
+                else if (FieldDictionaryFactory.TYPE_SIGNATURE.equals(fieldType)) {
+                    annot = new WidgetAnnotation(library, hashMap);
                 } else {
                     annot = new WidgetAnnotation(library, hashMap);
                 }
@@ -738,6 +740,10 @@ public abstract class Annotation extends Dictionary {
             Appearance newAppearance = new Appearance();
             HashMap appearanceDictionary = new HashMap();
             Rectangle2D rect = getUserSpaceRectangle();
+            if (rect == null){
+                // we need a rect in order to render correctly,  bail if not found. PDF-964
+                throw new IllegalStateException("Annotation is missing required /rect value");
+            }
             if (rect.getWidth() <= 1) {
                 rect.setRect(rect.getX(), rect.getY(), 15, rect.getHeight());
             }
@@ -1754,7 +1760,7 @@ public abstract class Annotation extends Dictionary {
             if (value == null)
                 sb.append("null");
             else if (value instanceof StringObject)
-                sb.append(((StringObject) value).getDecryptedLiteralString(library.getSecurityManager()));
+                sb.append(((StringObject) value).getDecryptedLiteralString(library.securityManager));
             else
                 sb.append(value.toString());
             sb.append(',');

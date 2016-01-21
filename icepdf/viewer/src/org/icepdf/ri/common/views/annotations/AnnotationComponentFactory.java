@@ -17,6 +17,7 @@ package org.icepdf.ri.common.views.annotations;
 
 import org.icepdf.core.pobjects.Document;
 import org.icepdf.core.pobjects.Name;
+import org.icepdf.core.pobjects.acroform.FieldDictionary;
 import org.icepdf.core.pobjects.acroform.FieldDictionaryFactory;
 import org.icepdf.core.pobjects.annotations.AbstractWidgetAnnotation;
 import org.icepdf.core.pobjects.annotations.Annotation;
@@ -50,8 +51,6 @@ public class AnnotationComponentFactory {
             "org.icepdf.core.pro.acroform.ChoiceFieldComponent";
     private static final String TEXT_FIELD_CLASS =
             "org.icepdf.core.pro.acroform.TextFieldComponent";
-    private static final String SIGNATURE_FIELD_CLASS =
-            "org.icepdf.core.pro.acroform.SignatureFieldComponent";
 
     private AnnotationComponentFactory() {
     }
@@ -107,7 +106,7 @@ public class AnnotationComponentFactory {
                         pageViewComponent, documentViewModel);
             } else if (Annotation.SUBTYPE_WIDGET.equals(subtype)) {
                 AbstractWidgetAnnotation widgetAnnotation = (AbstractWidgetAnnotation) annotation;
-                Name fieldType = widgetAnnotation.getFieldDictionary().getFieldType();
+                Name fieldType = ((FieldDictionary) widgetAnnotation.getFieldDictionary()).getFieldType();
                 // load pro interactive annotation support.
                 if (Document.foundIncrementalUpdater) {
                     if (FieldDictionaryFactory.TYPE_BUTTON.equals(fieldType)) {
@@ -123,9 +122,8 @@ public class AnnotationComponentFactory {
                                 documentViewController, pageViewComponent,
                                 documentViewModel);
                     } else if (FieldDictionaryFactory.TYPE_SIGNATURE.equals(fieldType)) {
-                        return generatedWidgetField(SIGNATURE_FIELD_CLASS, annotation,
-                                documentViewController, pageViewComponent,
-                                documentViewModel);
+                        return new WidgetAnnotationComponent(annotation, documentViewController,
+                                pageViewComponent, documentViewModel);
                     }
                 }
                 // load basic widget support, selection, rendering.

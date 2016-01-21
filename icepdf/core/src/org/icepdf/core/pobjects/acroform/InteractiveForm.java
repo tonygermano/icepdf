@@ -16,7 +16,6 @@
 package org.icepdf.core.pobjects.acroform;
 
 import org.icepdf.core.pobjects.*;
-import org.icepdf.core.pobjects.annotations.SignatureWidgetAnnotation;
 import org.icepdf.core.util.Library;
 import org.icepdf.core.util.Utils;
 
@@ -199,8 +198,8 @@ public class InteractiveForm extends Dictionary {
                 if (fieldRef instanceof Reference) {
                     // add them all as we find them.
                     annotObj = library.getObject((Reference) fieldRef);
-                    if (annotObj instanceof HashMap) {
-                        annotObj = FieldDictionaryFactory.buildField(library, (HashMap) annotObj);
+                    if (annotObj instanceof HashMap){
+                        annotObj = FieldDictionaryFactory.buildField(library, (HashMap)annotObj);
                     }
                     if (annotObj != null) {
                         fields.add(annotObj);
@@ -220,27 +219,7 @@ public class InteractiveForm extends Dictionary {
     }
 
     /**
-     * Checks to see if the fields list contains any signature anntoations.
-     *
-     * @return true if there are any signatures, otherwise false.
-     */
-    public boolean isSignatureFields() {
-        boolean foundSignature = false;
-        ArrayList<Object> fields = getFields();
-        if (fields != null) {
-            for (Object field : fields) {
-                if (field instanceof SignatureWidgetAnnotation) {
-                    foundSignature = true;
-                    break;
-                }
-            }
-        }
-        return foundSignature;
-    }
-
-    /**
-     * A set of flags specifying various document-level characteristics related to signature fields.  It should
-     * be noted that this filed is not used very often and {@see isSignatureFields} should be used instead.
+     * A set of flags specifying various document-level characteristics related to signature fields
      *
      * @return true if enabled, false otherwise.
      */

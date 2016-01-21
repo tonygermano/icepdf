@@ -313,7 +313,7 @@ public class FileSpecification extends Dictionary {
         Object description = library.getObject(entries, DESC_KEY);
         if (description instanceof StringObject) {
             StringObject tmp = (StringObject) description;
-            return tmp.getDecryptedLiteralString(library.getSecurityManager());
+            return tmp.getDecryptedLiteralString(library.securityManager);
         } else if (description instanceof String) {
             return description.toString();
         } else {
