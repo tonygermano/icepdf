@@ -304,7 +304,7 @@ public class TextSelectionPageHandler extends SelectionBoxHandler
      * @return page space mouse coordinates.
      */
     protected Point2D.Float convertMouseToPageSpace(Point mousePoint,
-                                                    AffineTransform pageTransform) {
+                                                  AffineTransform pageTransform) {
         Point2D.Float pageMouseLocation = new Point2D.Float();
         try {
             pageTransform.createInverse().transform(
