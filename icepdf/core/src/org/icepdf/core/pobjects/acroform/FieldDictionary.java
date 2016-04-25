@@ -192,6 +192,9 @@ public class FieldDictionary extends Dictionary {
             exportMappingName = (String) value;
         }
 
+        // value field
+//        getFieldValue();
+        // todo default value, see 12.7.5.3, Reset-Form Action.
         value = library.getObject(entries, DV_KEY);
         if (value != null) {
             defaultFieldValue = value;
@@ -211,14 +214,13 @@ public class FieldDictionary extends Dictionary {
      *
      * @return list of child elements.
      */
-    @SuppressWarnings("unchecked")
     public ArrayList<Object> getKids() {
         // find some kids.
         if (kids == null) {
             Object value = library.getObject(entries, KIDS_KEY);
             if (value != null && value instanceof List) {
                 List<Reference> children = (List<Reference>) value;
-                kids = new ArrayList<Object>(children.size());
+                kids = new ArrayList(children.size());
                 Object tmp;
                 for (Reference aChildren : children) {
                     tmp = library.getObject(aChildren);
