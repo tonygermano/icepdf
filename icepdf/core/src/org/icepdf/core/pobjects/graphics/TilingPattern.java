@@ -386,7 +386,7 @@ public class TilingPattern extends Stream implements Pattern {
         double imageHeight = height * baseScale;
 
         // create the new image to write too.
-        final BufferedImage bi = ImageUtility.createTranslucentCompatibleImage((int) Math.round(imageWidth), (int) Math.round(imageHeight));
+        final BufferedImage bi = ImageUtility.createTranslucentCompatibleImage((int)Math.round(imageWidth), (int) Math.round(imageHeight));
         Graphics2D canvas = bi.createGraphics();
 
         TexturePaint patternPaint = new TexturePaint(bi, new Rectangle2D.Double(
