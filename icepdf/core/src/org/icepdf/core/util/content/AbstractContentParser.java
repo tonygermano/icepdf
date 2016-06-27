@@ -694,10 +694,10 @@ public abstract class AbstractContentParser implements ContentParser {
                         // java has a hard time with painting dash array with values < 1.
                         // we have a few examples where converting the value to user space
                         // correct the problem PDF-966.
-                        if (dash < 0.5f) {
+                        if (dash < 0.5f){
                             dash = dash * 1000;
                         }
-                        dashArray[i] = dash;
+                        dashArray[i] = Math.round(dash);
 
                     }
                 }
@@ -780,7 +780,7 @@ public abstract class AbstractContentParser implements ContentParser {
                 float alpha = graphicState.getExtGState().getNonStrokingAlphConstant();
                 shapes.add(new BlendCompositeDrawCmd(graphicState.getExtGState().getBlendingMode(),
                         alpha));
-            } else {
+            }else{
                 setAlpha(shapes, graphicState, graphicState.getAlphaRule(), graphicState.getFillAlpha());
             }
         }
@@ -1921,7 +1921,7 @@ public abstract class AbstractContentParser implements ContentParser {
      * write operand occurs, otherwise a call to Tm seems to break text
      * positioning.
      * <p>
-     * Scalling is special as it can be negative and thus apply a horizontal
+     * Scaling is special as it can be negative and thus apply a horizontal
      * flip on the graphic state.
      *
      * @param graphicState current graphics state.
@@ -1933,10 +1933,10 @@ public abstract class AbstractContentParser implements ContentParser {
         // value of tz is actually used.  If the original non 1 number is used the
         // layout will be messed up.
         AffineTransform oldHScaling = new AffineTransform(graphicState.getCTM());
-        float hScalling = graphicState.getTextState().hScalling;
+        float hScaling = graphicState.getTextState().hScalling;
         AffineTransform horizontalScalingTransform =
                 new AffineTransform(
-                        af.getScaleX() * hScalling,
+                        af.getScaleX() * hScaling,
                         af.getShearY(),
                         af.getShearX(),
                         af.getScaleY(),
