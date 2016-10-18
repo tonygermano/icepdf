@@ -357,7 +357,7 @@ public class TilingPattern extends Stream implements Pattern {
         int height = (int) Math.round(bBoxMod.getHeight());
 
         double baseScale = 1.0f;
-        if ((width < 115 || height < 115) && base.getScaleX() >= 1) {
+        if ((width < 150 || height < 150) && base.getScaleX() >= 1) {
             baseScale = base.getScaleX() * 2;
             if (baseScale > 25) {
                 baseScale = 25;
@@ -386,7 +386,7 @@ public class TilingPattern extends Stream implements Pattern {
         double imageHeight = height * baseScale;
 
         // create the new image to write too.
-        final BufferedImage bi = ImageUtility.createTranslucentCompatibleImage((int) Math.round(imageWidth), (int) Math.round(imageHeight));
+        final BufferedImage bi = ImageUtility.createTranslucentCompatibleImage((int)Math.round(imageWidth), (int) Math.round(imageHeight));
         Graphics2D canvas = bi.createGraphics();
 
         TexturePaint patternPaint = new TexturePaint(bi, new Rectangle2D.Double(
