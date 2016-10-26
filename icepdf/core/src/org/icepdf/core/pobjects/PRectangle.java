@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -43,7 +43,6 @@ import java.util.List;
  *
  * @since 2.0
  */
-@SuppressWarnings("serial")
 public class PRectangle extends Rectangle2D.Float {
 
     private float p1x;
@@ -178,7 +177,7 @@ public class PRectangle extends Rectangle2D.Float {
         rect = new Rectangle2D.Double(rect.getX(),
                 rect.getY(),
                 rect.getWidth(), rect.getHeight());
-        ArrayList<Number> coords = new ArrayList<Number>(4);
+        ArrayList coords = new ArrayList(4);
         coords.add(rect.getMinX());
         coords.add(rect.getMinY());
         coords.add(rect.getMaxX());

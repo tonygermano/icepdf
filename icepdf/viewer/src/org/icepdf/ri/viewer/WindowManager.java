@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -37,35 +37,27 @@ import java.util.ResourceBundle;
  * @since 1.0
  */
 public class WindowManager implements WindowManagementCallback {
-
-    private static WindowManager windowManager;
-
     private PropertiesManager properties;
 
     private ArrayList<SwingController> controllers;
 
-    private long newWindowInvocationCounter = 0;
+    private long newWindowInvokationCounter = 0;
 
     private ResourceBundle messageBundle = null;
 
-    private WindowManager() {
-    }
-
-    public static WindowManager getInstance() {
-        return windowManager;
+    public WindowManager(PropertiesManager properties) {
+        this(properties, null);
     }
 
     //window management functions
-    public static WindowManager createInstance(PropertiesManager properties, ResourceBundle messageBundle) {
-
-        windowManager = new WindowManager();
-        windowManager.properties = properties;
-        windowManager.controllers = new ArrayList<SwingController>();
+    public WindowManager(PropertiesManager properties, ResourceBundle messageBundle) {
+        this.properties = properties;
+        controllers = new ArrayList<SwingController>();
 
         if (messageBundle != null) {
-            windowManager.messageBundle = messageBundle;
+            this.messageBundle = messageBundle;
         } else {
-            windowManager.messageBundle = ResourceBundle.getBundle(
+            this.messageBundle = ResourceBundle.getBundle(
                     PropertiesManager.DEFAULT_MESSAGE_BUNDLE);
         }
 
@@ -74,7 +66,6 @@ public class WindowManager implements WindowManagementCallback {
             System.out.println("\nICEsoft ICEpdf Viewer " + Document.getLibraryVersion());
             System.out.println("Copyright ICEsoft Technologies, Inc.\n");
         }
-        return windowManager;
     }
 
     public PropertiesManager getProperties() {
@@ -82,18 +73,13 @@ public class WindowManager implements WindowManagementCallback {
     }
 
     public long getNumberOfWindows() {
-        return newWindowInvocationCounter;
+        return newWindowInvokationCounter;
     }
 
 
     public void newWindow(final String location) {
         SwingController controller = commonWindowCreation();
         controller.openDocument(location);
-    }
-
-    public void newWindow(final Document document, final String fileName) {
-        SwingController controller = commonWindowCreation();
-        controller.openDocument(document, fileName);
     }
 
     public void newWindow(URL location) {
@@ -138,9 +124,9 @@ public class WindowManager implements WindowManagementCallback {
             int x = getProperties().getInt("application.x", 1);
             int y = getProperties().getInt("application.y", 1);
 
-            frame.setLocation((int) (x + (newWindowInvocationCounter * 10)),
-                    (int) (y + (newWindowInvocationCounter * 10)));
-            ++newWindowInvocationCounter;
+            frame.setLocation((int) (x + (newWindowInvokationCounter * 10)),
+                    (int) (y + (newWindowInvokationCounter * 10)));
+            ++newWindowInvokationCounter;
             frame.setVisible(true);
         }
 
@@ -158,7 +144,7 @@ public class WindowManager implements WindowManagementCallback {
         int index = controllers.indexOf(controller);
         if (index >= 0) {
             controllers.remove(index);
-            newWindowInvocationCounter--;
+            newWindowInvokationCounter--;
             if (viewer != null) {
                 viewer.setVisible(false);
                 viewer.dispose();
@@ -178,13 +164,7 @@ public class WindowManager implements WindowManagementCallback {
             if (properties != null) {
                 getProperties().set(PropertiesManager.PROPERTY_DEFAULT_PAGEFIT,
                         properties.getProperty(PropertiesManager.PROPERTY_DEFAULT_PAGEFIT));
-                int viewType = Integer.parseInt(properties.getProperty("document.viewtype"));
-                // don't save the attachments view as it only applies to specific
-                // document types.
-                if (viewType != DocumentViewControllerImpl.USE_ATTACHMENTS_VIEW) {
-                    getProperties().set("document.viewtype",
-                            properties.getProperty("document.viewtype"));
-                }
+                getProperties().set("document.viewtype", properties.getProperty("document.viewtype"));
             }
             getProperties().setDefaultFilePath(ViewModel.getDefaultFilePath());
             getProperties().setDefaultURL(ViewModel.getDefaultURL());
@@ -194,7 +174,8 @@ public class WindowManager implements WindowManagementCallback {
         getProperties().saveAndEnd();
 
         // make sure all the controllers have been disposed.
-        for (SwingController c : controllers) {
+        for (int i = 0; i < controllers.size(); i++) {
+            SwingController c = controllers.get(i);
             if (c == null)
                 continue;
             c.dispose();
@@ -204,7 +185,8 @@ public class WindowManager implements WindowManagementCallback {
     }
 
     public void minimiseAllWindows() {
-        for (SwingController controller : controllers) {
+        for (int i = 0; i < controllers.size(); i++) {
+            SwingController controller = controllers.get(i);
             JFrame frame = controller.getViewerFrame();
             if (frame != null)
                 frame.setState(Frame.ICONIFIED);
@@ -213,7 +195,8 @@ public class WindowManager implements WindowManagementCallback {
 
     public void bringAllWindowsToFront(SwingController frontMost) {
         JFrame frontMostFrame = null;
-        for (SwingController controller : controllers) {
+        for (int i = 0; i < controllers.size(); i++) {
+            SwingController controller = controllers.get(i);
             JFrame frame = controller.getViewerFrame();
             if (frame != null) {
                 if (frontMost == controller) {
@@ -252,12 +235,12 @@ public class WindowManager implements WindowManagementCallback {
     public List getWindowDocumentOriginList(SwingController giveIndex) {
         Integer foundIndex = null;
         int count = controllers.size();
-        List<Object> list = new ArrayList<Object>(count + 1);
+        List list = new ArrayList(count + 1);
         for (int i = 0; i < count; i++) {
             Object toAdd = null;
             SwingController controller = controllers.get(i);
             if (giveIndex == controller)
-                foundIndex = i;
+                foundIndex = new Integer(i);
             Document document = controller.getDocument();
             if (document != null)
                 toAdd = document.getDocumentOrigin();
@@ -269,7 +252,8 @@ public class WindowManager implements WindowManagementCallback {
     }
 
     void updateUI() {
-        for (SwingController controller : controllers) {
+        for (int i = 0; i < controllers.size(); i++) {
+            SwingController controller = controllers.get(i);
             JFrame frame = controller.getViewerFrame();
             if (frame != null)
                 SwingUtilities.updateComponentTreeUI(frame);

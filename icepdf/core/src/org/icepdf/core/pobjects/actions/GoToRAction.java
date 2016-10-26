@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -31,16 +31,7 @@ import java.util.HashMap;
  */
 public class GoToRAction extends Action {
 
-    /**
-     * The file in which the destination shall be located.
-     */
     public static final Name F_KEY = new Name("F");
-
-    /**
-     * A flag specifying whether to open the destination document in a new window. If this flag is false, the
-     * destination document replaces the current document in the same window. If this entry is absent, the conforming
-     * reader should behave in accordance with its preference.
-     */
     public static final Name NEW_WINDOW_KEY = new Name("NewWindow");
 
     // path to external file, see section 3.10.1 for more details on

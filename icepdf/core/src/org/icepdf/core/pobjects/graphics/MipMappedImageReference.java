@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -16,7 +16,6 @@
 package org.icepdf.core.pobjects.graphics;
 
 import org.icepdf.core.pobjects.ImageStream;
-import org.icepdf.core.pobjects.Page;
 import org.icepdf.core.pobjects.Resources;
 
 import java.awt.*;
@@ -37,16 +36,15 @@ class MipMappedImageReference extends ImageReference {
 
     private ArrayList<ImageReference> images;
 
-    protected MipMappedImageReference(ImageStream imageStream, GraphicsState graphicsState,
-                                      Resources resources, int imageIndex,
-                                      Page page) {
+    protected MipMappedImageReference(ImageStream imageStream, Color fillColor,
+                                      Resources resources) {
 
-        super(imageStream, graphicsState, resources, imageIndex, page);
+        super(imageStream, fillColor, resources);
 
         images = new ArrayList<ImageReference>();
 
         ImageReference imageReference =
-                new ImageStreamReference(imageStream, graphicsState, resources, imageIndex, page);
+                new ImageStreamReference(imageStream, fillColor, resources);
         images.add(imageReference);
 
         int width = imageReference.getWidth();
@@ -57,8 +55,8 @@ class MipMappedImageReference extends ImageReference {
         while (width > 20 && height > 20) {
             width /= 2;
             height /= 2;
-            imageReference = new ScaledImageReference(imageReference, graphicsState, resources,
-                    width, height, imageIndex, page);
+            imageReference = new ScaledImageReference(imageReference, fillColor, resources,
+                    width, height);
             images.add(imageReference);
         }
     }

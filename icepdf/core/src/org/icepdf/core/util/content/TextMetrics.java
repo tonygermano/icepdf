@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -18,9 +18,7 @@ package org.icepdf.core.util.content;
 import java.awt.geom.Point2D;
 
 /**
- * The TextMetrics class purpose is to help sort out the difference between
- * how text is drawn vs. how it can be retrieved for text extraction such as
- * mouse selection/clip board and output to file.
+ *
  */
 public class TextMetrics {
 

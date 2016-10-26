@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -104,6 +104,10 @@ public class LinkAnnotation extends Annotation {
         super(l, h);
     }
 
+    public void init() {
+        super.init();
+    }
+
     /**
      * Gets an instance of a LinkAnnotation that has valid Object Reference.
      *
@@ -146,11 +150,6 @@ public class LinkAnnotation extends Annotation {
         return linkAnnotation;
     }
 
-    public void init() {
-        super.init();
-        // try and generate an appearance stream.
-        resetNullAppearanceStream();
-    }
 
     /**
      * <p>Gets the link annotations highlight mode (visual effect)taht should
@@ -158,7 +157,7 @@ public class LinkAnnotation extends Annotation {
      * active area.</p>
      *
      * @return one of the predefined highlight effects, HIGHLIGHT_NONE,
-     * HIGHLIGHT_OUTLINE or HIGHLIGHT_PUSH.
+     *         HIGHLIGHT_OUTLINE or HIGHLIGHT_PUSH.
      */
     public Name getHighlightMode() {
         Object possibleName = getObject(HIGHLIGHT_MODE_KEY);
@@ -180,7 +179,7 @@ public class LinkAnnotation extends Annotation {
      * permitted if an A entry is not present.
      *
      * @return annotation target destination, null if not present in
-     * annotation.
+     *         annotation.
      */
     public Destination getDestination() {
         Object obj = getObject(DESTINATION_KEY);

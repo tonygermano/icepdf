@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -19,7 +19,6 @@ import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
-import java.net.URL;
 import java.util.Map;
 
 /**
@@ -29,14 +28,6 @@ import java.util.Map;
  * @since 3.0
  */
 public interface FontFile {
-
-    /**
-     * Possible encoding format of string that was designed to work with this
-     * font.  Type is determined by queues in the parent Cmap definition.
-     */
-    public enum ByteEncoding {
-        ONE_BYTE, TWO_BYTE, MIXED_BYTE
-    }
 
     public static final long LAYOUT_NONE = 0;
 
@@ -145,13 +136,7 @@ public interface FontFile {
      */
     public Shape getEstringOutline(String estr, float x, float y);
 
-    public ByteEncoding getByteEncoding();
+    public boolean isOneByteEncoding();
 
-    /**
-     * Gets the source url of the underlying file if any.  Embedded fonts will
-     * not have a source.
-     *
-     * @return null if the font is embedded, otherwise the font system path.
-     */
-    public URL getSource();
+
 }

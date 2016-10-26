@@ -37,9 +37,9 @@
  * Other JBIG2 image decoding implementations include
  * jbig2dec (http://jbig2dec.sourceforge.net/)
  * xpdf (http://www.foolabs.com/xpdf/)
- *
+ * 
  * The final draft JBIG2 specification can be found at http://www.jpeg.org/public/fcd14492.pdf
- *
+ * 
  * All three of the above resources were used in the writing of this software, with methodologies,
  * processes and inspiration taken from all three.
  *
@@ -69,13 +69,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class JBIG2ImageReader extends ImageReader {
-
-    private static final Logger logger =
-            Logger.getLogger(JBIG2ImageReader.class.toString());
 
     private JBIG2Decoder decoder;
     private ImageInputStream stream;
@@ -195,7 +190,7 @@ public class JBIG2ImageReader extends ImageReader {
 
             BufferedImage scaledImage = scaleImage(image.getRaster(), newWidth, newHeight, 1, 1);
 
-            Raster raster;
+            Raster raster = null;
 
             if (scaledImage != null) {
                 raster = scaledImage.getRaster();
@@ -205,7 +200,7 @@ public class JBIG2ImageReader extends ImageReader {
             wrDst.setRect(destinationOffset.x, destinationOffset.y, raster);
 
         } catch (RuntimeException e) {
-            logger.log(Level.FINE, "Error reading JBIG2 image data", e);
+            e.printStackTrace();
         }
 
         return dst;
@@ -220,7 +215,7 @@ public class JBIG2ImageReader extends ImageReader {
         return null;
     }
 
-    public Iterator<ImageTypeSpecifier> getImageTypes(int imageIndex) throws IOException {
+    public Iterator getImageTypes(int imageIndex) throws IOException {
         readFile();
 
         checkIndex(imageIndex);
@@ -231,7 +226,7 @@ public class JBIG2ImageReader extends ImageReader {
         // to return an appropriate BufferedImage that contains the decoded
         // image, and is accessed by an application.
 
-        List<ImageTypeSpecifier> l = new ArrayList<ImageTypeSpecifier>();
+        List l = new ArrayList();
 
         // The JBIG2 reader only uses a single List entry. This entry describes
         // a
@@ -423,15 +418,15 @@ public class JBIG2ImageReader extends ImageReader {
                                 if (count > 0)
                                     // if(index==null)
                                     newData[jj + (x * comp) + (newW * y * comp)] = (byte) ((byteTotal) / count);
-                                // else
-                                // newData[x+(newW*y)]=(byte)(((index[1] &
-                                // 255)*byteTotal)/count);
-//                                else {
-                                // if(index==null)
-                                // newData[jj+x+(newW*y*comp)]=(byte) 255;
-                                // else
-                                // newData[x+(newW*y)]=index[0];
-//                                }
+                                    // else
+                                    // newData[x+(newW*y)]=(byte)(((index[1] &
+                                    // 255)*byteTotal)/count);
+                                else {
+                                    // if(index==null)
+                                    // newData[jj+x+(newW*y*comp)]=(byte) 255;
+                                    // else
+                                    // newData[x+(newW*y)]=index[0];
+                                }
                             }
                         }
                     }
@@ -442,17 +437,15 @@ public class JBIG2ImageReader extends ImageReader {
 
                 } catch (Exception e) {
 
-                    if (logger.isLoggable(Level.FINE)) {
-                        // <start-full><start-demo>
-                        logger.fine("xx=" + xx + " yy=" + yy + " jj=" + jj + " ptr=" + ((yy + (y * sampling)) * origLineLength) + (((x * sampling) + (xx * comp) + jj)) + '/' + data.length);
+                    // <start-full><start-demo>
+                    System.err.println("xx=" + xx + " yy=" + yy + " jj=" + jj + " ptr=" + ((yy + (y * sampling)) * origLineLength) + (((x * sampling) + (xx * comp) + jj)) + '/' + data.length);
 
-                        // System.err.println("index="+index);
-                        logger.fine(((yy + (y * sampling)) * origLineLength) + " " + (((x * sampling) + (xx * comp) + jj)));
-                        logger.fine("w=" + w + " h=" + h + " sampling=" + sampling + " x=" + x + " y=" + y);
-                        // System.out.println("xx="+xx+" yy="+yy);
-                        logger.log(Level.FINE, "Error scaling image", e);
-                        // <end-demo><end-full>
-                    }
+                    // System.err.println("index="+index);
+                    System.err.println(((yy + (y * sampling)) * origLineLength) + " " + (((x * sampling) + (xx * comp) + jj)));
+                    System.err.println("w=" + w + " h=" + h + " sampling=" + sampling + " x=" + x + " y=" + y);
+                    // System.out.println("xx="+xx+" yy="+yy);
+                    e.printStackTrace();
+                    // <end-demo><end-full>
                 }
             }
         }
@@ -496,7 +489,7 @@ public class JBIG2ImageReader extends ImageReader {
             if (size == -1) {
                 ByteArrayOutputStream bos = new ByteArrayOutputStream();
                 byte[] temp = new byte[8192];
-                for (int len; (len = stream.read(temp)) > 0; ) {
+                for (int len = 0; (len = stream.read(temp)) > 0; ) {
                     bos.write(temp, 0, len);
                 }
                 bos.close();
@@ -509,9 +502,11 @@ public class JBIG2ImageReader extends ImageReader {
             decoder.decodeJBIG2(data);
 
         } catch (IOException e) {
-            logger.log(Level.FINE, "Error reading JBIG2 image data", e);
+            // TODO Auto-generated catch block
+            e.printStackTrace();
         } catch (JBIG2Exception e) {
-            logger.log(Level.FINE, "Error reading JBIG2 image data", e);
+            // TODO Auto-generated catch block
+            e.printStackTrace();
         }
 
         readFile = true;

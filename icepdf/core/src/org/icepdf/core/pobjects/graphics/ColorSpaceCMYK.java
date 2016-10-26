@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -21,7 +21,6 @@ import java.awt.color.ColorSpace;
  * @author Mark Collette
  * @since 2.0
  */
-@SuppressWarnings("serial")
 public class ColorSpaceCMYK extends ColorSpace {
     private static final String[] NAMES = new String[]{"Cyan", "Magenta", "Yellow", "Black"};
     private static final ColorSpace COLOR_SPACE_sRGB = ColorSpace.getInstance(ColorSpace.CS_sRGB);
@@ -117,7 +116,7 @@ public class ColorSpaceCMYK extends ColorSpace {
         rgbValues[0] = c;
         rgbValues[1] = m;
         rgbValues[2] = y;
-        return rgbValues;
+        return cmykValues;
     }
 
     private float[] _rgbValues = new float[4];

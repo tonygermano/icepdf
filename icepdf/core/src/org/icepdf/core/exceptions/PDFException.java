@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -20,7 +20,6 @@ package org.icepdf.core.exceptions;
  *
  * @since 1.0
  */
-@SuppressWarnings("serial")
 public class PDFException extends Exception {
     /**
      * Constructs an instance of PDFException with the specified detail message.

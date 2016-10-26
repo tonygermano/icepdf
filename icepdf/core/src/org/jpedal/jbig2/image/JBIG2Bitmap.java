@@ -37,9 +37,9 @@
  * Other JBIG2 image decoding implementations include
  * jbig2dec (http://jbig2dec.sourceforge.net/)
  * xpdf (http://www.foolabs.com/xpdf/)
- *
+ * 
  * The final draft JBIG2 specification can be found at http://www.jpeg.org/public/fcd14492.pdf
- *
+ * 
  * All three of the above resources were used in the writing of this software, with methodologies,
  * processes and inspiration taken from all three.
  *
@@ -684,7 +684,7 @@ public final class JBIG2Bitmap {
                     if (JBIG2StreamDecoder.debug)
                         System.out.println("Invalid symbol number in JBIG2 text region");
                 } else {
-                    // symbolBitmap = null;
+                    symbolBitmap = null;
 
                     int ri;
                     if (symbolRefine) {
@@ -736,26 +736,26 @@ public final class JBIG2Bitmap {
                                 combine(symbolBitmap, tt, s, combinationOperator);
                                 break;
                             case 2: // bottom right
-                                combine(symbolBitmap, tt - bitmapWidth, s, combinationOperator);
+                                combine(symbolBitmap, (int) (tt - bitmapWidth), s, combinationOperator);
                                 break;
                             case 3: // top right
-                                combine(symbolBitmap, tt - bitmapWidth, s, combinationOperator);
+                                combine(symbolBitmap, (int) (tt - bitmapWidth), s, combinationOperator);
                                 break;
                         }
                         s += bitmapHeight;
                     } else {
                         switch (referenceCorner) {
                             case 0: // bottom left
-                                combine(symbolBitmap, s, tt - bitmapHeight, combinationOperator);
+                                combine(symbolBitmap, s, (int) (tt - bitmapHeight), combinationOperator);
                                 break;
                             case 1: // top left
                                 combine(symbolBitmap, s, tt, combinationOperator);
                                 break;
                             case 2: // bottom right
-                                combine(symbolBitmap, s, tt - bitmapHeight, combinationOperator);
+                                combine(symbolBitmap, s, (int) (tt - bitmapHeight), combinationOperator);
                                 break;
                             case 3: // top right
-                                combine(symbolBitmap, s, tt, combinationOperator);
+                                combine(symbolBitmap, s, (int) tt, combinationOperator);
                                 break;
                         }
                         s += bitmapWidth;
@@ -1027,10 +1027,6 @@ public final class JBIG2Bitmap {
     }
 
     public int getPixel(int col, int row) {
-        // compensate for PDF-675
-        if (row < 0) {
-            row = 0;
-        }
         return data.get((row * width) + col) ? 1 : 0;
     }
 
@@ -1185,7 +1181,7 @@ public final class JBIG2Bitmap {
 
 
             if (mod == 0)
-                bytes[row][offset] = bits;
+                bytes[row][offset] = (byte) bits;
             else {
 
                 byte left = (byte) (bits >> mod);
@@ -1226,8 +1222,8 @@ public final class JBIG2Bitmap {
         }
 
         public void reset(boolean set) {
-            for (byte[] aByte : bytes)
-                Arrays.fill(aByte, set ? (byte) 0xFF : (byte) 0x00);
+            for (int i = 0; i < bytes.length; i++)
+                Arrays.fill(bytes[i], set ? (byte) 0xFF : (byte) 0x00);
         }
     }
 }

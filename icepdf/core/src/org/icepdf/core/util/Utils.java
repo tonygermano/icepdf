@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -45,10 +45,10 @@ public class Utils {
      * @param offset into buffer which value is to be set
      */
     public static void setIntIntoByteArrayBE(int value, byte[] buffer, int offset) {
-        buffer[offset] = (byte) ((value >>> 24) & 0xff);
+        buffer[offset + 0] = (byte) ((value >>> 24) & 0xff);
         buffer[offset + 1] = (byte) ((value >>> 16) & 0xff);
         buffer[offset + 2] = (byte) ((value >>> 8) & 0xff);
-        buffer[offset + 3] = (byte) ((value) & 0xff);
+        buffer[offset + 3] = (byte) ((value >>> 0) & 0xff);
     }
 
     /**
@@ -60,8 +60,8 @@ public class Utils {
      * @param offset into buffer which value is to be set
      */
     public static void setShortIntoByteArrayBE(short value, byte[] buffer, int offset) {
-        buffer[offset] = (byte) ((value >>> 8) & 0xff);
-        buffer[offset + 1] = (byte) ((value) & 0xff);
+        buffer[offset + 0] = (byte) ((value >>> 8) & 0xff);
+        buffer[offset + 1] = (byte) ((value >>> 0) & 0xff);
     }
 
     /**
@@ -177,13 +177,13 @@ public class Utils {
      */
     public static boolean reflectGraphicsEnvironmentISHeadlessInstance(Object graphicsEnvironment, boolean defaultReturnIfNoMethod) {
         try {
-            Class<?> clazz = graphicsEnvironment.getClass();
+            Class clazz = graphicsEnvironment.getClass();
             Method isHeadlessInstanceMethod = clazz.getMethod("isHeadlessInstance", new Class[]{});
             if (isHeadlessInstanceMethod != null) {
                 Object ret = isHeadlessInstanceMethod.invoke(
-                        graphicsEnvironment);
+                        graphicsEnvironment, new Object[]{});
                 if (ret instanceof Boolean)
-                    return (Boolean) ret;
+                    return ((Boolean) ret).booleanValue();
             }
         } catch (Throwable t) {
             logger.log(Level.FINE,
@@ -361,8 +361,8 @@ public class Utils {
     public static String convertByteArrayToByteString(byte[] bytes) {
         final int max = bytes.length;
         StringBuilder sb = new StringBuilder(max);
-        for (byte aByte : bytes) {
-            int b = ((int) aByte) & 0xFF;
+        for (int i = 0; i < max; i++) {
+            int b = ((int) bytes[i]) & 0xFF;
             sb.append((char) b);
         }
         return sb.toString();
@@ -378,8 +378,9 @@ public class Utils {
      * @return converted string.
      */
     public static String convertStringObject(Library library, StringObject stringObject) {
+        StringObject outlineText = stringObject;
         String convertedStringObject = null;
-        String titleText = stringObject.getDecryptedLiteralString(library.getSecurityManager());
+        String titleText = outlineText.getDecryptedLiteralString(library.securityManager);
         // If the title begins with 254 and 255 we are working with
         // Octal encoded strings. Check first to make sure that the
         // title string is not null, or is at least of length 2.
@@ -392,10 +393,10 @@ public class Utils {
             // convert teh unicode to characters.
             for (int i = 2; i < titleText.length(); i += 2) {
                 try {
-                    int b1 = ((((int) titleText.charAt(i)) & 0xFF)  << 8 ) |
-                            ((int) titleText.charAt(i + 1)) & 0xFF;
+                    int b1 = ((int) titleText.charAt(i)) & 0xFF;
+                    int b2 = ((int) titleText.charAt(i + 1)) & 0xFF;
                     //System.err.println(b1 + " " + b2);
-                    sb1.append((char) (b1));
+                    sb1.append((char) (b1 * 256 + b2));
                 } catch (Exception ex) {
                     // intentionally left blank.
                 }
@@ -405,8 +406,7 @@ public class Utils {
             StringBuilder sb = new StringBuilder();
             Encoding enc = Encoding.getPDFDoc();
             for (int i = 0; i < titleText.length(); i++) {
-                sb.append(titleText.charAt(i));
-//                sb.append(enc.get(titleText.charAt(i)));
+                sb.append(enc.get(titleText.charAt(i)));
             }
             convertedStringObject = sb.toString();
         }

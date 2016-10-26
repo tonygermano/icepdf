@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -175,29 +175,6 @@ public class StandardSecurityHandler extends SecurityHandler {
                           byte[] data) {
 
         // check if crypt filters are being used and find out if V2 or AESV2
-        String algorithmType = getAlgorithmType();
-
-        // use the general encryption algorithm for encryption
-        return standardEncryption.generalEncryptionAlgorithm(
-                objectReference, encryptionKey, algorithmType, data, true);
-    }
-
-
-    public byte[] decrypt(Reference objectReference,
-                          byte[] encryptionKey,
-                          byte[] data) {
-        // check if crypt filters are being used and find out if V2 or AESV2
-        String algorithmType = getAlgorithmType();
-
-        // use the general encryption algorithm for encryption
-        return standardEncryption.generalEncryptionAlgorithm(
-                objectReference, encryptionKey, algorithmType, data, false);
-    }
-
-    /**
-     * Utility to determine encryption type used.
-     */
-    private String getAlgorithmType() {
         String algorithmType;
         if (encryptionDictionary.getCryptFilter() != null) {
             CryptFilterEntry cryptFilterEntry =
@@ -208,7 +185,17 @@ public class StandardSecurityHandler extends SecurityHandler {
         } else {
             algorithmType = StandardEncryption.ENCRYPTION_TYPE_V2;
         }
-        return algorithmType;
+
+        // use the general encryption algorithm for encryption
+        return standardEncryption.generalEncryptionAlgorithm(
+                objectReference, encryptionKey, algorithmType, data);
+    }
+
+    public byte[] decrypt(Reference objectReference,
+                          byte[] encryptionKey,
+                          byte[] data) {
+        // standard encryption is symmetric, so we can just use enrypt to decrypt
+        return encrypt(objectReference, encryptionKey, data);
     }
 
     public synchronized InputStream getEncryptionInputStream(
@@ -221,24 +208,15 @@ public class StandardSecurityHandler extends SecurityHandler {
         CryptFilterEntry cryptFilter = null;
         if (decodeParams != null) {
             Name filterName = (Name) decodeParams.get(NAME_KEY);
-            if (filterName != null) {
-                // identity means don't use the cryprt filter or encryption at all
-                // for the stream.
-                if (filterName.equals(IDENTITY_KEY)) {
-                    return input;
-                } else {
-                    // find the filter name in the encryption dictionary
-                    cryptFilter = encryptionDictionary.
-                            getCryptFilter().getCryptFilterByName(filterName);
+            // identity means don't use the cryprt filter or encryption at all
+            // for the stream.
+            if (filterName.equals(IDENTITY_KEY)) {
+                return input;
+            } else {
+                // find the filter name in the encryption dictionary
+                cryptFilter = encryptionDictionary.
+                        getCryptFilter().getCryptFilterByName(filterName);
 
-                }
-            } else if (encryptionDictionary.getCryptFilter() != null) {
-                // corner case, some images treams also use the "decodeParams"
-                // dictionary, if it doesn't contain a filter name then we
-                // want to make sure we assign the standard one so the steam
-                // can be unencrypted.
-                cryptFilter = encryptionDictionary.getCryptFilter().getCryptFilterByName(
-                        encryptionDictionary.getStmF());
             }
         }
         // We default to the method specified in by StrmF in the security dictionary

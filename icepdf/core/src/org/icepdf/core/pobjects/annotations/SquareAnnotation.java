@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -83,9 +83,6 @@ public class SquareAnnotation extends MarkupAnnotation {
             fillColor = new Color(red, green, blue);
             isFillColor = true;
         }
-
-        // try and generate an appearance stream.
-        resetNullAppearanceStream();
     }
 
     /**
@@ -133,15 +130,8 @@ public class SquareAnnotation extends MarkupAnnotation {
      */
     public void resetAppearanceStream(double dx, double dy, AffineTransform pageTransform) {
 
-        Appearance appearance = appearances.get(currentAppearance);
-        AppearanceState appearanceState = appearance.getSelectedAppearanceState();
-
-        appearanceState.setMatrix(new AffineTransform());
-        appearanceState.setShapes(new Shapes());
-
-        Rectangle2D bbox = appearanceState.getBbox();
-        AffineTransform matrix = appearanceState.getMatrix();
-        Shapes shapes = appearanceState.getShapes();
+        matrix = new AffineTransform();
+        shapes = new Shapes();
 
         // setup the AP stream.
         setModifiedDate(PDate.formatDateTime(new Date()));
@@ -164,7 +154,7 @@ public class SquareAnnotation extends MarkupAnnotation {
         // setup the space for the AP content stream.
         AffineTransform af = new AffineTransform();
         af.scale(1, -1);
-        af.translate(-bbox.getMinX(), -bbox.getMaxY());
+        af.translate(-this.bbox.getMinX(), -this.bbox.getMaxY());
 
         BasicStroke stroke;
         if (borderStyle.isStyleDashed()) {
@@ -196,7 +186,7 @@ public class SquareAnnotation extends MarkupAnnotation {
             // else a stream, we won't support this for annotations.
         } else {
             // create a new xobject/form object
-            HashMap<Object, Object> formEntries = new HashMap<Object, Object>();
+            HashMap formEntries = new HashMap();
             formEntries.put(Form.TYPE_KEY, Form.TYPE_VALUE);
             formEntries.put(Form.SUBTYPE_KEY, Form.SUB_TYPE_VALUE);
             form = new Form(library, formEntries, null);
@@ -212,7 +202,7 @@ public class SquareAnnotation extends MarkupAnnotation {
             // update the AP's stream bytes so contents can be written out
             form.setRawBytes(
                     PostScriptEncoder.generatePostScript(shapes.getShapes()));
-            HashMap<Object, Object> appearanceRefs = new HashMap<Object, Object>();
+            HashMap appearanceRefs = new HashMap();
             appearanceRefs.put(APPEARANCE_STREAM_NORMAL_KEY, form.getPObjectReference());
             entries.put(APPEARANCE_STREAM_KEY, appearanceRefs);
 

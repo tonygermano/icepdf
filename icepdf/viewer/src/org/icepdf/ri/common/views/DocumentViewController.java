@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -156,8 +156,6 @@ public interface DocumentViewController {
     public void setViewCursor(final int cursorType);
 
     public Cursor getViewCursor(final int cursorType);
-
-    public int getViewCursor();
 
     public void setViewKeyListener(KeyListener l);
 

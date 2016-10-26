@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -15,10 +15,7 @@
  */
 package org.icepdf.core.util;
 
-import org.icepdf.core.io.SeekableInput;
 import org.icepdf.core.pobjects.*;
-import org.icepdf.core.pobjects.acroform.InteractiveForm;
-import org.icepdf.core.pobjects.acroform.SignatureHandler;
 import org.icepdf.core.pobjects.fonts.Font;
 import org.icepdf.core.pobjects.fonts.FontDescriptor;
 import org.icepdf.core.pobjects.graphics.ICCBased;
@@ -59,9 +56,9 @@ public class Library {
     static {
         try {
             commonPoolThreads =
-                    Defs.intProperty("org.icepdf.core.library.threadPoolSize", 5);
+                    Defs.intProperty("org.icepdf.core.library.threadPoolSize", 3);
             if (commonPoolThreads < 1) {
-                commonPoolThreads = 5;
+                commonPoolThreads = 3;
             }
         } catch (NumberFormatException e) {
             log.warning("Error reading buffered scale factor");
@@ -69,9 +66,9 @@ public class Library {
 
         try {
             painterPoolThreads =
-                    Defs.intProperty("org.icepdf.core.library.painterThreadPoolSize", 2);
+                    Defs.intProperty("org.icepdf.core.library.painterThreadPoolSize", 1);
             if (painterPoolThreads < 1) {
-                painterPoolThreads = 2;
+                painterPoolThreads = 1;
             }
         } catch (NumberFormatException e) {
             log.warning("Error reading buffered scale factor");
@@ -79,9 +76,9 @@ public class Library {
 
         try {
             imagePoolThreads =
-                    Defs.intProperty("org.icepdf.core.library.imageThreadPoolSize", 10);
+                    Defs.intProperty("org.icepdf.core.library.imageThreadPoolSize", 5);
             if (imagePoolThreads < 1) {
-                imagePoolThreads = 10;
+                imagePoolThreads = 5;
             }
         } catch (NumberFormatException e) {
             log.warning("Error reading buffered scale factor");
@@ -95,24 +92,17 @@ public class Library {
 
     // new incremental file loader class.
     private LazyObjectLoader lazyObjectLoader;
+
     private ConcurrentHashMap<Reference, WeakReference<Object>> refs =
             new ConcurrentHashMap<Reference, WeakReference<Object>>(1024);
     private ConcurrentHashMap<Reference, WeakReference<ICCBased>> lookupReference2ICCBased =
             new ConcurrentHashMap<Reference, WeakReference<ICCBased>>(256);
+
     // Instead of keeping Names names, Dictionary dests, we keep
     //   a reference to the Catalog, which actually owns them
     private Catalog catalog;
 
-    private SecurityManager securityManager;
-
-    // handles signature validation and signing.
-    private SignatureHandler signatureHandler;
-
-    // signature permissions
-    private Permissions permissions;
-
-    private SeekableInput documentInput;
-
+    public SecurityManager securityManager;
 
     // state manager reference needed by most classes to properly managed state
     // changes and new object creation
@@ -148,7 +138,7 @@ public class Library {
      *
      * @param reference reference to a PDF object in the document structure.
      * @return PDF object dictionary that the reference refers to.  Null if the
-     * object reference can not be found.
+     *         object reference can not be found.
      */
     public Object getObject(Reference reference) {
         Object ob;
@@ -224,7 +214,7 @@ public class Library {
      * @param dictionaryEntries dictionary to test
      * @param key               dictionary key
      * @return true if the key value exists and is a reference, false if the
-     * dictionaryEntries are null or the key references an inline dictionary
+     *         dictionaryEntries are null or the key references an inline dictionary
      */
     public boolean isReference(HashMap dictionaryEntries, Name key) {
         return dictionaryEntries != null &&
@@ -240,7 +230,7 @@ public class Library {
      * @param dictionaryEntries dictionary to search in.
      * @param key               key to search for in dictionary.
      * @return reference of the object that key points if any.  Null if the key
-     * points to an inline dictionary and not a reference.
+     *         points to an inline dictionary and not a reference.
      */
     public Reference getReference(HashMap dictionaryEntries, Name key) {
         Object ref = dictionaryEntries.get(key);
@@ -264,7 +254,7 @@ public class Library {
      * Sets the document state manager so that all object can access the
      * state manager via the central library instance.
      *
-     * @param stateManager reference to the state change class
+     * @param stateManager
      */
     public void setStateManager(StateManager stateManager) {
         this.stateManager = stateManager;
@@ -275,8 +265,8 @@ public class Library {
      *
      * @param referenceObject reference object.
      * @return PDF object that <code>referenceObject</code> references.  If
-     * <code>referenceObject</code> is not an instance of a Reference, the
-     * origional <code>referenceObject</code> is returned.
+     *         <code>referenceObject</code> is not an instance of a Reference, the
+     *         origional <code>referenceObject</code> is returned.
      */
     public Object getObject(Object referenceObject) {
         if (referenceObject instanceof Reference) {
@@ -323,7 +313,7 @@ public class Library {
      * @param dictionaryEntries the dictionary entries to look up the key in.
      * @param key               string value representing the dictionary key.
      * @return Number object if a valid key;  null, if the key does not point
-     * to Number or is invalid.
+     *         to Number or is invalid.
      */
     public Number getNumber(HashMap dictionaryEntries, Name key) {
         Object o = getObject(dictionaryEntries, key);
@@ -340,7 +330,7 @@ public class Library {
      * @param dictionaryEntries the dictionary entries to look up the key in.
      * @param key               string value representing the dictionary key.
      * @return Number object if a valid key;  null, if the key does not point
-     * to Number or is invalid.
+     *         to Number or is invalid.
      */
     public Boolean getBoolean(HashMap dictionaryEntries, Name key) {
         Object o = getObject(dictionaryEntries, key);
@@ -357,7 +347,7 @@ public class Library {
      * @param dictionaryEntries the dictionary entries to look up the key in.
      * @param key               string value representing the dictionary key.
      * @return float value if a valid key;  null, if the key does not point
-     * to a float or is invalid.
+     *         to a float or is invalid.
      */
     public float getFloat(HashMap dictionaryEntries, Name key) {
         Number n = getNumber(dictionaryEntries, key);
@@ -372,7 +362,7 @@ public class Library {
      * @param dictionaryEntries the dictionary entries to look up the key in.
      * @param key               string value representing the dictionary key.
      * @return int value if a valid key,  null if the key does not point
-     * to an int or is invalid.
+     *         to an int or is invalid.
      */
     public int getInt(HashMap dictionaryEntries, Name key) {
         Number n = getNumber(dictionaryEntries, key);
@@ -387,7 +377,7 @@ public class Library {
      * @param dictionaryEntries the dictionary entries to look up the key in.
      * @param key               string value representing the dictionary key.
      * @return float value if a valid key;  null, if the key does not point
-     * to a float or is invalid.
+     *         to a float or is invalid.
      */
     public long getLong(HashMap dictionaryEntries, Name key) {
         Number n = getNumber(dictionaryEntries, key);
@@ -402,7 +392,7 @@ public class Library {
      * @param dictionaryEntries the dictionary entries to look up the key in.
      * @param key               string value representing the dictionary key.
      * @return Name object if a valid key;  null, if the key does not point
-     * to Name or is invalid.
+     *         to Name or is invalid.
      */
     public Name getName(HashMap dictionaryEntries, Name key) {
         Object o = getObject(dictionaryEntries, key);
@@ -422,7 +412,7 @@ public class Library {
      * @param dictionaryEntries the dictionary entries to look up the key in.
      * @param key               string value representing the dictionary key.
      * @return string object if a valid key;  null, if the key does not point
-     * to Name or is invalid.
+     *         to Name or is invalid.
      */
     public String getString(HashMap dictionaryEntries, Name key) {
         Object o = getObject(dictionaryEntries, key);
@@ -446,9 +436,8 @@ public class Library {
      * @param dictionaryEntries the dictionary entries to look up the key in.
      * @param key               string value representing the dictionary key.
      * @return dictionary object if a valid key;  null, if the key does not point
-     * to dictionary or is invalid.
+     *         to dictionary or is invalid.
      */
-    @SuppressWarnings("unchecked")
     public HashMap getDictionary(HashMap dictionaryEntries, Name key) {
         Object o = getObject(dictionaryEntries, key);
         if (o instanceof HashMap) {
@@ -520,7 +509,6 @@ public class Library {
         return cs;
     }
 
-    @SuppressWarnings("unchecked")
     public Resources getResources(HashMap dictionaryEntries, Name key) {
         if (dictionaryEntries == null)
             return null;
@@ -567,7 +555,7 @@ public class Library {
     /**
      * Removes an object from from the library.
      *
-     * @param objetReference object reference to remove to library
+     * @param objetReference
      */
     public void removeObject(Reference objetReference) {
         if (objetReference != null) {
@@ -581,26 +569,8 @@ public class Library {
     public Library() {
         // set Catalog memory Manager and cache manager.
         imagePool = new ImagePool();
-        signatureHandler = new SignatureHandler();
     }
 
-    /**
-     * Sets a pointer to the orginal document input stream
-     *
-     * @param documentInput seekable inputstream.
-     */
-    public void setDocumentInput(SeekableInput documentInput) {
-        this.documentInput = documentInput;
-    }
-
-    /**
-     * Gets the SeekableInput of the document underlying bytes.
-     *
-     * @return document bytes.
-     */
-    public SeekableInput getDocumentInput() {
-        return documentInput;
-    }
 
     /**
      * Gets the PDF object specified by the <code>key</code> in the dictionary
@@ -609,7 +579,7 @@ public class Library {
      * @param dictionaryEntries the dictionary entries to look up the key in.
      * @param key               string value representing the dictionary key.
      * @return the Reference specified by the PDF key.  If the key is invalid
-     * or does not reference a Reference object, null is returned.
+     *         or does not reference a Reference object, null is returned.
      * @see #getObject(java.util.HashMap, Name)
      */
     public Reference getObjectReference(HashMap dictionaryEntries,
@@ -641,33 +611,10 @@ public class Library {
      * Gets the document's security manger.
      *
      * @return document's security manager if the document is encrypted, null
-     * otherwise.
+     *         otherwise.
      */
     public SecurityManager getSecurityManager() {
         return securityManager;
-    }
-
-    public void setSecurityManager(SecurityManager securityManager) {
-        this.securityManager = securityManager;
-    }
-
-    public SignatureHandler getSignatureHandler() {
-        return signatureHandler;
-    }
-
-    /**
-     * Set a documents permissions for a given certificate of signature, optional.
-     * The permission should also be used with the encryption permissions if present
-     * to configure the viewer permissions.
-     *
-     * @return permission object if present, otherwise null.
-     */
-    public Permissions getPermissions() {
-        return permissions;
-    }
-
-    public void setPermissions(Permissions permissions) {
-        this.permissions = permissions;
     }
 
     /**
@@ -716,22 +663,6 @@ public class Library {
      */
     public void setCatalog(Catalog c) {
         catalog = c;
-    }
-
-    /**
-     * Checks the Catalog for an interactive Forms dictionary and if found the resources object
-     * is used for a font lookup.
-     *
-     * @param fontName font name to look for.
-     * @return font font,  null otherwise.
-     */
-    public Font getInteractiveFormFont(String fontName) {
-        InteractiveForm form = getCatalog().getInteractiveForm();
-        if (form != null) {
-            Resources resources = form.getResources();
-            return resources.getFont(new Name(fontName));
-        }
-        return null;
     }
 
     /**

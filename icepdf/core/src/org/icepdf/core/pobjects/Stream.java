@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -224,7 +224,7 @@ public class Stream extends Dictionary {
 
         // Search for crypt dictionary entry and decode params so that
         // named filters can be assigned correctly.
-        if (library.getSecurityManager() != null) {
+        if (library.securityManager != null) {
             // check see of there is a decodeParams for a crypt filter.
             HashMap decodeParams = library.getDictionary(entries, DECODEPARAM_KEY);
             input = library.getSecurityManager().getEncryptionInputStream(
@@ -292,10 +292,6 @@ public class Stream extends Dictionary {
                     logger.fine("UNSUPPORTED:" + filterName + " " + entries);
                 }
             }
-        }
-        // Apply  Predictor Filter logic fo LZW or Flate streams.
-        if (PredictorDecode.isPredictor(library, entries)) {
-            input = new PredictorDecode(input, library, entries);
         }
 
         return input;

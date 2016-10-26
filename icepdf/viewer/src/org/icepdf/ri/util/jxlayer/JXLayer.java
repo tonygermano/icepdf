@@ -113,7 +113,6 @@ import java.util.Iterator;
  * @see #setUI(LayerUI)
  * @see LayerUI
  */
-@SuppressWarnings("serial")
 public final class JXLayer<V extends Component> extends JComponent
         implements Scrollable, PropertyChangeListener, Accessible {
     private V view;
@@ -128,6 +127,7 @@ public final class JXLayer<V extends Component> extends JComponent
 
     private static final LayerEventController eventController =
             new LayerEventController();
+
     private static final long ACCEPTED_EVENTS =
             AWTEvent.COMPONENT_EVENT_MASK |
                     AWTEvent.CONTAINER_EVENT_MASK |
@@ -181,7 +181,7 @@ public final class JXLayer<V extends Component> extends JComponent
      * <br/>This is a bound property.
      *
      * @return the {@code JXLayer}'s view component
-     * or {@code null} if none exists
+     *         or {@code null} if none exists
      * @see #setView(Component)
      */
     public V getView() {
@@ -234,7 +234,7 @@ public final class JXLayer<V extends Component> extends JComponent
      * <br/>This is a bound property.
      *
      * @return the {@code JXLayer}'s glassPane component
-     * or {@code null} if none exists
+     *         or {@code null} if none exists
      * @see #setGlassPane(JPanel)
      */
     public JPanel getGlassPane() {
@@ -534,7 +534,7 @@ public final class JXLayer<V extends Component> extends JComponent
      * implementation to the {@code LayerUI.getScrollableUnitIncrement(JXLayer, Rectangle, int, int)}
      *
      * @return The "unit" increment for scrolling in the specified direction.
-     * This value should always be positive.
+     *         This value should always be positive.
      * @see Scrollable
      * @see LayerUI#getScrollableUnitIncrement(JXLayer, Rectangle, int, int)
      */
@@ -574,7 +574,6 @@ public final class JXLayer<V extends Component> extends JComponent
     /**
      * static AWTEventListener to be shared with all AbstractLayerUIs
      */
-    @SuppressWarnings("serial")
     private static class LayerEventController implements AWTEventListener {
         private ArrayList<WeakReference<JXLayer>> layerList =
                 new ArrayList<WeakReference<JXLayer>>();
@@ -695,7 +694,6 @@ public final class JXLayer<V extends Component> extends JComponent
         }
     }
 
-    @SuppressWarnings("serial")
     private static class DefaultLayerLayout implements LayoutManager, Serializable {
         /**
          * {@inheritDoc}
@@ -772,7 +770,6 @@ public final class JXLayer<V extends Component> extends JComponent
      * The default glassPane for the {@link JXLayer}.
      * It is a subclass of {@code JPanel} which is non opaque by default.
      */
-    @SuppressWarnings("serial")
     private static class DefaultLayerGlassPane extends JPanel {
         /**
          * Creates a new {@link DefaultLayerGlassPane}

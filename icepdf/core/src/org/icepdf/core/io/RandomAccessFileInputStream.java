@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -17,7 +17,6 @@ package org.icepdf.core.io;
 
 import java.io.*;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -70,9 +69,7 @@ public class RandomAccessFileInputStream extends InputStream implements Seekable
         try {
             return (int) (m_RandomAccessFile.getFilePointer());
         } catch (IOException e) {
-            if (logger.isLoggable(Level.FINE)) {
-                logger.log(Level.WARNING, "Error calling available", e);
-            }
+            e.printStackTrace();
         }
         return 0;
     }

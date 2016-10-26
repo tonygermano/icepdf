@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -18,7 +18,6 @@ package org.icepdf.ri.common.views;
 import org.icepdf.core.SecurityCallback;
 import org.icepdf.core.pobjects.Destination;
 import org.icepdf.core.pobjects.Document;
-import org.icepdf.core.pobjects.NamedDestinations;
 import org.icepdf.core.pobjects.PageTree;
 import org.icepdf.core.search.DocumentSearchController;
 import org.icepdf.core.util.ColorUtil;
@@ -51,7 +50,6 @@ import java.util.logging.Logger;
  *
  * @since 2.5
  */
-@SuppressWarnings("serial")
 public class DocumentViewControllerImpl
         implements DocumentViewController, ComponentListener {
 
@@ -66,6 +64,7 @@ public class DocumentViewControllerImpl
      * Displays a the pages in one column.
      */
     public static final int ONE_COLUMN_VIEW = 2;
+
     /**
      * Displays the pages two at a time, with odd-numbered pages on the left.
      */
@@ -74,6 +73,7 @@ public class DocumentViewControllerImpl
      * Displays the pages in two columns, with odd-numbered pages on the left.
      */
     public static final int TWO_COLUMN_LEFT_VIEW = 4;
+
     /**
      * Displays the pages two at a time, with event-numbered pages on the left.
      */
@@ -82,14 +82,12 @@ public class DocumentViewControllerImpl
      * Displays the pages in two columns, with even-numbered pages on the left.
      */
     public static final int TWO_COLUMN_RIGHT_VIEW = 6;
-    /**
-     * Displays the pages in two columns, with even-numbered pages on the left.
-     */
-    public static final int USE_ATTACHMENTS_VIEW = 7;
+
     /**
      * Zoom factor used when zooming in or out.
      */
     public static final float ZOOM_FACTOR = 1.2F;
+
     /**
      * Rotation factor used with rotating document.
      */
@@ -118,7 +116,7 @@ public class DocumentViewControllerImpl
 
     private Document document;
 
-    private DocumentViewModel documentViewModel;
+    private DocumentViewModelImpl documentViewModel;
     private AbstractDocumentView documentView;
 
     private JScrollPane documentViewScrollPane;
@@ -126,11 +124,14 @@ public class DocumentViewControllerImpl
     protected int viewportWidth, oldViewportWidth;
     protected int viewportHeight, oldViewportHeight;
     protected int viewType, oldViewType;
+
     protected int viewportFitMode, oldViewportFitMode;
-    protected int cursorType;
+
     protected SwingController viewerController;
+
     protected AnnotationCallback annotationCallback;
     protected SecurityCallback securityCallback;
+
     protected PropertyChangeSupport changes = new PropertyChangeSupport(this);
 
 
@@ -379,16 +380,7 @@ public class DocumentViewControllerImpl
             return;
         }
 
-        // check for a named destination def, and if so do the lookup.
-        NamedDestinations namedDestinations = document.getCatalog().getDestinations();
-        if (namedDestinations != null) {
-            Destination tmp = namedDestinations.getDestination(destination.getNamedDestination());
-            if (tmp != null) {
-                destination = tmp;
-            }
-        }
-
-        if (destination == null || destination.getPageReference() == null) {
+        if (destination == null) {
             return;
         }
 
@@ -512,14 +504,6 @@ public class DocumentViewControllerImpl
         setViewType();
     }
 
-    /**
-     * Revert to the previously set view type.
-     */
-    public void revertViewType() {
-        viewType = oldViewType;
-        setViewType(viewType);
-    }
-
     private void setViewType() {
 
         // check if there is current view, if so dispose it
@@ -560,10 +544,6 @@ public class DocumentViewControllerImpl
                     new TwoPageView(this, documentViewScrollPane,
                             documentViewModel,
                             DocumentView.RIGHT_VIEW);
-        } else if (viewType == USE_ATTACHMENTS_VIEW) {
-            documentView =
-                    new CollectionDocumentView(this, documentViewScrollPane,
-                            documentViewModel);
         } else {
             documentView =
                     new OneColumnPageView(this, documentViewScrollPane, documentViewModel);
@@ -589,8 +569,7 @@ public class DocumentViewControllerImpl
 
     public boolean setFitMode(final int fitMode) {
 
-        if (documentViewModel == null || viewType ==
-                DocumentViewControllerImpl.USE_ATTACHMENTS_VIEW) {
+        if (documentViewModel == null) {
             return false;
         }
 
@@ -621,12 +600,7 @@ public class DocumentViewControllerImpl
                 if (documentView != null && documentViewScrollPane != null) {
                     float viewportWidth = documentViewScrollPane.getViewport().getViewRect().width;
                     float pageViewWidth = documentView.getDocumentSize().width;
-                    // test if the scroll bar is not present, if so then we
-                    // should consider that the scroll bar will be visible after the
-                    // fit width is applied.
-                    if (!documentViewScrollPane.getVerticalScrollBar().isVisible()) {
-                        viewportWidth -= documentViewScrollPane.getVerticalScrollBar().getWidth();
-                    }
+
                     // add insert padding on each side.
                     pageViewWidth += AbstractDocumentView.layoutInserts * 2;
 
@@ -847,8 +821,7 @@ public class DocumentViewControllerImpl
             // can ge assigned.
             if (changed) {
                 // notify the view of the tool change
-                if (documentView != null)
-                    documentView.setToolMode(viewToolMode);
+                documentView.setToolMode(viewToolMode);
 
                 // notify the page components of the tool change.
                 List<AbstractPageViewComponent> pageComponents =
@@ -874,17 +847,13 @@ public class DocumentViewControllerImpl
         return documentViewModel.getViewToolMode();
     }
 
-    public void setViewCursor(final int cursorType) {
-        this.cursorType = cursorType;
-        Cursor cursor = getViewCursor(cursorType);
+    public void setViewCursor(final int currsorType) {
+        Cursor cursor = getViewCursor(currsorType);
         if (documentViewScrollPane != null) {
+            //documentViewScrollPane.setViewCursor( cursor );
             if (documentViewScrollPane.getViewport() != null)
                 documentViewScrollPane.getViewport().setCursor(cursor);
         }
-    }
-
-    public int getViewCursor() {
-        return cursorType;
     }
 
     public Cursor getViewCursor(final int currsorType) {
@@ -1266,11 +1235,17 @@ public class DocumentViewControllerImpl
     }
 
     public void undo() {
+        // reloads the last modified annotations state.
+        documentViewModel.getAnnotationCareTaker().undo();
+
         // repaint the view.
         documentView.repaint();
     }
 
     public void redo() {
+        // tries to redo a previously undo command, may not do anything
+        documentViewModel.getAnnotationCareTaker().redo();
+
         // repaint the view.
         documentView.repaint();
     }

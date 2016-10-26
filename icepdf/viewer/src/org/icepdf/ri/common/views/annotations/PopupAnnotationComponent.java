@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -40,7 +40,6 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
-import java.util.logging.Level;
 
 /**
  * The PopupAnnotationComponent encapsulates a PopupAnnotation objects.  It
@@ -57,7 +56,6 @@ import java.util.logging.Level;
  * @see org.icepdf.ri.common.utility.annotation.FreeTextAnnotationPanel
  * @since 5.0
  */
-@SuppressWarnings("serial")
 public class PopupAnnotationComponent extends AbstractAnnotationComponent
         implements TreeSelectionListener, ActionListener, DocumentListener {
 
@@ -76,6 +74,7 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
     protected JTree commentTree;
     protected JScrollPane commentTreeScrollPane;
     protected MarkupAnnotation selectedMarkupAnnotation;
+
     // add and remove commands
     protected JMenuItem replyMenuItem;
     protected JMenuItem deleteMenuItem;
@@ -88,6 +87,7 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
     // generic commands, open/minimize all
     protected JMenuItem openAllMenuItem;
     protected JMenuItem minimizeAllMenuItem;
+
     protected JPopupMenu contextMenu;
 
     public PopupAnnotationComponent(Annotation annotation, DocumentViewController documentViewController,
@@ -470,7 +470,7 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
     }
 
     private void showHidePopupAnnotations(boolean visible) {
-        ArrayList<AbstractAnnotationComponent> annotationComponents =
+        ArrayList<AnnotationComponent> annotationComponents =
                 pageViewComponent.getAnnotationComponents();
         for (AnnotationComponent annotationComponent : annotationComponents) {
             if (annotationComponent instanceof PopupAnnotationComponent) {
@@ -555,7 +555,7 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
                         document.getText(0, document.getLength()));
             }
         } catch (BadLocationException ex) {
-            logger.log(Level.FINE, "Error updating markup annotation content", ex);
+            ex.printStackTrace();
         }
     }
 
@@ -579,10 +579,6 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
                 creationLabel.setText(selectedMarkupAnnotation.getCreationDate().toString());
             }
         }
-    }
-
-    public boolean isActive() {
-        return false;
     }
 
 
@@ -628,7 +624,7 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
         MarkupAnnotation currentMarkup = (MarkupAnnotation) root.getUserObject();
         Reference reference = currentMarkup.getPObjectReference();
         for (Annotation annotation : annotations) {
-            if (annotation != null && annotation instanceof MarkupAnnotation) {
+            if (annotation instanceof MarkupAnnotation) {
                 MarkupAnnotation markupAnnotation = (MarkupAnnotation) annotation;
                 MarkupAnnotation inReplyToAnnotation =
                         markupAnnotation.getInReplyToAnnotation();
@@ -649,7 +645,7 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
 
     private void removeMarkupInReplyTo(Reference reference) {
         if (reference != null) {
-            ArrayList<AbstractAnnotationComponent> annotationComponents =
+            ArrayList<AnnotationComponent> annotationComponents =
                     pageViewComponent.getAnnotationComponents();
             MarkupAnnotationComponent markupAnnotationComponent;
             MarkupAnnotation markupAnnotation;
@@ -714,7 +710,7 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
     }
 
     private AnnotationComponent findAnnotationComponent(Annotation annotation) {
-        ArrayList<AbstractAnnotationComponent> annotationComponents =
+        ArrayList<AnnotationComponent> annotationComponents =
                 pageViewComponent.getAnnotationComponents();
         Reference compReference;
         Reference annotationReference = annotation.getPObjectReference();

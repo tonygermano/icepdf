@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -225,6 +225,5 @@ public class OperatorNames {
             OP_TRUNCATE = 41,
             OP_XOR = 42,
             OP_EXP_START = 43,
-            OP_EXP_END = 44,
-            OP_PROC = 45;
+            OP_EXP_END = 44;
 }

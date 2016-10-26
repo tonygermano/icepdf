@@ -1,7 +1,7 @@
 package org.icepdf.ri.common.views.annotations;
 
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -32,7 +32,6 @@ import java.awt.geom.AffineTransform;
  *
  * @since 5.0.2
  */
-@SuppressWarnings("serial")
 public class FreeTextArea extends JTextArea {
 
     public interface ZoomProvider {
@@ -41,6 +40,7 @@ public class FreeTextArea extends JTextArea {
 
     private ZoomProvider zoomProvider;
     private boolean active;
+
     public FreeTextArea(final ZoomProvider zoomProvider) {
         super();
         this.zoomProvider = zoomProvider;

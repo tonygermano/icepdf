@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -235,8 +235,8 @@ public class LineAnnotationHandler extends SelectionBoxHandler implements ToolHa
                 documentViewModel.getViewZoom());
         try {
             at = at.createInverse();
-        } catch (NoninvertibleTransformException e) {
-            logger.log(Level.FINE, "Error converting to page space.", e);
+        } catch (NoninvertibleTransformException e1) {
+            e1.printStackTrace();
         }
         // convert the two points as well as the bbox.
         Rectangle tBbox = new Rectangle(rectToDraw.x, rectToDraw.y,

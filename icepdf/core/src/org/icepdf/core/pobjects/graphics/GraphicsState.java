@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -15,6 +15,7 @@
  */
 package org.icepdf.core.pobjects.graphics;
 
+import org.icepdf.core.pobjects.Form;
 import org.icepdf.core.pobjects.Name;
 import org.icepdf.core.pobjects.graphics.commands.*;
 import org.icepdf.core.util.Defs;
@@ -225,70 +226,69 @@ public class GraphicsState {
 
 
     // Current transformation matrix.
-    private AffineTransform CTM;
-
-    private static ClipDrawCmd clipDrawCmd = new ClipDrawCmd();
-    private static NoClipDrawCmd noClipDrawCmd = new NoClipDrawCmd();
+    private AffineTransform CTM = new AffineTransform();
 
     // Specifies the shape of the endpoint for any open path.
-    private int lineCap;
+    private int lineCap = BasicStroke.CAP_BUTT;
 
     // Specifies the thickness in user parse of a path to be stroked.
-    private float lineWidth;
+    private float lineWidth = 1;
 
     // Specifies the shape of the joints between connected segments.
-    private int lineJoin;
+    private int lineJoin = BasicStroke.JOIN_MITER;
 
     // Maximum length of mitered line join for stroked paths.
-    private float miterLimit;
+    private float miterLimit = 10;
 
     // Stores the lengths of the dash segments
-    private float[] dashArray;
+    private float[] dashArray = null;
 
     // Stores the current dash phase
-    private float dashPhase;
+    private float dashPhase = 0.0f;
 
     // color used to fill a stroked path.
-    private Color fillColor;
+    private Color fillColor = Color.black;
 
     // The current color to be used during a painting operation.
-    private Color strokeColor;
+    private Color strokeColor = Color.black;
 
     // Stroking alpha constant for "CA"
-    private float strokeAlpha;
+    private float strokeAlpha = 1.0f;
 
     // Fill alpha constant for "ca" or non-stroking alpha
-    private float fillAlpha;
+    private float fillAlpha = 1.0f;
+
+    // soft mask information for transparency model
+    private SoftMask softMask;
 
     // Transparency grouping changes which transparency rule is applied.
     // Normally it is simply a SRC_OVER rule but the group can also have isolated
     // and knockout values that directly affect which rule is used for the
     // transparency.
-    private ExtGState extGState;
-    private int alphaRule;
+    private int alphaRule = AlphaComposite.SRC_OVER;
 
     private boolean transparencyGroup;
     private boolean isolated;
     private boolean knockOut;
 
     // Color space of the fill color, non-stroking colour.
-    private PColorSpace fillColorSpace;
+    private PColorSpace fillColorSpace = new DeviceGray(null, null);
 
     // Color space of the stroke color, stroking colour.
-    private PColorSpace strokeColorSpace;
+    private PColorSpace strokeColorSpace = new DeviceGray(null, null);
 
     // Set of graphics stat parameter  for painting text.
-    private TextState textState;
+    private TextState textState = new TextState();
 
     // parent graphics state if it exists.
-    private GraphicsState parentGraphicState;
+    private GraphicsState parentGraphicState = null;
 
     // all shapes associated with this graphics state.
     private Shapes shapes;
 
     // current clipping area.
     private Area clip;
-    private boolean clipChange;
+    private boolean clipChange = false;
 
     // over print mode
     private int overprintMode;
@@ -305,23 +305,6 @@ public class GraphicsState {
      */
     public GraphicsState(Shapes shapes) {
         this.shapes = shapes;
-        CTM = new AffineTransform();
-
-        lineCap = BasicStroke.CAP_BUTT;
-        lineWidth = 1;
-        lineJoin = BasicStroke.JOIN_MITER;
-        miterLimit = 10;
-
-        fillColor = Color.black;
-        strokeColor = Color.black;
-        strokeAlpha = 1.0f;
-        fillAlpha = 1.0f;
-
-        alphaRule = AlphaComposite.SRC_OVER;
-        fillColorSpace = new DeviceGray(null, null);
-        strokeColorSpace = new DeviceGray(null, null);
-        textState = new TextState();
-
     }
 
     /**
@@ -341,11 +324,13 @@ public class GraphicsState {
         miterLimit = parentGraphicsState.miterLimit;
         lineJoin = parentGraphicsState.lineJoin;
 
+        fillColor = new Color(parentGraphicsState.fillColor.getRed(),
+                parentGraphicsState.fillColor.getGreen(),
+                parentGraphicsState.fillColor.getBlue());
 
-        fillColor = new Color(parentGraphicsState.fillColor.getRGB(), true);
-
-        strokeColor = new Color(parentGraphicsState.strokeColor.getRGB(), true);
-
+        strokeColor = new Color(parentGraphicsState.strokeColor.getRed(),
+                parentGraphicsState.strokeColor.getGreen(),
+                parentGraphicsState.strokeColor.getBlue());
         shapes = parentGraphicsState.shapes;
         if (parentGraphicsState.clip != null) {
             clip = (Area) parentGraphicsState.clip.clone();
@@ -354,27 +339,21 @@ public class GraphicsState {
         fillColorSpace = parentGraphicsState.fillColorSpace;
         strokeColorSpace = parentGraphicsState.strokeColorSpace;
         textState = new TextState(parentGraphicsState.textState);
-        dashPhase = parentGraphicsState.dashPhase;
-        dashArray = parentGraphicsState.dashArray;
+        dashPhase = parentGraphicsState.getDashPhase();
+        dashArray = parentGraphicsState.getDashArray();
 
         // copy over printing attributes
-        overprintMode = parentGraphicsState.overprintMode;
-        overprintOther = parentGraphicsState.overprintOther;
-        overprintStroking = parentGraphicsState.overprintStroking;
+        overprintMode = parentGraphicsState.getOverprintMode();
+        overprintOther = parentGraphicsState.isOverprintOther();
+        overprintStroking = parentGraphicsState.isOverprintStroking();
 
         // copy the alpha rules
-        fillAlpha = parentGraphicsState.fillAlpha;
-        strokeAlpha = parentGraphicsState.strokeAlpha;
-        alphaRule = parentGraphicsState.alphaRule;
+        fillAlpha = parentGraphicsState.getFillAlpha();
+        strokeAlpha = parentGraphicsState.getStrokeAlpha();
+        alphaRule = parentGraphicsState.getAlphaRule();
 
-        // extra graphics
-        if (parentGraphicsState.getExtGState() != null) {
-            extGState = new ExtGState(parentGraphicsState.getExtGState().getLibrary(),
-                    parentGraphicsState.getExtGState().getEntries());
-        }
-
-        // copy the parent too.
-        this.parentGraphicState = parentGraphicsState.parentGraphicState;
+        // smaks
+        softMask = parentGraphicsState.getSoftMask();
 
     }
 
@@ -424,10 +403,7 @@ public class GraphicsState {
      * @param af the AffineTranform object to set the CTM to.
      */
     public void set(AffineTransform af) {
-        // appling a CTM can be expensive, so only do it if it's needed.
-        if (!CTM.equals(af)) {
-            CTM = new AffineTransform(af);
-        }
+        CTM = new AffineTransform(af);
         shapes.add(new TransformDrawCmd(new AffineTransform(CTM)));
     }
 
@@ -452,11 +428,8 @@ public class GraphicsState {
      * @see org.icepdf.core.pobjects.graphics.ExtGState
      */
     public void concatenate(ExtGState extGState) {
-        // keep a reference for our partial Transparency group support.
-        this.extGState = new ExtGState(extGState.getLibrary(),
-                extGState.getEntries());
-
         // Map over extGState attributes if present.
+
         // line width
         if (extGState.getLineWidth() != null) {
             setLineWidth(extGState.getLineWidth().floatValue());
@@ -484,15 +457,55 @@ public class GraphicsState {
             }
         }
         // Stroking alpha
-        if (extGState.getNonStrokingAlphConstant() != -1) {
-            setFillAlpha(extGState.getNonStrokingAlphConstant());
+        if (extGState.getNonStrokingAlphConstant() != null) {
+            setFillAlpha(extGState.getNonStrokingAlphConstant().floatValue());
         }
         // none stroking alpha
-        if (extGState.getStrokingAlphConstant() != -1) {
-            setStrokeAlpha(extGState.getStrokingAlphConstant());
+        if (extGState.getStrokingAlphConstant() != null) {
+            setStrokeAlpha(extGState.getStrokingAlphConstant().floatValue());
         }
 
-        setOverprintMode(extGState.getOverprintMode());
+        // blending mode - quick hack for blending support that at lest doesn't
+        // hide the content. More work on this to follow.
+        if (extGState.getBlendingMode() != null) {
+            if (extGState.getBlendingMode().equals("Multiply")) {
+                setFillAlpha(0.70f);
+                setStrokeAlpha(0.70f);
+            }
+        }
+
+        if (extGState.getOverprintMode() != null) {
+            setOverprintMode(extGState.getOverprintMode().intValue());
+        }
+
+        // save soft mask information
+        if (extGState.getSMask() != null) {
+            setSoftMask(extGState.getSMask());
+        }
+        if (extGState.getSMask() != null) {
+            SoftMask sMask = extGState.getSMask();
+            setSoftMask(sMask);
+            Form form = sMask.getG();
+            Shapes shapes = form.getShapes();
+            List<Image> images = shapes.getImages();
+//            for (final Image image : images){
+//                final JFrame f = new JFrame("Test");
+//                f.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+//                f.getContentPane().add(new JComponent() {
+//                    @Override
+//                    public void paint(Graphics g_) {
+//                        super.paint(g_);
+//                        g_.drawImage(image,0,0,null);
+//                    }
+//                });
+//                f.setSize(new Dimension(800, 800));
+//                f.setVisible(true);
+//            }
+//            System.out.println("BC " + sMask.getBC());
+//            System.out.println("Form " + form);
+//            System.out.println("Name " + sMask.getS());
+//            System.out.println();
+        }
 
         // apply over print logic
         processOverPaint(extGState.getOverprint(), extGState.getOverprintFill());
@@ -512,10 +525,10 @@ public class GraphicsState {
             overprintOther = overprintStroking;
         }
         // PDF 1.2 and over
-//        else if (OP != null) {
+        else if (OP != null) {
 //            overprintStroking = OP.booleanValue();
 //            overprintOther = op.booleanValue();
-//        }
+        }
         // else default inits of false for each is fine.
     }
 
@@ -527,19 +540,22 @@ public class GraphicsState {
      * @see #save()
      */
     public GraphicsState restore() {
+        // Return the graphics state which is pointed to by the
+        // parentGraphicState.
+
         // make sure we have a parent to restore to
         if (parentGraphicState != null) {
             // Add the parents CTM to the stack,
             parentGraphicState.set(parentGraphicState.CTM);
             // Add the parents clip to the stack
-            if (clipChange) {
+            if (parentGraphicState.clipChange || clipChange) {
                 if (parentGraphicState.clip != null) {
                     if (!parentGraphicState.clip.equals(clip)) {
                         parentGraphicState.shapes.add(new ShapeDrawCmd(new Area(parentGraphicState.clip)));
-                        parentGraphicState.shapes.add(clipDrawCmd);
+                        parentGraphicState.shapes.add(new ClipDrawCmd());
                     }
                 } else {
-                    parentGraphicState.shapes.add(noClipDrawCmd);
+                    parentGraphicState.shapes.add(new NoClipDrawCmd());
                 }
             }
             // Update the stack with the parentGraphicsState stack.
@@ -559,6 +575,7 @@ public class GraphicsState {
 
             // stroke Color
 //            parentGraphicState.shapes.add(parentGraphicState.getStrokeColor());
+
         }
 
         return parentGraphicState;
@@ -608,21 +625,18 @@ public class GraphicsState {
             // update the clip with the new value if it is new.
             if (clip == null || !clip.equals(area)) {
                 clip = new Area(area);
-                shapes.add(new ShapeDrawCmd(area));
-                shapes.add(clipDrawCmd);
+                shapes.add(new ShapeDrawCmd(new Area(area)));
+                shapes.add(new ClipDrawCmd());
+                // mark that the clip has changed.
                 clipChange = true;
-                if (parentGraphicState != null) parentGraphicState.clipChange = true;
             } else {
                 clip = new Area(area);
             }
         } else {
             // add a null clip for a null shape, should not normally happen
             clip = null;
-            shapes.add(noClipDrawCmd);
-            clipChange = true;
-            if (parentGraphicState != null) parentGraphicState.clipChange = true;
+            shapes.add(new NoClipDrawCmd());
         }
-
     }
 
     public Area getClip() {
@@ -706,9 +720,6 @@ public class GraphicsState {
     }
 
     public void setStrokeAlpha(float alpha) {
-        if (alpha > 1.0f) {
-            alpha = 1.0f;
-        }
         strokeAlpha = alpha;
     }
 
@@ -717,9 +728,6 @@ public class GraphicsState {
     }
 
     public void setFillAlpha(float alpha) {
-        if (alpha > 1.0f) {
-            alpha = 1.0f;
-        }
         fillAlpha = alpha;
     }
 
@@ -811,8 +819,12 @@ public class GraphicsState {
         this.knockOut = knockOut;
     }
 
-    public ExtGState getExtGState() {
-        return extGState;
+    public SoftMask getSoftMask() {
+        return softMask;
+    }
+
+    public void setSoftMask(SoftMask softMask) {
+        this.softMask = softMask;
     }
 }
 

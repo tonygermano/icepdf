@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -59,7 +59,6 @@ public class InkAnnotation extends MarkupAnnotation {
         super(l, h);
     }
 
-    @SuppressWarnings("unchecked")
     public void init() {
         super.init();
         // look for an ink list
@@ -87,14 +86,9 @@ public class InkAnnotation extends MarkupAnnotation {
             if (tmp instanceof List) {
                 rectangle = library.getRectangle(entries, RECTANGLE_KEY);
             }
-            if (rectangle != null) {
-                setBBox(rectangle.getBounds());
-            }
+            setBBox(rectangle.getBounds());
             resetAppearanceStream(new AffineTransform());
         }
-
-        // try and generate an appearance stream.
-        resetNullAppearanceStream();
     }
 
     /**
@@ -175,15 +169,8 @@ public class InkAnnotation extends MarkupAnnotation {
     public void resetAppearanceStream(double dx, double dy, AffineTransform pageSpace) {
 
         // setup clean shapes
-        Appearance appearance = appearances.get(currentAppearance);
-        AppearanceState appearanceState = appearance.getSelectedAppearanceState();
-
-        appearanceState.setMatrix(new AffineTransform());
-        appearanceState.setShapes(new Shapes());
-
-        Rectangle2D bbox = appearanceState.getBbox();
-        AffineTransform matrix = appearanceState.getMatrix();
-        Shapes shapes = appearanceState.getShapes();
+        matrix = new AffineTransform();
+        shapes = new Shapes();
 
         // setup the AP stream.
         setModifiedDate(PDate.formatDateTime(new Date()));
@@ -203,7 +190,7 @@ public class InkAnnotation extends MarkupAnnotation {
 
         // setup the space for the AP content stream.
         af = new AffineTransform();
-        af.translate(-bbox.getMinX(), -bbox.getMinY());
+        af.translate(-this.bbox.getMinX(), -this.bbox.getMinY());
 
         shapes.add(new TransformDrawCmd(af));
         shapes.add(new StrokeDrawCmd(stroke));

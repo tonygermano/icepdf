@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -16,7 +16,6 @@
 package org.icepdf.core.pobjects;
 
 import org.icepdf.core.io.SeekableInputConstrainedWrapper;
-import org.icepdf.core.pobjects.graphics.ExtGState;
 import org.icepdf.core.pobjects.graphics.GraphicsState;
 import org.icepdf.core.pobjects.graphics.Shapes;
 import org.icepdf.core.util.Library;
@@ -57,14 +56,12 @@ public class Form extends Stream {
     private Shapes shapes;
     // Graphics state object to be used by content parser
     private GraphicsState graphicsState;
-    private ExtGState extGState;
     private Resources resources;
     private Resources parentResource;
     // transparency grouping data
     private boolean transparencyGroup;
     private boolean isolated;
     private boolean knockOut;
-    private boolean shading;
     private boolean inited = false;
 
     /**
@@ -87,11 +84,6 @@ public class Form extends Stream {
         }
     }
 
-    public HashMap getGroup() {
-        return library.getDictionary(entries, GROUP_KEY);
-    }
-
-    @SuppressWarnings("unchecked")
     public void setAppearance(Shapes shapes, AffineTransform matrix, Rectangle2D bbox) {
         this.shapes = shapes;
         this.matrix = matrix;
@@ -111,27 +103,7 @@ public class Form extends Stream {
     public void setGraphicsState(GraphicsState graphicsState) {
         if (graphicsState != null) {
             this.graphicsState = graphicsState;
-            this.extGState = graphicsState.getExtGState();
         }
-    }
-
-    /**
-     * Gets the associated graphic state instance for this form.
-     *
-     * @return external graphic state,  can be null.
-     */
-    public GraphicsState getGraphicsState() {
-        return graphicsState;
-    }
-
-    /**
-     * Gets the extended graphics state for the form at the time of creation.  This contains any masking and blending
-     * data that might bet over written during the forms parsing.
-     *
-     * @return extended graphic state at the time of creation.
-     */
-    public ExtGState getExtGState() {
-        return extGState;
     }
 
     /**
@@ -193,7 +165,7 @@ public class Form extends Stream {
                 if (logger.isLoggable(Level.FINER)) {
                     logger.finer("Parsing form " + getPObjectReference());
                 }
-                shapes = cp.parse(new byte[][]{in}, null).getShapes();
+                shapes = cp.parse(new byte[][]{in}).getShapes();
             } catch (Throwable e) {
                 // reset shapes vector, we don't want to mess up the paint stack
                 shapes = new Shapes();
@@ -211,7 +183,6 @@ public class Form extends Stream {
         return leafResources;
     }
 
-    @SuppressWarnings("unchecked")
     public void setResources(Resources resources) {
         entries.put(RESOURCES_KEY, resources.getEntries());
     }
@@ -240,7 +211,7 @@ public class Form extends Stream {
      * system in xObject space to the parent coordinates space.
      *
      * @return affine transform representing the xObject's pdf to xObject space
-     * transform.
+     *         transform.
      */
     public AffineTransform getMatrix() {
         return matrix;
@@ -273,13 +244,5 @@ public class Form extends Stream {
      */
     public boolean isKnockOut() {
         return knockOut;
-    }
-
-    public boolean isShading() {
-        return shading;
-    }
-
-    public void setShading(boolean shading) {
-        this.shading = shading;
     }
 }

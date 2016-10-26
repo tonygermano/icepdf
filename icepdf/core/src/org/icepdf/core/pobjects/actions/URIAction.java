@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -60,7 +60,7 @@ public class URIAction extends Action {
      */
     public void setURI(String URI) {
         StringObject tmp = new LiteralStringObject(
-                URI, getPObjectReference(), library.getSecurityManager());
+                URI, getPObjectReference(), library.securityManager);
         // StringObject detection should allow writer to pick on encryption.
         entries.put(URIAction.URI_KEY, tmp);
         this.URI = tmp;
@@ -78,7 +78,7 @@ public class URIAction extends Action {
         if (actionURI instanceof StringObject) {
             URI = (StringObject) actionURI;
         }
-        return URI.getDecryptedLiteralString(library.getSecurityManager());
+        return URI.getDecryptedLiteralString(library.securityManager);
     }
 
     /**

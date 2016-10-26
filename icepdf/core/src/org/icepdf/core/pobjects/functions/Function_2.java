@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -127,7 +127,7 @@ public class Function_2 extends Function {
             // C0 and C1 should have the same length work through C0 length
             for (int j = 0; j < C0.length; j++) {
                 // apply the function as defined above.
-                yValue = (float) (C0[j] + Math.pow(Math.abs(x[i]), N) * (C1[j] - C0[j]));
+                yValue = (float) (C0[j] + Math.pow(x[i], N) * (C1[j] - C0[j]));
 
                 // Range is optional but if present should be used to clip the output
                 if (range != null)

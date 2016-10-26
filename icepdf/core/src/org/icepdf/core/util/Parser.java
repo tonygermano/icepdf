@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -81,8 +81,8 @@ public class Parser {
      *
      * @param library all found objects in the pdf document
      * @return the next object in the DataInputStream.  Null is returned
-     * if there are no more objects left in the DataInputStream or
-     * a I/O error is encountered.
+     *         if there are no more objects left in the DataInputStream or
+     *         a I/O error is encountered.
      * @throws PDFException error getting object from library
      */
     public Object getObject(Library library) throws PDFException {
@@ -146,8 +146,7 @@ public class Parser {
                             generationNumber);
                 }
                 // mark that we have reached the end of the object
-                else if (nextToken.equals("endobj") || nextToken.equals("endobject")
-                        || nextToken.equals("enbobj")) {
+                else if (nextToken.equals("endobj") || nextToken.equals("endobject")) {
                     if (inObject) {
                         // set flag to false, as we are done parsing an Object
                         inObject = false;
@@ -179,13 +178,7 @@ public class Parser {
                 else if (nextToken.equals("stream")) {
                     deepnessCount++;
                     // pop dictionary that defines the stream
-                    Object tmp = stack.pop();
-                    HashMap streamHash;
-                    if (tmp instanceof Dictionary) {
-                        streamHash = ((Dictionary) tmp).getEntries();
-                    } else {
-                        streamHash = (HashMap) tmp;
-                    }
+                    HashMap streamHash = (HashMap) stack.pop();
                     // find the length of the stream
                     int streamLength = library.getInt(streamHash, Dictionary.LENGTH_KEY);
 
@@ -273,9 +266,7 @@ public class Parser {
                                     streamDataInput, filePositionOfStreamData, size);
                         }
                     } catch (IOException e) {
-                        if (logger.isLoggable(Level.FINE)) {
-                            logger.log(Level.FINE, "Error getting next object", e);
-                        }
+                        e.printStackTrace();
                         return null;
                     }
                     PTrailer trailer = null;
@@ -365,13 +356,8 @@ public class Parser {
                 else if (nextToken.equals("]")) {
                     deepnessCount--;
                     final int searchPosition = stack.search("[");
-                    int size = searchPosition - 1;
-                    if (size < 0) {
-                        logger.warning("Negative array size, a  malformed content " +
-                                "stream has likely been encountered.");
-                        size = 0;
-                    }
-                    List<Object> v = new ArrayList<Object>(size);
+                    final int size = searchPosition - 1;
+                    List v = new ArrayList(size);
                     Object[] tmp = new Object[size];
                     if (searchPosition > 0) {
                         for (int i = size - 1; i >= 0; i--) {
@@ -397,7 +383,7 @@ public class Parser {
                     // check for extra >> which we want to ignore
                     if (!isTrailer && deepnessCount >= 0) {
                         if (!stack.isEmpty()) {
-                            HashMap<Object, Object> hashMap = new HashMap<Object, Object>();
+                            HashMap hashMap = new HashMap();
                             Object obj = stack.pop();
                             // put all of the dictionary definistion into the
                             // the hashTabl
@@ -412,10 +398,6 @@ public class Parser {
                                 }
                             }
                             obj = hashMap.get(Dictionary.TYPE_KEY);
-                            if (obj == null) {
-                                // PDF-927,  incorrect /type def.
-                                obj = hashMap.get(new Name("type"));
-                            }
                             // Process the know first level dictionaries.
                             if (obj != null && obj instanceof Name) {
                                 Name n = (Name) obj;
@@ -457,7 +439,7 @@ public class Parser {
                         }
                     } else if (isTrailer && deepnessCount == 0) {
                         // we have an xref entry
-                        HashMap<Object, Object> hashMap = new HashMap<Object, Object>();
+                        HashMap hashMap = new HashMap();
                         Object obj = stack.pop();
                         // put all of the dictionary definition into the
                         // the new map.
@@ -495,16 +477,6 @@ public class Parser {
                         ((String) nextToken).startsWith("%")) {
                     // Comment, ignored for now
                 }
-                // corner case for encoder error "endobjxref"
-                else if (nextToken instanceof String &&
-                        ((String) nextToken).startsWith("endobj")) {
-                    if (inObject) {
-                        // set flag to false, as we are done parsing an Object
-                        inObject = false;
-                        // return PObject,
-                        return addPObject(library, objectReference);
-                    }
-                }
                 // everything else gets pushed onto the stack
                 else {
                     stack.push(nextToken);
@@ -516,6 +488,7 @@ public class Parser {
             while (!complete);
         } catch (Exception e) {
             logger.log(Level.WARNING, "Fatal error parsing PDF file stream.", e);
+            e.printStackTrace();
             return null;
         }
         // return the top of the stack
@@ -523,7 +496,8 @@ public class Parser {
     }
 
     /**
-     *
+     * @return
+     * @throws java.io.IOException
      */
     public String peek2() throws IOException {
         reader.mark(2);
@@ -553,8 +527,10 @@ public class Parser {
                 break;
             if (state == STATE_PRE_E && c == 'E') {
                 state++;
+                continue;
             } else if (state == STATE_PRE_I && c == 'I') {
                 state++;
+                continue;
             } else if (state == STATE_PRE_WHITESPACE && isWhitespace((char) (0xFF & c))) {
                 // It's hard to tell if the EI + whitespace is part of the
                 //  image data or not, given that many PDFs are mis-encoded,
@@ -593,7 +569,9 @@ public class Parser {
         }
         // If the input ends right after the EI, but with no whitespace,
         //  then we're still done
-        return state == STATE_PRE_WHITESPACE;
+        if (state == STATE_PRE_WHITESPACE)
+            return true;
+        return false;
     }
 
     /**
@@ -697,7 +675,7 @@ public class Parser {
         Object o = getToken();
         if (o instanceof String) {
             if (o.equals("<<")) {
-                HashMap<Object, Object> h = new HashMap<Object, Object>();
+                HashMap h = new HashMap();
                 Object o1 = getStreamObject();
                 while (!o1.equals(">>")) {
                     h.put(o1, getStreamObject());
@@ -708,7 +686,7 @@ public class Parser {
             // arrays are only used for CID mappings, the hex decoding is delayed
             // as a result using the CID_STREAM flag
             else if (o.equals("[")) {
-                List<Object> v = new ArrayList<Object>();
+                List v = new ArrayList();
                 Object o1 = getStreamObject();
                 while (!o1.equals("]")) {
                     v.add(o1);
@@ -923,7 +901,6 @@ public class Parser {
                         // do nothing
                         else if (currentChar == '(' || currentChar == ')'
                                 || currentChar == '\\') {
-                            // do nothing
                         }
                         // capture the horizontal tab (HT), tab character is hard
                         // to find, only appears in files with font substitution and
@@ -1075,6 +1052,7 @@ public class Parser {
         reader.reset();
     }
 
+
     public int getIntSurroundedByWhitespace() {
         int num = 0;
         boolean makeNegative = false;
@@ -1138,6 +1116,7 @@ public class Parser {
                 break;
             }
         }
+
         if (singed) {
             if (isDecimal) {
                 return -(digit + decimal);
@@ -1215,7 +1194,7 @@ public class Parser {
      */
     public static boolean isWhitespace(char c) {
         return ((c == ' ') || (c == '\t') || (c == '\r') ||
-                (c == '\n') || (c == '\f') || (c == 0));
+                (c == '\n') || (c == '\f'));
     }
 
     private static boolean isDelimiter(char c) {
