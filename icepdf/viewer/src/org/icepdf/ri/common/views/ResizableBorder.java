@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -32,7 +32,6 @@ import java.util.logging.Logger;
  *
  * @since 4.0
  */
-@SuppressWarnings("serial")
 public class ResizableBorder extends AbstractBorder {
 
     private static final Logger logger =
@@ -43,6 +42,7 @@ public class ResizableBorder extends AbstractBorder {
     private static Color outlineResizeColor;
 
     public static final int INSETS = 5;
+
     static {
 
         // sets annotation selected highlight colour
@@ -80,10 +80,12 @@ public class ResizableBorder extends AbstractBorder {
             SwingConstants.EAST, SwingConstants.NORTH_WEST,
             SwingConstants.NORTH_EAST, SwingConstants.SOUTH_WEST,
             SwingConstants.SOUTH_EAST};
+
     private static final int cursors[] = {
             Cursor.N_RESIZE_CURSOR, Cursor.S_RESIZE_CURSOR, Cursor.W_RESIZE_CURSOR,
             Cursor.E_RESIZE_CURSOR, Cursor.NW_RESIZE_CURSOR, Cursor.NE_RESIZE_CURSOR,
             Cursor.SW_RESIZE_CURSOR, Cursor.SE_RESIZE_CURSOR};
+
     private static final Stroke dashedBorder =
             new BasicStroke(1, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[]{2, 1}, 0);
     private static final Stroke solidBorder =

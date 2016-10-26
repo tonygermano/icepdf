@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -40,7 +40,6 @@ import java.util.ResourceBundle;
  *
  * @since 4.0
  */
-@SuppressWarnings("serial")
 public class GoToActionDialog extends AnnotationDialogAdapter
         implements ActionListener, ItemListener {
 
@@ -115,8 +114,7 @@ public class GoToActionDialog extends AnnotationDialogAdapter
         }
         // check to see of we have a name tree in the document, if not we
         // disable the controls for named destinations
-        if (controller.getDocument().getCatalog().getNames() == null ||
-                controller.getDocument().getCatalog().getNames().getDestsNameTree() == null) {
+        if (controller.getDocument().getCatalog().getNameTree() == null) {
             implicitDestinationFieldsEnabled(true);
             clearImplicitDestinations(true);
             namedDestination.setEnabled(false);
@@ -243,7 +241,7 @@ public class GoToActionDialog extends AnnotationDialogAdapter
             dispose();
         } else if (e.getSource() == viewNamedDesButton) {
             // test implementation of a NameJTree for destinations.
-            NameTree nameTree = controller.getDocument().getCatalog().getNames().getDestsNameTree();
+            NameTree nameTree = controller.getDocument().getCatalog().getNameTree();
             if (nameTree != null) {
                 // create new dialog instance.
                 nameTreeDialog = new NameTreeDialog(

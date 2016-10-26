@@ -1,5 +1,5 @@
 <!--
-  ~ Copyright 2006-2016 ICEsoft Technologies Inc.
+  ~ Copyright 2006-2013 ICEsoft Technologies Inc.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the
@@ -18,21 +18,11 @@
 
     <import file="../examples/etc/build-common.xml"/>
 
-
     <property name="productinfo.src"
               location="conf/org/icepdf/core/application"/>
     <property name="productinfo.dest"
               location="src/org/icepdf/core/application"/>
 
-    <condition property="javadoc.verbose" value="true" else="false">
-          <isset property="docDebug"/>
-    </condition>
-    <condition
-      property="javadoc.doclint.none"
-      value=""
-      else="-Xdoclint:none">
-      <not><isset property="withDoclint"/></not>
-    </condition>
     <!-- core jar containing core and jbig2 library -->
     <target name="jar" depends="compile" description="Creates ICEpdf core jar.">
         <!-- jar file name -->
@@ -41,7 +31,6 @@
         <build.jar jar.file.name="${jar.file.name}">
             <add.jar.src.includes>
                 <include name="org/icepdf/core/pobjects/fonts/afm/"/>
-                <include name="org/icepdf/core/pobjects/graphics/res/"/>
             </add.jar.src.includes>
         </build.jar>
 
@@ -58,7 +47,6 @@
         <build.jar jar.file.name="icepdf-core.jar">
             <add.jar.src.includes>
                 <include name="org/icepdf/core/pobjects/fonts/afm/"/>
-                <include name="org/icepdf/core/pobjects/graphics/res/"/>
                 <exclude name="org/jpedal/"/>
             </add.jar.src.includes>
             <!-- exclude the jbig src -->
@@ -124,26 +112,16 @@
         </jar>
     </target>
 
-    <target name="javadoc" description="build javadocs. Note that command line property
-                   docDebug can be used for verbose option and withDoclint can be used when
-                   the optional parameter for turning off doclints is required and available  (Java 1.8)
-                   use:- ant -DwithDoclint=true etc...">
-        <echo message="additonalparam: ${javadoc.doclint.none}"/>
+    <target name="javadoc">
         <delete dir="${build.dir}/javadocs"/>
-        <javadoc verbose="${javadoc.verbose}" useexternalfile="true" failonerror="true"
-                 encoding="utf8"
-                 destdir="${build.dir}/javadocs" windowtitle="ICEpdf API"
-                 additionalparam="${javadoc.doclint.none}">
+        <javadoc verbose="false" useexternalfile="true" failonerror="true"
+                 destdir="${build.dir}/javadocs" windowtitle="ICEpdf API">
             <classpath refid="compile.run.classpath"/>
             <fileset dir="${src.dir}">
                 <exclude name="org/icepdf/core/pobjects/fonts/afm/"/>
-                <exclude name="org/icepdf/core/pobjects/graphics/res/"/>
             </fileset>
             <doctitle><![CDATA[<h2>ICEpdf API</h2>]]></doctitle>
         </javadoc>
-    </target>
-    <target name="deploy-maven" depends="src-jar, jar, javadoc-jar" description="prepare artifacts for maven central repo">
-
     </target>
 
 </project>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -96,7 +96,7 @@ abstract class MultipleGradientPaintContext implements PaintContext {
     /**
      * The cached raster, which is reusable among instances
      */
-    protected static WeakReference<WritableRaster> cached;
+    protected static WeakReference cached;
 
     /**
      * Raster is reused whenever possible
@@ -716,11 +716,12 @@ abstract class MultipleGradientPaintContext implements PaintContext {
         nSteps--;                       // upto, but not including the last slot
         output[nSteps] = rgb2;        // the last color is also fixed
         for (int i = 1; i < nSteps; i++) {
+            float fI = i;
             output[i] =
-                    ((a1 + ((((int) (i * tempA)) + 1) >> 1) & 0xff) << 24) |
-                            ((r1 + ((((int) (i * tempR)) + 1) >> 1) & 0xff) << 16) |
-                            ((g1 + ((((int) (i * tempG)) + 1) >> 1) & 0xff) << 8) |
-                            ((b1 + ((((int) (i * tempB)) + 1) >> 1) & 0xff));
+                    ((a1 + ((((int) (fI * tempA)) + 1) >> 1) & 0xff) << 24) |
+                            ((r1 + ((((int) (fI * tempR)) + 1) >> 1) & 0xff) << 16) |
+                            ((g1 + ((((int) (fI * tempG)) + 1) >> 1) & 0xff) << 8) |
+                            ((b1 + ((((int) (fI * tempB)) + 1) >> 1) & 0xff));
         }
 
     }
@@ -1071,9 +1072,9 @@ abstract class MultipleGradientPaintContext implements PaintContext {
     }
 
 
-    private int getAntiAlias(float p1, boolean p1_up,
-                             float p2, boolean p2_up,
-                             float sz, float weight) {
+    private final int getAntiAlias(float p1, boolean p1_up,
+                                   float p2, boolean p2_up,
+                                   float sz, float weight) {
 
         // Until the last set of ops these are 28.4 fixed point values.
         int ach = 0, rch = 0, gch = 0, bch = 0;
@@ -1363,7 +1364,9 @@ abstract class MultipleGradientPaintContext implements PaintContext {
         } else {
             output = (float) Math.pow((input + 0.055) / 1.055, 2.4);
         }
-        return Math.round(output * 255.0f);
+        int o = Math.round(output * 255.0f);
+
+        return o;
     }
 
     /**
@@ -1382,7 +1385,10 @@ abstract class MultipleGradientPaintContext implements PaintContext {
         } else {
             output = (1.055f * ((float) Math.pow(input, (1.0 / 2.4)))) - 0.055f;
         }
-        return Math.round(output * 255.0f);
+
+        int o = Math.round(output * 255.0f);
+
+        return o;
     }
 
 
@@ -1443,11 +1449,12 @@ abstract class MultipleGradientPaintContext implements PaintContext {
      * rasters for use by any other instance, as long as they are sufficiently
      * large.
      */
-    protected static synchronized WritableRaster getCachedRaster
+    protected static final
+    synchronized WritableRaster getCachedRaster
     (ColorModel cm, int w, int h) {
         if (cm == cachedModel) {
             if (cached != null) {
-                WritableRaster ras = cached.get();
+                WritableRaster ras = (WritableRaster) cached.get();
                 if (ras != null &&
                         ras.getWidth() >= w &&
                         ras.getHeight() >= h) {
@@ -1467,10 +1474,11 @@ abstract class MultipleGradientPaintContext implements PaintContext {
      * rasters for use by any other instance, as long as they are sufficiently
      * large.
      */
-    protected static synchronized void putCachedRaster(ColorModel cm,
-                                                       WritableRaster ras) {
+    protected static final
+    synchronized void putCachedRaster(ColorModel cm,
+                                      WritableRaster ras) {
         if (cached != null) {
-            WritableRaster cras = cached.get();
+            WritableRaster cras = (WritableRaster) cached.get();
             if (cras != null) {
                 int cw = cras.getWidth();
                 int ch = cras.getHeight();
@@ -1485,7 +1493,7 @@ abstract class MultipleGradientPaintContext implements PaintContext {
             }
         }
         cachedModel = cm;
-        cached = new WeakReference<WritableRaster>(ras);
+        cached = new WeakReference(ras);
     }
 
     /**

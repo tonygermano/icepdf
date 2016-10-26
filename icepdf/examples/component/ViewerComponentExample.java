@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -15,13 +15,12 @@
  */
 
 
+import org.icepdf.ri.common.ComponentKeyBinding;
 import org.icepdf.ri.common.SwingController;
-import org.icepdf.ri.common.SwingViewBuilder;
-import org.icepdf.ri.util.FontPropertiesManager;
-import org.icepdf.ri.util.PropertiesManager;
+import org.icepdf.ri.common.views.DocumentViewController;
+import org.icepdf.ri.common.views.DocumentViewControllerImpl;
 
 import javax.swing.*;
-import java.util.ResourceBundle;
 
 
 /**
@@ -35,47 +34,44 @@ import java.util.ResourceBundle;
 public class ViewerComponentExample {
     public static void main(String[] args) {
         // Get a file from the command line to open
-        final String filePath = args[0];
+        String filePath = args[0];
 
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                // build a component controller
-                SwingController controller = new SwingController();
-                controller.setIsEmbeddedComponent(true);
+        // build a component controller
+        SwingController controller = new SwingController();
+        controller.setIsEmbeddedComponent(true);
 
-                PropertiesManager properties = new PropertiesManager(
-                        System.getProperties(),
-                        ResourceBundle.getBundle(PropertiesManager.DEFAULT_MESSAGE_BUNDLE));
+        // set the viewController embeddable flag.
+        DocumentViewController viewController =
+                controller.getDocumentViewController();
 
-                // read/store the font cache.
-                ResourceBundle messageBundle = ResourceBundle.getBundle(
-                        PropertiesManager.DEFAULT_MESSAGE_BUNDLE);
-                new FontPropertiesManager(properties, System.getProperties(), messageBundle);
+        JPanel viewerComponentPanel = new JPanel();
+        viewerComponentPanel.add(viewController.getViewContainer());
 
-                properties.set(PropertiesManager.PROPERTY_DEFAULT_ZOOM_LEVEL, "1.25");
+        // add copy keyboard command
+        ComponentKeyBinding.install(controller, viewerComponentPanel);
 
-                SwingViewBuilder factory = new SwingViewBuilder(controller, properties);
+        // add interactive mouse link annotation support via callback
+        controller.getDocumentViewController().setAnnotationCallback(
+                new org.icepdf.ri.common.MyAnnotationCallback(
+                        controller.getDocumentViewController()));
 
-                // add interactive mouse link annotation support via callback
-                controller.getDocumentViewController().setAnnotationCallback(
-                        new org.icepdf.ri.common.MyAnnotationCallback(controller.getDocumentViewController()));
-                JPanel viewerComponentPanel = factory.buildViewerPanel();
-                JFrame applicationFrame = new JFrame();
-                applicationFrame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-                applicationFrame.getContentPane().add(viewerComponentPanel);
-                // Now that the GUI is all in place, we can try openning a PDF
-                controller.openDocument(filePath);
+        // build a containing JFrame for display
+        JFrame applicationFrame = new JFrame();
+        applicationFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        applicationFrame.getContentPane().add(viewerComponentPanel);
 
-                // add the window event callback to dispose the controller and
-                // currently open document.
-                applicationFrame.addWindowListener(controller);
+        // Now that the GUI is all in place, we can try opening a PDF
+        controller.openDocument(filePath);
 
-                // show the component
-                applicationFrame.pack();
-                applicationFrame.setVisible(true);
-            }
-        });
+        // hard set the page view to single page which effectively give a single
+        // page view. This should be done after openDocument as it has code that
+        // can change the view mode if specified by the file.
+        controller.setPageViewMode(
+                DocumentViewControllerImpl.ONE_PAGE_VIEW,
+                false);
 
-
+        // show the component
+        applicationFrame.pack();
+        applicationFrame.setVisible(true);
     }
 }

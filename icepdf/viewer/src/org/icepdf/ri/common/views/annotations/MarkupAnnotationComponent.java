@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -30,7 +30,6 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.NoninvertibleTransformException;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -51,7 +50,6 @@ import java.util.logging.Logger;
  * @see TextMarkupAnnotationComponent
  * @since 5.0
  */
-@SuppressWarnings("serial")
 public abstract class MarkupAnnotationComponent extends AbstractAnnotationComponent {
 
     private static final Logger logger =
@@ -82,7 +80,7 @@ public abstract class MarkupAnnotationComponent extends AbstractAnnotationCompon
                     // toggle the visibility of the popup
                     popup.setOpen(!popup.isOpen());
                     // find the popup component
-                    ArrayList<AbstractAnnotationComponent> annotationComponents =
+                    ArrayList<AnnotationComponent> annotationComponents =
                             pageViewComponent.getAnnotationComponents();
                     Reference compReference;
                     Reference popupReference = popup.getPObjectReference();
@@ -175,18 +173,14 @@ public abstract class MarkupAnnotationComponent extends AbstractAnnotationCompon
                 documentViewModel.getViewZoom());
         try {
             at = at.createInverse();
-        } catch (NoninvertibleTransformException e) {
-            logger.log(Level.FINE, "Error converting to page space.", e);
+        } catch (NoninvertibleTransformException e1) {
+            e1.printStackTrace();
         }
 
         shape = at.createTransformedShape(shape);
 
         return shape;
 
-    }
-
-    public boolean isActive() {
-        return false;
     }
 
 }

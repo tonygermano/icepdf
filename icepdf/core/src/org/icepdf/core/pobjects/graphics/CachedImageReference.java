@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -16,9 +16,9 @@
 package org.icepdf.core.pobjects.graphics;
 
 import org.icepdf.core.pobjects.ImageStream;
-import org.icepdf.core.pobjects.Page;
 import org.icepdf.core.pobjects.Resources;
 
+import java.awt.*;
 import java.awt.image.BufferedImage;
 
 /**
@@ -34,10 +34,8 @@ public abstract class CachedImageReference extends ImageReference {
     private ImagePool imagePool;
     private boolean isNull;
 
-    protected CachedImageReference(ImageStream imageStream, GraphicsState graphicsState,
-                                   Resources resources, int imageIndex,
-                                   Page page) {
-        super(imageStream, graphicsState, resources, imageIndex, page);
+    protected CachedImageReference(ImageStream imageStream, Color fillColor, Resources resources) {
+        super(imageStream, fillColor, resources);
         imagePool = imageStream.getLibrary().getImagePool();
         this.reference = imageStream.getPObjectReference();
     }

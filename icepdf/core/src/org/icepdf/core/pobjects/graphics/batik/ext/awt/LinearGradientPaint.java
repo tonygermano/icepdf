@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -281,6 +281,7 @@ public final class LinearGradientPaint extends MultipleGradientPaint {
                     cycleMethod,
                     colorSpace);
         } catch (NoninvertibleTransformException e) {
+            e.printStackTrace();
             throw new IllegalArgumentException("transform should be" +
                     "invertible");
         }

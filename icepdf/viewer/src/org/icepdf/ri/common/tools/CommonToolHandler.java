@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -24,8 +24,6 @@ import org.icepdf.ri.common.views.DocumentViewModel;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.NoninvertibleTransformException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Common logicv to all annotation handlers.
@@ -33,9 +31,6 @@ import java.util.logging.Logger;
  * @since 5.0
  */
 public class CommonToolHandler {
-
-    private static final Logger logger =
-            Logger.getLogger(CommonToolHandler.class.toString());
 
     // parent page component
     protected AbstractPageViewComponent pageViewComponent;
@@ -58,8 +53,8 @@ public class CommonToolHandler {
                 documentViewModel.getViewZoom());
         try {
             at = at.createInverse();
-        } catch (NoninvertibleTransformException e) {
-            logger.log(Level.FINE, "Error page space transform", e);
+        } catch (NoninvertibleTransformException e1) {
+            e1.printStackTrace();
         }
         return at;
     }
@@ -79,8 +74,8 @@ public class CommonToolHandler {
                 documentViewModel.getViewZoom());
         try {
             at = at.createInverse();
-        } catch (NoninvertibleTransformException e) {
-            logger.log(Level.FINE, "Error converting to page space", e);
+        } catch (NoninvertibleTransformException e1) {
+            e1.printStackTrace();
         }
 
         shape = at.createTransformedShape(shape);

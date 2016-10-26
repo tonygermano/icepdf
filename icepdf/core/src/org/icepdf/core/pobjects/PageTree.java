@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -15,7 +15,6 @@
  */
 package org.icepdf.core.pobjects;
 
-import org.icepdf.core.pobjects.graphics.WatermarkCallback;
 import org.icepdf.core.util.Library;
 
 import java.lang.ref.WeakReference;
@@ -67,7 +66,6 @@ public class PageTree extends Dictionary {
     // loaded resource flag, we can't use null check as some trees don't have
     // resources. 
     private boolean loadedResources;
-    private WatermarkCallback watermarkCallback;
 
     /**
      * Inheritable rotation factor by child pages.
@@ -104,12 +102,22 @@ public class PageTree extends Dictionary {
         if (inited) {
             return;
         }
-
+        inited = true;
         Object parentTree = library.getObject(entries, PARENT_KEY);
         if (parentTree instanceof PageTree) {
             parent = (PageTree) parentTree;
         }
         kidsCount = library.getNumber(entries, COUNT_KEY).intValue();
+        List boxDimensions = (List) (library.getObject(entries, MEDIABOX_KEY));
+        if (boxDimensions != null) {
+            mediaBox = new PRectangle(boxDimensions);
+//            System.out.println("PageTree - MediaBox " + mediaBox);
+        }
+        boxDimensions = (List) (library.getObject(entries, CROPBOX_KEY));
+        if (boxDimensions != null) {
+            cropBox = new PRectangle(boxDimensions);
+//            System.out.println("PageTree - CropBox " + cropBox);
+        }
         kidsReferences = (List) library.getObject(entries, KIDS_KEY);
         kidsPageAndPages = new HashMap<Integer, WeakReference<Object>>(kidsReferences.size());
         // Rotation is only respected if child pages do not have their own
@@ -120,7 +128,7 @@ public class PageTree extends Dictionary {
             // mark that we have an inheritable value
             isRotationFactor = true;
         }
-        inited = true;
+
 
     }
 
@@ -131,28 +139,6 @@ public class PageTree extends Dictionary {
      * @return media box boundary in user space units.
      */
     public PRectangle getMediaBox() {
-        if (!inited) {
-            init();
-        }
-
-        if (mediaBox != null) {
-            return mediaBox;
-        }
-        // add all of the pages media box dimensions to a vector and process
-        List boxDimensions = (List) (library.getObject(entries, MEDIABOX_KEY));
-        if (boxDimensions != null) {
-            mediaBox = new PRectangle(boxDimensions);
-        }
-        // If mediaBox is null check with the parent pages, as media box is inheritable
-        if (mediaBox == null) {
-            PageTree pageTree = getParent();
-            while (pageTree != null && mediaBox == null) {
-                mediaBox = pageTree.getMediaBox();
-                if (mediaBox == null) {
-                    pageTree = pageTree.getParent();
-                }
-            }
-        }
         return mediaBox;
     }
 
@@ -163,28 +149,6 @@ public class PageTree extends Dictionary {
      * @return crop box boundary in user space units.
      */
     public PRectangle getCropBox() {
-        if (!inited) {
-            init();
-        }
-
-        if (cropBox != null) {
-            return cropBox;
-        }
-        // add all of the pages crop box dimensions to a vector and process
-        List boxDimensions = (List) (library.getObject(entries, CROPBOX_KEY));
-        if (boxDimensions != null) {
-            cropBox = new PRectangle(boxDimensions);
-        }
-        // Default value of the cropBox is the MediaBox if not set implicitly
-        PRectangle mediaBox = getMediaBox();
-        if (cropBox == null && mediaBox != null) {
-            cropBox = (PRectangle) mediaBox.clone();
-        } else if (mediaBox != null) {
-            // PDF 1.5 spec states that the media box should be intersected with the
-            // crop box to get the new box. But we only want to do this if the
-            // cropBox is not the same as the mediaBox
-            cropBox = mediaBox.createCartesianIntersection(cropBox);
-        }
         return cropBox;
     }
 
@@ -219,7 +183,7 @@ public class PageTree extends Dictionary {
      *
      * @param r reference to a page in the page tree.
      * @return page number of the specified reference.  If no page is found, -1
-     * is returned.
+     *         is returned.
      */
     public int getPageNumber(Reference r) {
         Page pg = (Page) library.getObject(r);
@@ -333,17 +297,6 @@ public class PageTree extends Dictionary {
     }
 
     /**
-     * Sets a page watermark implementation to be painted on top of the page
-     * content.  Watermark can be specified for each page or once by calling
-     * document.setWatermark().
-     *
-     * @param watermarkCallback watermark implementation.
-     */
-    protected void setWatermarkCallback(WatermarkCallback watermarkCallback) {
-        this.watermarkCallback = watermarkCallback;
-    }
-
-    /**
      * In a PDF file there is a root Pages object, which contains
      * children Page objects, as well as children PageTree objects,
      * all arranged in a tree.
@@ -378,12 +331,6 @@ public class PageTree extends Dictionary {
     public Page getPage(int pageNumber) {
         if (pageNumber < 0)
             return null;
-        Page page = getPagePotentiallyNotInitedByRecursiveIndex(pageNumber);
-        // pass in the watermark, even null to wipe a previous watermark
-        if (page != null) {
-            page.setWatermarkCallback(watermarkCallback);
-            page.setPageIndex(pageNumber);
-        }
         return getPagePotentiallyNotInitedByRecursiveIndex(pageNumber);
     }
 

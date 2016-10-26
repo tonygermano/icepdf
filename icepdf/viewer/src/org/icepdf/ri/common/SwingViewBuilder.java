@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -17,13 +17,10 @@ package org.icepdf.ri.common;
 
 import apple.dts.samplecode.osxadapter.OSXAdapter;
 import org.icepdf.core.util.Defs;
-import org.icepdf.ri.common.utility.acroform.AcroFormPanel;
-import org.icepdf.ri.common.utility.acroform.AcroFormPropertiesPanel;
 import org.icepdf.ri.common.utility.annotation.AnnotationPanel;
 import org.icepdf.ri.common.utility.layers.LayersPanel;
 import org.icepdf.ri.common.utility.outline.OutlinesTree;
 import org.icepdf.ri.common.utility.search.SearchPanel;
-import org.icepdf.ri.common.utility.signatures.SignaturesPanel;
 import org.icepdf.ri.common.utility.thumbs.ThumbnailsPanel;
 import org.icepdf.ri.common.views.DocumentViewController;
 import org.icepdf.ri.common.views.DocumentViewControllerImpl;
@@ -318,6 +315,7 @@ public class SwingViewBuilder {
 
     public static final int TOOL_BAR_STYLE_FLOATING = 1;
     public static final int TOOL_BAR_STYLE_FIXED = 2;
+
     protected static final float[] DEFAULT_ZOOM_LEVELS = {
             0.05f, 0.10f, 0.25f, 0.50f, 0.75f,
             1.0f, 1.5f, 2.0f, 3.0f,
@@ -331,7 +329,9 @@ public class SwingViewBuilder {
     protected boolean haveMadeAToolBar;
     protected int documentViewType;
     protected int documentPageFitMode;
+
     protected ResourceBundle messageBundle;
+
     protected PropertiesManager propertiesManager;
 
     public static boolean isMacOs;
@@ -438,7 +438,7 @@ public class SwingViewBuilder {
      * behave as a fully functional PDF Viewer application.
      *
      * @return a JFrame containing the PDF document's current page visualization,
-     * menu bar, accelerator buttons, and document outline if available.
+     *         menu bar, accelerator buttons, and document outline if available.
      * @see #buildViewerPanel
      */
     public JFrame buildViewerFrame() {
@@ -462,7 +462,7 @@ public class SwingViewBuilder {
      * standalone JFrame
      *
      * @return JPanel containing the PDF document's current page visualization,
-     * menu bar, accelerator buttons, and document outline if available.
+     *         menu bar, accelerator buttons, and document outline if available.
      * @see #buildViewerFrame
      */
     public JPanel buildViewerPanel() {
@@ -485,7 +485,7 @@ public class SwingViewBuilder {
         // Builds the utility pane as well as the main document View, important
         // code entry point.
         JSplitPane utilAndDocSplit =
-                buildUtilityAndDocumentAndPropertiesSplitPane(embeddableComponent);
+                buildUtilityAndDocumentSplitPane(embeddableComponent);
         if (utilAndDocSplit != null)
             cp.add(utilAndDocSplit, BorderLayout.CENTER);
         JPanel statusPanel = buildStatusPanel();
@@ -724,7 +724,7 @@ public class SwingViewBuilder {
         JMenuItem mi = makeMenuItem(
                 messageBundle.getString("viewer.menu.edit.undo.label"),
                 null, null, buildKeyStroke(KeyEventConstants.KEY_CODE_UNDO,
-                        KeyEventConstants.MODIFIER_UNDO));
+                KeyEventConstants.MODIFIER_UNDO));
         if (viewerController != null && mi != null)
             viewerController.setUndoMenuItem(mi);
         return mi;
@@ -734,7 +734,7 @@ public class SwingViewBuilder {
         JMenuItem mi = makeMenuItem(
                 messageBundle.getString("viewer.menu.edit.redo.label"),
                 null, null, buildKeyStroke(KeyEventConstants.KEY_CODE_REDO,
-                        KeyEventConstants.MODIFIER_REDO));
+                KeyEventConstants.MODIFIER_REDO));
         if (viewerController != null && mi != null)
             viewerController.setReduMenuItem(mi);
         return mi;
@@ -744,7 +744,7 @@ public class SwingViewBuilder {
         JMenuItem mi = makeMenuItem(
                 messageBundle.getString("viewer.menu.edit.copy.label"),
                 null, null, buildKeyStroke(KeyEventConstants.KEY_CODE_COPY,
-                        KeyEventConstants.MODIFIER_COPY));
+                KeyEventConstants.MODIFIER_COPY));
         if (viewerController != null && mi != null)
             viewerController.setCopyMenuItem(mi);
         return mi;
@@ -754,7 +754,7 @@ public class SwingViewBuilder {
         JMenuItem mi = makeMenuItem(
                 messageBundle.getString("viewer.menu.edit.delete.label"),
                 null, null, buildKeyStroke(KeyEventConstants.KEY_CODE_DELETE,
-                        KeyEventConstants.MODIFIER_DELETE));
+                KeyEventConstants.MODIFIER_DELETE));
         if (viewerController != null && mi != null)
             viewerController.setDeleteMenuItem(mi);
         return mi;
@@ -764,7 +764,7 @@ public class SwingViewBuilder {
         JMenuItem mi = makeMenuItem(
                 messageBundle.getString("viewer.menu.edit.selectAll.label"),
                 null, null, buildKeyStroke(KeyEventConstants.KEY_CODE_SELECT_ALL,
-                        KeyEventConstants.MODIFIER_SELECT_ALL));
+                KeyEventConstants.MODIFIER_SELECT_ALL));
         if (viewerController != null && mi != null)
             viewerController.setSelectAllMenuItem(mi);
         return mi;
@@ -774,7 +774,7 @@ public class SwingViewBuilder {
         JMenuItem mi = makeMenuItem(
                 messageBundle.getString("viewer.menu.edit.deselectAll.label"),
                 null, null, buildKeyStroke(KeyEventConstants.KEY_CODE_DESELECT_ALL,
-                        KeyEventConstants.MODIFIER_DESELECT_ALL));
+                KeyEventConstants.MODIFIER_DESELECT_ALL));
         if (viewerController != null && mi != null)
             viewerController.setDselectAllMenuItem(mi);
         return mi;
@@ -995,7 +995,6 @@ public class SwingViewBuilder {
         return mi;
     }
 
-    @SuppressWarnings("unchecked")
     public void buildWindowListMenuItems(JMenu menu) {
         if (viewerController != null &&
                 viewerController.getWindowManagementCallback() != null) {
@@ -1107,8 +1106,6 @@ public class SwingViewBuilder {
             addToToolBar(toolbar, buildToolToolBar());
         if (PropertiesManager.checkAndStoreBooleanProperty(propertiesManager, PropertiesManager.PROPERTY_SHOW_TOOLBAR_ANNOTATION))
             addToToolBar(toolbar, buildAnnotationlToolBar());
-        if (PropertiesManager.checkAndStoreBooleanProperty(propertiesManager, PropertiesManager.PROPERTY_SHOW_TOOLBAR_FORMS))
-            addToToolBar(toolbar, buildFormsToolBar());
 
         // we only add the configurable font engin in the demo version
         if (isDemo) {
@@ -1429,13 +1426,6 @@ public class SwingViewBuilder {
         return toolbar;
     }
 
-    public JToolBar buildFormsToolBar() {
-        JToolBar toolbar = new JToolBar();
-        commonToolBarSetup(toolbar, false);
-        addToToolBar(toolbar, buildFormHighlightButton(Images.SIZE_LARGE));
-        return toolbar;
-    }
-
     public JToolBar buildAnnotationUtilityToolBar() {
         JToolBar toolbar = new JToolBar();
         commonToolBarSetup(toolbar, true);
@@ -1450,21 +1440,6 @@ public class SwingViewBuilder {
         addToToolBar(toolbar, buildInkAnnotationToolButton());
         addToToolBar(toolbar, buildFreeTextAnnotationToolButton());
         addToToolBar(toolbar, buildTextAnnotationUtilityToolButton(Images.SIZE_MEDIUM));
-        return toolbar;
-    }
-
-    public JToolBar buildAcroFormUtilityToolBar() {
-        JToolBar toolbar = new JToolBar();
-        commonToolBarSetup(toolbar, true);
-        addToToolBar(toolbar, buildPropertiesPanelAnnotationButton());
-        toolbar.addSeparator();
-//        addToToolBar(toolbar, buildSelectToolButton(Images.SIZE_MEDIUM));
-        addToToolBar(toolbar, buildTextFieldAnnotationToolButton());
-        addToToolBar(toolbar, buildChoiceFieldAnnotationToolButton());
-        addToToolBar(toolbar, buildRadioFieldAnnotationToolButton());
-        addToToolBar(toolbar, buildCheckFieldAnnotationToolButton());
-        addToToolBar(toolbar, buildButtonFieldArrowAnnotationToolButton());
-        addToToolBar(toolbar, buildSigntureFieldAnnotationToolButton());
         return toolbar;
     }
 
@@ -1625,86 +1600,6 @@ public class SwingViewBuilder {
         return btn;
     }
 
-    public JToggleButton buildPropertiesPanelAnnotationButton() {
-        JToggleButton btn = makeToolbarToggleButton(
-                messageBundle.getString("viewer.toolbar.tool.acroform.properties.label"),
-                messageBundle.getString("viewer.toolbar.tool.acroform.properties.tooltip"),
-                "annot_properties", Images.SIZE_MEDIUM, buttonFont);
-        if (viewerController != null && btn != null)
-            viewerController.setPropertiesWidgetButton(btn);
-        return btn;
-    }
-
-    public JToggleButton buildTextFieldAnnotationToolButton() {
-        JToggleButton btn = makeToolbarToggleButton(
-                messageBundle.getString("viewer.toolbar.tool.acroform.textField.label"),
-                messageBundle.getString("viewer.toolbar.tool.acroform.textField.tooltip"),
-                "annot_text", Images.SIZE_MEDIUM, buttonFont);
-        if (viewerController != null && btn != null)
-            viewerController.setTextFieldAnnotationToolButton(btn);
-        return btn;
-    }
-
-    public JToggleButton buildRadioFieldAnnotationToolButton() {
-        JToggleButton btn = makeToolbarToggleButton(
-                messageBundle.getString("viewer.toolbar.tool.acroform.btn.radio.label"),
-                messageBundle.getString("viewer.toolbar.tool.acroform.btn.radio.tooltip"),
-                "annot_btn_radio", Images.SIZE_MEDIUM, buttonFont);
-        if (viewerController != null && btn != null)
-            viewerController.setButtonRadioFieldAnnotationToolButton(btn);
-        return btn;
-    }
-
-    public JToggleButton buildCheckFieldAnnotationToolButton() {
-        JToggleButton btn = makeToolbarToggleButton(
-                messageBundle.getString("viewer.toolbar.tool.acroform.btn.checkbox.label"),
-                messageBundle.getString("viewer.toolbar.tool.acroform.btn.checkbox.tooltip"),
-                "annot_btn_checkbox", Images.SIZE_MEDIUM, buttonFont);
-        if (viewerController != null && btn != null)
-            viewerController.setButtonCheckboxFieldAnnotationToolButton(btn);
-        return btn;
-    }
-
-    public JToggleButton buildButtonFieldArrowAnnotationToolButton() {
-        JToggleButton btn = makeToolbarToggleButton(
-                messageBundle.getString("viewer.toolbar.tool.acroform.btn.label"),
-                messageBundle.getString("viewer.toolbar.tool.acroform.btn.tooltip"),
-                "annot_btn", Images.SIZE_MEDIUM, buttonFont);
-        if (viewerController != null && btn != null)
-            viewerController.setButtonFieldAnnotationToolButton(btn);
-        return btn;
-    }
-
-    public JToggleButton buildChoiceFieldAnnotationToolButton() {
-        JToggleButton btn = makeToolbarToggleButton(
-                messageBundle.getString("viewer.toolbar.tool.acroform.choice.label"),
-                messageBundle.getString("viewer.toolbar.tool.acroform.choice.tooltip"),
-                "annot_choice", Images.SIZE_MEDIUM, buttonFont);
-        if (viewerController != null && btn != null)
-            viewerController.setButtonChoiceFieldAnnotationToolButton(btn);
-        return btn;
-    }
-
-    public JToggleButton buildSigntureFieldAnnotationToolButton() {
-        JToggleButton btn = makeToolbarToggleButton(
-                messageBundle.getString("viewer.toolbar.tool.acroform.signature.label"),
-                messageBundle.getString("viewer.toolbar.tool.acroform.signature.tooltip"),
-                "annot_sig", Images.SIZE_MEDIUM, buttonFont);
-        if (viewerController != null && btn != null)
-            viewerController.setSignatureFieldAnnotationToolButton(btn);
-        return btn;
-    }
-
-    public JToggleButton buildFormHighlightButton(final String imageSize) {
-        JToggleButton btn = makeToolbarToggleButton(
-                messageBundle.getString("viewer.toolbar.tool.forms.highlight.label"),
-                messageBundle.getString("viewer.toolbar.tool.forms.highlight.tooltip"),
-                "form_highlight", Images.SIZE_LARGE, buttonFont);
-        if (viewerController != null && btn != null)
-            viewerController.setFormHighlightButton(btn);
-        return btn;
-    }
-
     public JToggleButton buildTextAnnotationUtilityToolButton(final String imageSize) {
         JToggleButton btn = makeToolbarToggleButtonSmall(
                 messageBundle.getString("viewer.toolbar.tool.textAnno.label"),
@@ -1735,41 +1630,6 @@ public class SwingViewBuilder {
         return btn;
     }
 
-    public JSplitPane buildUtilityAndDocumentAndPropertiesSplitPane(boolean embeddableComponent) {
-        // create the utility and document spit panes.
-        JSplitPane mainDocumentSplitPane = buildUtilityAndDocumentSplitPane(embeddableComponent);
-        JSplitPane documentAndPropertiesPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        documentAndPropertiesPane.setOneTouchExpandable(false);
-        documentAndPropertiesPane.setDividerSize(8);
-        documentAndPropertiesPane.setContinuousLayout(true);
-
-        // set the viewController embeddable flag.
-        DocumentViewController viewController =
-                viewerController.getDocumentViewController();
-        // will add key event listeners
-        viewerController.setIsEmbeddedComponent(embeddableComponent);
-
-        // remove F6 focus management key from the splitpane
-        documentAndPropertiesPane.getActionMap().getParent().remove("toggleFocus");
-
-        documentAndPropertiesPane.setLeftComponent(mainDocumentSplitPane);
-        documentAndPropertiesPane.setRightComponent(buildAcroFormPropertiesPanel());
-
-        // apply previously set divider location, default is -1
-        int dividerLocation = PropertiesManager.checkAndStoreIntegerProperty(
-                propertiesManager,
-                PropertiesManager.PROPERTY_DIVIDER_LOCATION, 640);
-        documentAndPropertiesPane.setDividerLocation(dividerLocation);
-
-        // Add the split pan component to the view controller so that it can
-        // manipulate the divider via the controller, hide, show, etc. for
-        // utility pane.
-        if (viewerController != null)
-            viewerController.setDocumentAndPropertiesSplitPane(documentAndPropertiesPane);
-
-        return documentAndPropertiesPane;
-    }
-
 
     public JSplitPane buildUtilityAndDocumentSplitPane(boolean embeddableComponent) {
         JSplitPane splitpane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
@@ -1794,7 +1654,7 @@ public class SwingViewBuilder {
         // apply previously set divider location, default is -1
         int dividerLocation = PropertiesManager.checkAndStoreIntegerProperty(
                 propertiesManager,
-                PropertiesManager.PROPERTY_UTILITY_DIVIDER_LOCATION, 260);
+                PropertiesManager.PROPERTY_DIVIDER_LOCATION, 260);
         splitpane.setDividerLocation(dividerLocation);
 
         // Add the split pan component to the view controller so that it can
@@ -1838,22 +1698,10 @@ public class SwingViewBuilder {
                     buildLayersComponents());
         }
         if (PropertiesManager.checkAndStoreBooleanProperty(propertiesManager,
-                PropertiesManager.PROPERTY_SHOW_UTILITYPANE_SIGNATURES)) {
-            utilityTabbedPane.add(
-                    messageBundle.getString("viewer.utilityPane.signatures.tab.title"),
-                    buildSignatureComponents());
-        }
-        if (PropertiesManager.checkAndStoreBooleanProperty(propertiesManager,
                 PropertiesManager.PROPERTY_SHOW_UTILITYPANE_ANNOTATION)) {
             utilityTabbedPane.add(
                     messageBundle.getString("viewer.utilityPane.annotation.tab.title"),
                     buildAnnotationPanel());
-        }
-        if (PropertiesManager.checkAndStoreBooleanProperty(propertiesManager,
-                PropertiesManager.PROPERTY_SHOW_UTILITYPANE_ACROFORM)) {
-            utilityTabbedPane.add(
-                    messageBundle.getString("viewer.utilityPane.acroform.tab.title"),
-                    buildAcroFormPanel());
         }
 
         // Ensure something was added to the utility pane, otherwise reset it to null
@@ -1893,14 +1741,6 @@ public class SwingViewBuilder {
         return layersPanel;
     }
 
-    public JComponent buildSignatureComponents() {
-        SignaturesPanel signaturesPanel = new SignaturesPanel(viewerController);
-        if (viewerController != null) {
-            viewerController.setSignaturesPanel(signaturesPanel);
-        }
-        return signaturesPanel;
-    }
-
     public SearchPanel buildSearchPanel() {
         SearchPanel searchPanel = new SearchPanel(viewerController);
         if (viewerController != null)
@@ -1916,23 +1756,6 @@ public class SwingViewBuilder {
         return annotationPanel;
     }
 
-    public JComponent buildAcroFormPanel(){
-        AcroFormPanel acroFormPanel = new AcroFormPanel(viewerController);
-        acroFormPanel.setAcroFromUtilityToolbar(buildAcroFormUtilityToolBar());
-        if (viewerController != null) {
-            viewerController.setAcroFormPanel(acroFormPanel);
-        }
-        return acroFormPanel;
-    }
-
-    public JComponent buildAcroFormPropertiesPanel() {
-        AcroFormPropertiesPanel acroFormPropertiesPanel = new AcroFormPropertiesPanel(viewerController);
-        if (viewerController != null) {
-            viewerController.setAcroFormPropertiesPanel(acroFormPropertiesPanel);
-        }
-        return acroFormPropertiesPanel;
-    }
-
     /**
      * Builds the status bar panel containing a status label on the left and
      * view mode controls on the right.  The status bar can be shown or
@@ -1943,7 +1766,7 @@ public class SwingViewBuilder {
      * for all properties is 'true'.
      *
      * @return status panel JPanel if visible, null if the proeprty
-     * 'application.statusbar=false' is set.
+     *         'application.statusbar=false' is set.
      */
     public JPanel buildStatusPanel() {
         // check to see if the status bars should be built.
@@ -2041,6 +1864,7 @@ public class SwingViewBuilder {
         JButton tmp = new JButton(showButtonText ? title : "");
         tmp.setFont(font);
         tmp.setToolTipText(toolTip);
+        ;
         tmp.setPreferredSize(new Dimension(32, 32));
         try {
             tmp.setIcon(new ImageIcon(Images.get(imageName + "_a" + imageSize + ".png")));
@@ -2048,7 +1872,7 @@ public class SwingViewBuilder {
             tmp.setRolloverIcon(new ImageIcon(Images.get(imageName + "_r" + imageSize + ".png")));
             tmp.setDisabledIcon(new ImageIcon(Images.get(imageName + "_i" + imageSize + ".png")));
         } catch (NullPointerException e) {
-            logger.warning("Failed to load toolbar button images: " + imageName + "_i" + imageSize + ".png");
+
         }
         tmp.setRolloverEnabled(true);
         tmp.setBorderPainted(false);
@@ -2083,7 +1907,7 @@ public class SwingViewBuilder {
             tmp.setRolloverIcon(new ImageIcon(Images.get(imageName + "_r" + imageSize + ".png")));
             tmp.setDisabledIcon(new ImageIcon(Images.get(imageName + "_i" + imageSize + ".png")));
         } catch (NullPointerException e) {
-            logger.warning("Failed to load toolbar toggle button images: " + imageName + "_i" + imageSize + ".png");
+
         }
         //tmp.setBorderPainted(false);
         tmp.setBorder(BorderFactory.createEmptyBorder());
@@ -2118,7 +1942,7 @@ public class SwingViewBuilder {
             tmp.setRolloverIcon(new ImageIcon(Images.get(imageName + "_r" + imageSize + ".png")));
             tmp.setDisabledIcon(new ImageIcon(Images.get(imageName + "_i" + imageSize + ".png")));
         } catch (NullPointerException e) {
-            logger.warning("Failed to load toolbar toggle images: " + imageName + "_i" + imageSize + ".png");
+
         }
         //tmp.setBorderPainted(false);
         tmp.setBorder(BorderFactory.createEmptyBorder());
@@ -2156,7 +1980,7 @@ public class SwingViewBuilder {
             tmp.setSelectedIcon(new ImageIcon(Images.get(imageName + "_n.png")));
             tmp.setDisabledIcon(new ImageIcon(Images.get(imageName + "_n.png")));
         } catch (NullPointerException e) {
-            logger.warning("Failed to load toobar toggle button images: " + imageName + ".png");
+
         }
         tmp.setBorderPainted(false);
         tmp.setBorder(BorderFactory.createEmptyBorder());
@@ -2192,11 +2016,12 @@ public class SwingViewBuilder {
         JMenuItem jmi = new JMenuItem(text);
         if (imageName != null) {
             try {
-                jmi.setIcon(new ImageIcon(Images.get(imageName + "_a" + imageSize + ".png")));
+                jmi.setIcon(new ImageIcon(Images.get(imageName + "_a." + imageSize + "png")));
                 jmi.setDisabledIcon(new ImageIcon(Images.get(imageName + "_i" + imageSize + ".png")));
-                jmi.setRolloverIcon(new ImageIcon(Images.get(imageName + "_r" + imageSize + ".png")));
+                jmi.setRolloverIcon(new ImageIcon(Images.get(imageName + "_r" + imageSize +
+                        ".png")));
             } catch (NullPointerException e) {
-                logger.warning("Failed to load menu images: " + imageName + "_a" + imageSize + ".png");
+
             }
         } else {
             jmi.setIcon(new ImageIcon(Images.get("menu_spacer.gif")));

@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -41,7 +41,7 @@ public abstract class AbstractPageViewComponent
     protected ToolHandler currentToolHandler;
 
     // annotations component for this pageViewComp.
-    protected ArrayList<AbstractAnnotationComponent> annotationComponents;
+    protected ArrayList<AnnotationComponent> annotationComponents;
 
     public abstract Page getPage();
 
@@ -164,24 +164,6 @@ public abstract class AbstractPageViewComponent
                         documentViewModel);
                 documentViewController.clearSelectedText();
                 break;
-            case DocumentViewModel.DISPLAY_TOOL_TEXT_FIELD_ANNOTATION:
-//               // todo text field handler
-                break;
-            case DocumentViewModel.DISPLAY_TOOL_BUTTON_CHECKBOX_FIELD_ANNOTATION:
-//                // todo checkbox handler.
-                break;
-            case DocumentViewModel.DISPLAY_TOOL_BUTTON_RADIO_FIELD_ANNOTATION:
-//                // todo radio handler.
-                break;
-            case DocumentViewModel.DISPLAY_TOOL_BUTTON_FIELD_ANNOTATION:
-//                // todo button handler.
-                break;
-            case DocumentViewModel.DISPLAY_TOOL_SIGNATURE_FIELD_ANNOTATION:
-//                // todo signature handler.
-                break;
-            case DocumentViewModel.DISPLAY_TOOL_CHOICE_FIELD_ANNOTATION:
-//                // todo choicei handler.
-                break;
             default:
                 currentToolHandler = null;
         }
@@ -193,47 +175,32 @@ public abstract class AbstractPageViewComponent
     }
 
     public void refreshAnnotationComponents(Page page) {
-        if (page != null) {
-            List<Annotation> annotations = page.getAnnotations();
-            if (annotations != null && annotations.size() > 0) {
-                // we don't want to re-initialize the component as we'll
-                // get duplicates if the page has be gc'd
-                if (annotationComponents == null) {
-                    annotationComponents =
-                            new ArrayList<AbstractAnnotationComponent>(annotations.size());
-                    for (Annotation annotation : annotations) {
-                        // parser can sometimes return an empty array depending on the PDF syntax being used.
-                        if (annotation != null) {
-                            AbstractAnnotationComponent comp =
-                                    AnnotationComponentFactory.buildAnnotationComponent(
-                                            annotation, documentViewController,
-                                            this, documentViewModel);
-                            if (comp != null) {
-                                // add for painting
-                                annotationComponents.add(comp);
-                                // add to layout
-                                if (comp instanceof PopupAnnotationComponent) {
-                                    this.add(comp, JLayeredPane.POPUP_LAYER);
-                                } else {
-                                    this.add(comp, JLayeredPane.DEFAULT_LAYER);
-                                }
-                            } else {
-                                // have test file with null value here.
-                                // System.out.println();
-                            }
-                        }
+        List<Annotation> annotations = page.getAnnotations();
+        if (annotations != null && annotations.size() > 0) {
+            // we don't want to re-initialize the component as we'll
+            // get duplicates if the page has be gc'd
+            if (annotationComponents == null) {
+                annotationComponents =
+                        new ArrayList<AnnotationComponent>(annotations.size());
+                for (Annotation annotation : annotations) {
+                    AbstractAnnotationComponent comp =
+                            AnnotationComponentFactory.buildAnnotationComponent(
+                                    annotation, documentViewController,
+                                    this, documentViewModel);
+                    // add for painting
+                    annotationComponents.add(comp);
+                    // add to layout
+                    if (comp instanceof PopupAnnotationComponent) {
+                        this.add(comp, JLayeredPane.POPUP_LAYER);
+                    } else {
+                        this.add(comp, JLayeredPane.DEFAULT_LAYER);
                     }
                 }
             }
         }
     }
 
-    /**
-     * Gets a list of the annotation components used in this page view.
-     *
-     * @return list of annotation components, can be null.
-     */
-    public ArrayList<AbstractAnnotationComponent> getAnnotationComponents() {
+    public ArrayList<AnnotationComponent> getAnnotationComponents() {
         return annotationComponents;
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -26,11 +26,11 @@ import java.util.logging.Logger;
 /**
  * <p>This class <code>Function_0</code> represents a generic Type 0, sampled function
  * type.  Type 0 functions use a sequence of sampled values (contained in a stream)
- * to produce an approximation for function whose domains and ranges are bounded.
+ * to produce an approximation for function shose domains and ranges are bounded.
  * The samples are organized as an m-dimensional table in which each entry has n
  * components. </p>
  * <p/>
- * <p>Sampled functions are highly general and offer reasonably accurate
+ * <p>Sampled functiosn are highly general and offer reasonablly accurate
  * representations of arbitrary analytic functions at low expense.  The
  * dimensionality of a sampled function is restricted only by the implementation
  * limits.</p>
@@ -55,7 +55,7 @@ public class Function_0 extends Function {
     // The number of bits used to represent each sample. If the function has
     // multiple output values, each one occupies BitsPerSample bits.  Valid
     // values are 1,2,4,8,12,16,24, and 32.
-    private int bitsPerSample;
+    private int bitspersample;
 
     // The order of interpolation between samples.  Valid values are 1 and 3,
     // specifying linear and cubic spline interpolation, respectively.  Default 1
@@ -69,9 +69,10 @@ public class Function_0 extends Function {
     // An array of 2 x n numbers specifying the linear mapping of sample values
     // into the range the range appropriate for the function's output values.
     // Default same as Range.
-    private float[] decode;
+    private float decode[];
 
-    private int[][] samples;
+    // associated stream bytes, comes from dictionary
+    private byte bytes[];
 
     /**
      * Creates a new instance of a type 0 function.
@@ -89,9 +90,9 @@ public class Function_0 extends Function {
         for (int i = 0; i < s.size(); i++) {
             size[i] = (int) (((Number) s.get(i)).floatValue());
         }
-        // setup bitsPerSample array, each entry represents the number of bits used
+        // setup bitspersample array, each entry represents the number of bits used
         // for each sample
-        bitsPerSample = d.getInt(BITSPERSAMPLE_KEY);
+        bitspersample = d.getInt(BITSPERSAMPLE_KEY);
 
         // setup of encode table, specifies the linear mapping of input values
         // into the domain of the function's sample table.
@@ -120,20 +121,24 @@ public class Function_0 extends Function {
                 decode[i] = ((Number) dec.get(i)).floatValue();
             }
         } else {
-            // decode is optional, so we should copy range as a default values
+            // deocode is optional, so we should copy range as a default values
             System.arraycopy(range, 0, decode, 0, range.length);
+//            for (int i = 0; i < range.length; i++) {
+//                decode[i] = range[i];
+//            }
         }
 
         // lastly get the stream byte data if any.
         Stream stream = (Stream) d;
-        convertToSamples(stream.getDecodedStreamBytes(0), bitsPerSample);
+        bytes = stream.getDecodedStreamBytes(0);
     }
+
 
     /**
      * Calculates the y values for the given x values using a sampled function.
      *
      * @param x array of input values m.
-     * @return array of output value n.
+     * @return array of ouput value n.
      */
     public float[] calculate(float[] x) {
         // length of output array
@@ -142,20 +147,19 @@ public class Function_0 extends Function {
         float y[] = new float[n];
         // work throw all input data and store in y[]
         try {
-            // sampled each input value xi for 0 & i < m
-            for (int i = 0; i < size.length; i++) {
+            for (int i = 0; i < x.length; i++) {
                 // clip input value appropriately for the given domain
                 // xi' = min (max(xi, Domain2i), Domain2i+1)
                 x[i] = Math.min(Math.max(x[i], domain[2 * i]), domain[2 * i + 1]);
                 // find the encoded value
-                // ei = interpolate (xi', Domain2i, Domain2i+1, Encode2i, Encode2i+1)
+                // ei = intermolate (xi', Domain2i, Domain2i+1, Encode2i, Encode2i+1)
                 float e = interpolate(x[i], domain[2 * i], domain[2 * i + 1],
                         encode[2 * i], encode[2 * i + 1]);
                 // clip to the size of the sampled table in that dimension:
                 // ei' = min (max(ei, 0), Sizei-1)
                 e = Math.min(Math.max(e, 0), size[i] - 1);
                 // pretty sure that e1 and e2 are used to for a bilinear interpolation?
-                // Output values are are calculated from the nearest surrounding values
+                // Output values are are caculated from the nearest surrounding values
                 // in the sample table in the sample table.
                 int e1 = (int) Math.floor(e);
                 int e2 = (int) Math.ceil(e);
@@ -163,18 +167,18 @@ public class Function_0 extends Function {
                 // Calculate the final output values
                 for (int j = 0; j < n; j++) {
                     //  find nearest surrounding values in the sample table
-                    int b1 = samples[e1][j];
-                    int b2 = samples[e2][j];
+                    int b1 = ((int) bytes[(int) (e1 * n + j)]) & 255;
+                    int b2 = ((int) bytes[(int) (e2 * n + j)]) & 255;
                     // get the average
                     float r = ((float) b1 + (float) b2) / 2;
-                    // interpolate to get output values
-                    r = interpolate(r, 0f, (float) Math.pow(2, bitsPerSample) -
+                    // interplate to get output values
+                    r = interpolate(r, 0f, (float) Math.pow(2, bitspersample) -
                             1, decode[2 * j], decode[2 * j + 1]);
                     // finally, decoded values are clipped ot the range
                     // yj = min(max(rj', Range2j), Range2j+1)
                     r = Math.min(Math.max(r, range[2 * j]), range[2 * j + 1]);
                     index = i * n + j;
-                    // make sure we y can contain the calculated r value
+                    // make sure we y can contain the calcualated r value
                     if (index < y.length) {
                         y[index] = r;
                     }
@@ -182,53 +186,8 @@ public class Function_0 extends Function {
                 }
             }
         } catch (Exception e) {
-            logger.log(Level.FINER, "Error calculating function 0 values", e);
+            logger.log(Level.WARNING, "Error calculating function 0 values", e);
         }
         return y;
-    }
-
-    /**
-     * Utility for converting sample bytes to integers of the correct bits per sample.
-     *
-     * @param bytes         byte array to convert.
-     * @param bitsPerSample bits per sample value
-     */
-    private void convertToSamples(byte[] bytes, int bitsPerSample) {
-        int size = 1;
-        int inputMax = domain.length / 2;
-        int outputMax = range.length / 2;
-        for (int i = 0; i < inputMax; i++) {
-            size *= this.size[i];
-        }
-        samples = new int[size][outputMax];
-
-        int sampleIndex = 0;
-        int byteLocation = 0;
-        int bitLocation = 0;
-        for (int i = 0; i < inputMax; i++) {
-            for (int j = 0; j < this.size[i]; j++) {
-                for (int k = 0; k < outputMax; k++) {
-                    int value = 0;
-                    int bitsToRead = bitsPerSample;
-                    byte byteCount = bytes[byteLocation];
-                    while (bitsToRead > 0) {
-                        int nextBit = ((byteCount >> (7 - bitLocation)) & 0x1);
-                        value |= nextBit << (bitsToRead - 1);
-                        bitLocation++;
-                        // skip to the next bit.
-                        if (bitLocation == 8) {
-                            bitLocation = 0;
-                            byteLocation++;
-                            if (bitsToRead > 1) {
-                                byteCount = bytes[byteLocation];
-                            }
-                        }
-                        bitsToRead--;
-                    }
-                    samples[sampleIndex][k] = value;
-                }
-                sampleIndex++;
-            }
-        }
     }
 }

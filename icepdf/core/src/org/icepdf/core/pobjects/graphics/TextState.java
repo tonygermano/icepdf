@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -83,48 +83,55 @@ public class TextState {
      * in unscaled text space units. Character spacing is used by the Tj, TJ,
      * and ' operators. Initial value: 0.
      */
-    public float cspace;
+    public float cspace = 0;
+
     /**
      * Set the word spacing, Tw, to wordSpace, which is a number expressed in
      * unscaled text space units. Word spacing is used by the Tj, TJ, and '
      * operators. Initial value: 0.
      */
-    public float wspace;
+    public float wspace = 0;
+
     /**
      * Set the horizontal scaling, Th, to (scale div 100). scale is a number
      * specifying the percentage of the normal width. Initial value: 100
      * (normal width).
      */
-    public float hScalling;
+    public float hScalling = 1;
+
     /**
      * Set the text leading, Tl, to leading, which is a number expressed in
      * unscaled text space units. Text leading is used only by the T*, ',
      * and " operators. Initial value: 0.
      */
-    public float leading;
+    public float leading = 0;
+
     /**
      * Text Font size
      */
-    public float tsize;
+    public float tsize = 0;
     /**
      * Set the text rendering mode, Tmode, to render, which is an integer.
      * Initial value: 0.
      */
-    public int rmode;
+    public int rmode = 0;
     /**
      * Set the text rise, Trise, to rise, which is a number expressed in
      * unscaled text space units. Initial value: 0.
      */
-    public float trise;
+    public float trise = 0;
+
     /**
      * Transformation matrix defined by the Tm tag
      */
-    public AffineTransform tmatrix;
-    public AffineTransform tlmatrix;
+    public AffineTransform tmatrix = new AffineTransform();
+    public AffineTransform tlmatrix = new AffineTransform();
+
     /**
      * Text Font - Associated ICEpdf font object
      */
     public Font font;
+
     /**
      * Text Font - Associated awt font object for display purposes
      */
@@ -134,13 +141,10 @@ public class TextState {
      * Create a new Instance of TextState
      */
     public TextState() {
-        tmatrix = new AffineTransform();
-        tlmatrix = new AffineTransform();
-        hScalling = 1;
     }
 
     /**
-     * Creat a new instance of TextState. All text state properties are copied
+     * Creat a new instance of TextState. All text state properites are copied
      * from <code>ts</code>.
      *
      * @param ts text state to

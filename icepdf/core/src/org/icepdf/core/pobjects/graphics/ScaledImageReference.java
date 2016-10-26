@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -16,13 +16,12 @@
 package org.icepdf.core.pobjects.graphics;
 
 import org.icepdf.core.pobjects.ImageStream;
-import org.icepdf.core.pobjects.ImageUtility;
-import org.icepdf.core.pobjects.Page;
 import org.icepdf.core.pobjects.Resources;
 import org.icepdf.core.util.Library;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
 import java.util.concurrent.FutureTask;
 import java.util.logging.Logger;
 
@@ -42,13 +41,28 @@ public class ScaledImageReference extends CachedImageReference {
     private int width;
     private int height;
 
-    protected ScaledImageReference(ImageStream imageStream, GraphicsState graphicsState,
-                                   Resources resources, int imageIndex, Page page) {
-        super(imageStream, graphicsState, resources, imageIndex, page);
+    protected ScaledImageReference(ImageStream imageStream, Color fillColor, Resources resources) {
+        super(imageStream, fillColor, resources);
 
         // get eh original image width.
-        width = imageStream.getWidth();
-        height = imageStream.getHeight();
+        int width = imageStream.getWidth();
+        int height = imageStream.getHeight();
+
+        // apply scaling factor
+        double scaleFactor = 1.0;
+        if (width > 1000 && width < 1500) {
+            scaleFactor = 0.75;
+        } else if (width > 1500) {
+            scaleFactor = 0.5;
+        }
+        // update image size for any scaling.
+        if (scaleFactor < 1.0) {
+            this.width = (int) Math.ceil(width * scaleFactor);
+            this.height = (int) Math.ceil(height * scaleFactor);
+        } else {
+            this.width = width;
+            this.height = height;
+        }
 
         // kick off a new thread to load the image, if not already in pool.
         ImagePool imagePool = imageStream.getLibrary().getImagePool();
@@ -60,9 +74,9 @@ public class ScaledImageReference extends CachedImageReference {
         }
     }
 
-    public ScaledImageReference(ImageReference imageReference, GraphicsState graphicsState, Resources resources,
-                                int width, int height, int imageIndex, Page page) {
-        super(imageReference.getImageStream(), graphicsState, resources, imageIndex, page);
+    public ScaledImageReference(ImageReference imageReference, Color fillColor, Resources resources,
+                                int width, int height) {
+        super(imageReference.getImageStream(), fillColor, resources);
 
         this.width = width;
         this.height = height;
@@ -92,40 +106,28 @@ public class ScaledImageReference extends CachedImageReference {
 
     public BufferedImage call() {
         BufferedImage image = null;
-        long start = System.nanoTime();
         try {
             // get the stream image if need, otherwise scale what you have.
-            image = imageStream.getImage(graphicsState, resources);
-
+            if (image == null) {
+                image = imageStream.getImage(fillColor, resources);
+            }
             if (image != null) {
-                // get eh original image width.
-                int width = imageStream.getWidth();
-                int height = imageStream.getHeight();
-
-                // apply scaling factor
-                double scaleFactor = 1.0;
-                if (width > 1000 && width < 1500) {
-                    scaleFactor = 0.75;
-                } else if (width > 1500) {
-                    scaleFactor = 0.5;
-                }
-                // update image size for any scaling.
-                if (scaleFactor < 1.0) {
-                    width = (int) Math.ceil(width * scaleFactor);
-                    height = (int) Math.ceil(height * scaleFactor);
-
-                    BufferedImage scaled;
-                    if (ImageUtility.hasAlpha(image)) {
-                        scaled = ImageUtility.createTranslucentCompatibleImage(width, height);
-                    } else {
-                        scaled = ImageUtility.createCompatibleImage(width, height);
-                    }
+                int width = image.getWidth();
+                int height = image.getHeight();
+                // scale images if this.width/height were altered in the constructor
+                if (width != this.width || height != this.height) {
+                    ColorModel colorModel = image.getColorModel();
+                    BufferedImage scaled = new BufferedImage(
+                            colorModel,
+                            colorModel.createCompatibleWritableRaster(this.width, this.height),
+                            image.isAlphaPremultiplied(),
+                            null
+                    );
                     Graphics2D g = scaled.createGraphics();
                     g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
                     g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-                    g.drawImage(image, 0, 0, width, height, null);
+                    g.drawImage(image, 0, 0, this.width, this.height, null);
                     g.dispose();
-                    image.flush();
                     image = scaled;
                 }
             }
@@ -133,8 +135,6 @@ public class ScaledImageReference extends CachedImageReference {
             logger.warning("Error loading image: " + imageStream.getPObjectReference() +
                     " " + imageStream.toString());
         }
-        long end = System.nanoTime();
-        notifyImagePageEvents((end - start));
         return image;
     }
 }

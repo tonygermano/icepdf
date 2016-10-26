@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -53,7 +53,9 @@ public class TextAnnotationHandler extends CommonToolHandler implements ToolHand
 
     private static final Logger logger =
             Logger.getLogger(TextAnnotationHandler.class.toString());
+
     protected static Color defaultFillColor;
+
     static {
 
         // sets annotation text fill colour
@@ -145,8 +147,8 @@ public class TextAnnotationHandler extends CommonToolHandler implements ToolHand
         AffineTransform pageInverseTransform = new AffineTransform();
         try {
             pageInverseTransform = pageTransform.createInverse();
-        } catch (NoninvertibleTransformException ex) {
-            logger.log(Level.FINE, "Error converting to page space.", ex);
+        } catch (NoninvertibleTransformException e1) {
+            e1.printStackTrace();
         }
         Dimension scaledSize = new Dimension(
                 (int) Math.abs(ICON_SIZE.width * pageInverseTransform.getScaleX()),

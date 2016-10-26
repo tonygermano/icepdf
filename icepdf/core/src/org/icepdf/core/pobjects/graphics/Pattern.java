@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -64,7 +64,7 @@ public interface Pattern {
 
     public Rectangle2D getBBox();
 
-    void init(GraphicsState graphicsState);
+    void init();
 
     public Paint getPaint();
 

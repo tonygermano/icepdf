@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -35,11 +35,13 @@ import java.awt.event.ItemListener;
  *
  * @since 4.0
  */
-@SuppressWarnings("serial")
 public class LinkAnnotationPanel extends AnnotationPanelAdapter implements ItemListener {
 
     // default list values.
     private static final int DEFAULT_HIGHLIGHT_STYLE = 1;
+
+    // highlight states styles.
+    private static ValueLabelItem[] HIGHLIGHT_STYLE_LIST;
 
     // link action appearance properties.
     private JComboBox highlightStyleBox;
@@ -112,7 +114,7 @@ public class LinkAnnotationPanel extends AnnotationPanelAdapter implements ItemL
     private void createGUI() {
 
         // highlight styles.
-        ValueLabelItem[] highlightStyleList = new ValueLabelItem[]{
+        HIGHLIGHT_STYLE_LIST = new ValueLabelItem[]{
                 new ValueLabelItem(LinkAnnotation.HIGHLIGHT_NONE,
                         messageBundle.getString("viewer.utilityPane.annotation.link.none")),
                 new ValueLabelItem(LinkAnnotation.HIGHLIGHT_INVERT,
@@ -128,7 +130,7 @@ public class LinkAnnotationPanel extends AnnotationPanelAdapter implements ItemL
                 TitledBorder.LEFT,
                 TitledBorder.DEFAULT_POSITION));
         // highlight style box.
-        highlightStyleBox = new JComboBox(highlightStyleList);
+        highlightStyleBox = new JComboBox(HIGHLIGHT_STYLE_LIST);
         highlightStyleBox.setSelectedIndex(DEFAULT_HIGHLIGHT_STYLE);
         highlightStyleBox.addItemListener(this);
         add(new JLabel(

@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -31,7 +31,6 @@ import java.io.Serializable;
  *
  * @since 1.0
  */
-@SuppressWarnings("serial")
 public class Reference implements Serializable {
     // object number
     int objf = 0;
@@ -113,6 +112,6 @@ public class Reference implements Serializable {
      * @return summary of reference object data.
      */
     public String toString() {
-        return objf + " " + genf + " R";
+        return objf + " " + genf + "R";
     }
 }

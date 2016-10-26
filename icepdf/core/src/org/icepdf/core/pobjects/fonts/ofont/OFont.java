@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -29,7 +29,6 @@ import java.awt.font.TextLayout;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -136,6 +135,10 @@ public class OFont implements FontFile {
 
     public FontFile deriveFont(float pointsize) {
         OFont font = new OFont(this);
+        // clear font metric cache if we change the font's size
+        if (font.getSize() != pointsize) {
+            this.echarAdvanceCache.clear();
+        }
         font.awtFont = this.awtFont.deriveFont(pointsize);
         font.maxCharBounds = this.maxCharBounds;
         return font;
@@ -148,7 +151,7 @@ public class OFont implements FontFile {
         float advanceY;
 
         // check cache for existing layout
-        String text = ech + "_" + awtFont.getSize();
+        String text = String.valueOf(ech);
         Point2D.Float echarAdvance = echarAdvanceCache.get(text);
 
         // generate metrics is needed
@@ -158,10 +161,11 @@ public class OFont implements FontFile {
             // are drawing, the method also does a check to apply differences if toUnicode is null.
             char echGlyph = getCMapping(ech);
 
-            FontRenderContext frc = new FontRenderContext(new AffineTransform(), true, true);
             GlyphVector glyphVector = awtFont.createGlyphVector(
-                    frc,
+                    new FontRenderContext(new AffineTransform(), true, true),
                     String.valueOf(echGlyph));
+
+            FontRenderContext frc = new FontRenderContext(new AffineTransform(), true, true);
             TextLayout textLayout = new TextLayout(String.valueOf(echGlyph), awtFont, frc);
 
             // get bounds, only need to do this once.
@@ -380,8 +384,8 @@ public class OFont implements FontFile {
         return String.valueOf(c);
     }
 
-    public ByteEncoding getByteEncoding() {
-        return ByteEncoding.ONE_BYTE;
+    public boolean isOneByteEncoding() {
+        return false;
     }
 
     public Shape getEstringOutline(String displayText, float x, float y) {
@@ -416,9 +420,5 @@ public class OFont implements FontFile {
         }
 
         return glyphVector.getOutline();
-    }
-
-    public URL getSource() {
-        return null;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -17,7 +17,7 @@ package org.icepdf.core.pobjects.graphics.text;
 
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Collections;
 
 /**
  * Line text is make up WordText objects.  This structure is to aid the
@@ -29,7 +29,7 @@ public class LineText extends AbstractText implements TextSelect {
 
     private WordText currentWord;
 
-    private List<WordText> words;
+    private ArrayList<WordText> words;
 
     public LineText() {
         words = new ArrayList<WordText>(16);
@@ -64,8 +64,17 @@ public class LineText extends AbstractText implements TextSelect {
     protected void addText(GlyphText sprite) {
 
         // look for white space characters and insert whitespace word
-        if (WordText.detectWhiteSpace(sprite) ||
-                WordText.detectPunctuation(sprite, currentWord)) {
+        if (WordText.detectWhiteSpace(sprite)) {
+            // add as a new word, nothing special otherwise
+            WordText newWord = new WordText();
+            newWord.setWhiteSpace(true);
+            newWord.addText(sprite);
+            addWord(newWord);
+            // ready new word
+            currentWord = null;
+        }
+        //  add punctuation as new words
+        else if (WordText.detectPunctuation(sprite)) {
             // add as a new word, nothing special otherwise
             WordText newWord = new WordText();
             newWord.setWhiteSpace(true);
@@ -93,15 +102,6 @@ public class LineText extends AbstractText implements TextSelect {
         }
     }
 
-    public void clearCurrentWord() {
-        // make sure we don't insert a new line if the previous has no words.
-        if (currentWord != null &&
-                currentWord.size() == 0) {
-            return;
-        }
-        currentWord = null;
-    }
-
     /**
      * Adds the specified word to the end of the line collection and makes
      * the new word the currentWord reference.
@@ -116,14 +116,6 @@ public class LineText extends AbstractText implements TextSelect {
         // word test 
         currentWord = wordText;
 
-    }
-
-    public void addAll(List<WordText> words) {
-        this.words.addAll(words);
-    }
-
-    protected void setWords(List<WordText> words) {
-        this.words = words;
     }
 
     /**
@@ -144,7 +136,7 @@ public class LineText extends AbstractText implements TextSelect {
      *
      * @return words in a line.
      */
-    public List<WordText> getWords() {
+    public ArrayList<WordText> getWords() {
         return words;
     }
 
@@ -190,6 +182,7 @@ public class LineText extends AbstractText implements TextSelect {
      */
     public StringBuilder getSelected() {
         StringBuilder selectedText = new StringBuilder();
+        Collections.sort(words, new TextPositionComparator());
 
         for (WordText word : words) {
             selectedText.append(word.getSelected());

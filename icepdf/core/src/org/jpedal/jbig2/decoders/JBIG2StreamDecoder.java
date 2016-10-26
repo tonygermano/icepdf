@@ -37,9 +37,9 @@
  * Other JBIG2 image decoding implementations include
  * jbig2dec (http://jbig2dec.sourceforge.net/)
  * xpdf (http://www.foolabs.com/xpdf/)
- *
+ * 
  * The final draft JBIG2 specification can be found at http://www.jpeg.org/public/fcd14492.pdf
- *
+ * 
  * All three of the above resources were used in the writing of this software, with methodologies,
  * processes and inspiration taken from all three.
  *
@@ -80,8 +80,8 @@ public class JBIG2StreamDecoder {
 
     private int noOfPages = -1;
 
-    private List<Segment> segments = new ArrayList<Segment>();
-    private List<JBIG2Bitmap> bitmaps = new ArrayList<JBIG2Bitmap>();
+    private List segments = new ArrayList();
+    private List bitmaps = new ArrayList();
 
     private byte[] globalData;
 
@@ -201,7 +201,7 @@ public class JBIG2StreamDecoder {
         for (Iterator it = segments.iterator(); it.hasNext(); ) {
             Segment segment = (Segment) it.next();
             SegmentHeader segmentHeader = segment.getSegmentHeader();
-            if (segmentHeader.getSegmentType() != Segment.PAGE_INFORMATION) {
+            if (segmentHeader.getSegmentType() != segment.PAGE_INFORMATION) {
                 it.remove();
             }
         }
@@ -428,28 +428,26 @@ public class JBIG2StreamDecoder {
                     break;
             }
 
-            if (!randomAccessOrganisation && segment != null) {
+            if (!randomAccessOrganisation) {
                 segment.readSegment();
             }
 
-            if (segments != null) {
-                segments.add(segment);
-            }
+            segments.add(segment);
         }
 
-        if (randomAccessOrganisation && segments != null) {
-            for (Object segment1 : segments) {
-                Segment segment = (Segment) segment1;
+        if (randomAccessOrganisation) {
+            for (Iterator it = segments.iterator(); it.hasNext(); ) {
+                Segment segment = (Segment) it.next();
                 segment.readSegment();
             }
         }
     }
 
     public PageInformationSegment findPageSegement(int page) {
-        for (Object segment1 : segments) {
-            Segment segment = (Segment) segment1;
+        for (Iterator it = segments.iterator(); it.hasNext(); ) {
+            Segment segment = (Segment) it.next();
             SegmentHeader segmentHeader = segment.getSegmentHeader();
-            if (segmentHeader.getSegmentType() == Segment.PAGE_INFORMATION && segmentHeader.getPageAssociation() == page) {
+            if (segmentHeader.getSegmentType() == segment.PAGE_INFORMATION && segmentHeader.getPageAssociation() == page) {
                 return (PageInformationSegment) segment;
             }
         }
@@ -458,8 +456,8 @@ public class JBIG2StreamDecoder {
     }
 
     public Segment findSegment(int segmentNumber) {
-        for (Object segment1 : segments) {
-            Segment segment = (Segment) segment1;
+        for (Iterator it = segments.iterator(); it.hasNext(); ) {
+            Segment segment = (Segment) it.next();
             if (segment.getSegmentHeader().getSegmentNumber() == segmentNumber) {
                 return segment;
             }
@@ -525,7 +523,7 @@ public class JBIG2StreamDecoder {
         // =
         // 11100000
 
-        short[] retentionFlags;
+        short[] retentionFlags = null;
         /** take off the first three bits of the first byte */
         short firstByte = (short) (referedToSegmentCountAndRetentionFlags & 31); // 31 =
         // 00011111
@@ -571,8 +569,8 @@ public class JBIG2StreamDecoder {
             System.out.print("retentionFlags = ");
 
         if (JBIG2StreamDecoder.debug) {
-            for (short retentionFlag : retentionFlags)
-                System.out.print(retentionFlag + " ");
+            for (int i = 0; i < retentionFlags.length; i++)
+                System.out.print(retentionFlags[i] + " ");
             System.out.println("");
         }
     }
@@ -604,8 +602,8 @@ public class JBIG2StreamDecoder {
 
         if (JBIG2StreamDecoder.debug) {
             System.out.print("referredToSegments = ");
-            for (int referredToSegment : referredToSegments)
-                System.out.print(referredToSegment + " ");
+            for (int i = 0; i < referredToSegments.length; i++)
+                System.out.print(referredToSegments[i] + " ");
             System.out.println("");
         }
     }
@@ -675,8 +673,8 @@ public class JBIG2StreamDecoder {
     }
 
     public JBIG2Bitmap findBitmap(int bitmapNumber) {
-        for (Object bitmap1 : bitmaps) {
-            JBIG2Bitmap bitmap = (JBIG2Bitmap) bitmap1;
+        for (Iterator it = bitmaps.iterator(); it.hasNext(); ) {
+            JBIG2Bitmap bitmap = (JBIG2Bitmap) it.next();
             if (bitmap.getBitmapNumber() == bitmapNumber) {
                 return bitmap;
             }
@@ -686,7 +684,8 @@ public class JBIG2StreamDecoder {
     }
 
     public JBIG2Bitmap getPageAsJBIG2Bitmap(int i) {
-        return findPageSegement(i).getPageBitmap();
+        JBIG2Bitmap pageBitmap = findPageSegement(1).getPageBitmap();
+        return pageBitmap;
     }
 
     public boolean isNumberOfPagesKnown() {

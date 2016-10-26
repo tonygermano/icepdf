@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -51,6 +51,7 @@ public class OptionalContent extends Dictionary {
     public static final Name VIEW_VALUE = new Name("View");
     public static final Name DESIGN_VALUE = new Name("Design");
     public static final Name NONE_OC_FLAG = new Name("marked");
+
     private Name baseState = ON_vALUE;
 
     /**
@@ -63,7 +64,7 @@ public class OptionalContent extends Dictionary {
      * shall indicate the set of all intents, including those not yet defined.
      * Default value: View. The value shall be View for the document’s default configuration.
      */
-    private List<Name> intent = Arrays.asList(VIEW_VALUE);
+    private List<Name> intent = Arrays.asList(new Name[]{VIEW_VALUE});
 
 
     /**
@@ -99,24 +100,15 @@ public class OptionalContent extends Dictionary {
 
     private List<Object> rbGroups;
 
-    // object was created but the PDF doesn't actually have optional content definition and optional content
-    // properties may no longer be valid.
-    private boolean emptyDefinition;
-
     public OptionalContent(Library l, HashMap h) {
         super(l, h);
         groups = new HashMap<Reference, OptionalContentGroup>();
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void init() {
         if (inited) {
             return;
-        }
-        // test of a valid definition.
-        if (entries == null || entries.size() == 0) {
-            emptyDefinition = true;
         }
 
         // build out the optionContentGroups from the OCGs array, array should always
@@ -220,7 +212,6 @@ public class OptionalContent extends Dictionary {
         inited = true;
     }
 
-    @SuppressWarnings("unchecked")
     private List<Object> parseOrderArray(List<Object> rawOrder, OptionalContentGroup parent) {
         List<Object> order = new ArrayList<Object>(5);
         OptionalContentGroup group = null;
@@ -271,8 +262,8 @@ public class OptionalContent extends Dictionary {
      *
      * @param object content to check visibility.
      * @return optional content groups currently visibility state, returns
-     * true if no state can be found, better to show then to
-     * hide by default.
+     *         true if no state can be found, better to show then to
+     *         hide by default.
      */
     public boolean isVisible(Object object) {
         if (object instanceof Reference) {
@@ -303,9 +294,5 @@ public class OptionalContent extends Dictionary {
 
     public OptionalContentGroup getOCGs(Reference reference) {
         return groups.get(reference);
-    }
-
-    public boolean isEmptyDefinition() {
-        return emptyDefinition;
     }
 }

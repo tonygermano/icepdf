@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -22,6 +22,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.util.ResourceBundle;
 
 /**
@@ -30,8 +31,7 @@ import java.util.ResourceBundle;
  *
  * @since 1.1
  */
-@SuppressWarnings("serial")
-public class DocumentInformationDialog extends EscapeJDialog {
+public class DocumentInformationDialog extends JDialog {
 
     // layouts constraint
     private GridBagConstraints constraints;
@@ -108,28 +108,28 @@ public class DocumentInformationDialog extends EscapeJDialog {
 
         // add labels
         addGB(permissionsPanel, new JLabel(
-                        messageBundle.getString("viewer.dialog.documentInformation.title.label")),
+                messageBundle.getString("viewer.dialog.documentInformation.title.label")),
                 0, 0, 1, 1);
         addGB(permissionsPanel, new JLabel(
-                        messageBundle.getString("viewer.dialog.documentInformation.subject.label")),
+                messageBundle.getString("viewer.dialog.documentInformation.subject.label")),
                 0, 1, 1, 1);
         addGB(permissionsPanel, new JLabel(
-                        messageBundle.getString("viewer.dialog.documentInformation.author.label")),
+                messageBundle.getString("viewer.dialog.documentInformation.author.label")),
                 0, 2, 1, 1);
         addGB(permissionsPanel, new JLabel(
-                        messageBundle.getString("viewer.dialog.documentInformation.keywords.label")),
+                messageBundle.getString("viewer.dialog.documentInformation.keywords.label")),
                 0, 3, 1, 1);
         addGB(permissionsPanel, new JLabel(
-                        messageBundle.getString("viewer.dialog.documentInformation.creator.label")),
+                messageBundle.getString("viewer.dialog.documentInformation.creator.label")),
                 0, 4, 1, 1);
         addGB(permissionsPanel, new JLabel(
-                        messageBundle.getString("viewer.dialog.documentInformation.producer.label")),
+                messageBundle.getString("viewer.dialog.documentInformation.producer.label")),
                 0, 5, 1, 1);
         addGB(permissionsPanel, new JLabel(
-                        messageBundle.getString("viewer.dialog.documentInformation.created.label")),
+                messageBundle.getString("viewer.dialog.documentInformation.created.label")),
                 0, 6, 1, 1);
         addGB(permissionsPanel, new JLabel(
-                        messageBundle.getString("viewer.dialog.documentInformation.modified.label")),
+                messageBundle.getString("viewer.dialog.documentInformation.modified.label")),
                 0, 7, 1, 1);
         constraints.insets = new Insets(15, 5, 5, 5);
         constraints.anchor = GridBagConstraints.CENTER;
@@ -151,6 +151,23 @@ public class DocumentInformationDialog extends EscapeJDialog {
 
         pack();
         setLocationRelativeTo(frame);
+    }
+
+    /**
+     * Override createRootPane so that "escape" key can be used to
+     * close this window.
+     */
+    protected JRootPane createRootPane() {
+        ActionListener actionListener = new ActionListener() {
+            public void actionPerformed(ActionEvent actionEvent) {
+                setVisible(false);
+                dispose();
+            }
+        };
+        JRootPane rootPane = new JRootPane();
+        KeyStroke stroke = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0);
+        rootPane.registerKeyboardAction(actionListener, stroke, JComponent.WHEN_IN_FOCUSED_WINDOW);
+        return rootPane;
     }
 
     /**

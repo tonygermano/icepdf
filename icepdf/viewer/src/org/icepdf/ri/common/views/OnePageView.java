@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -31,7 +31,6 @@ import java.awt.*;
  *
  * @since 2.5
  */
-@SuppressWarnings("serial")
 public class OnePageView extends AbstractDocumentView {
 
     protected JScrollPane documentScrollpane;
@@ -47,7 +46,7 @@ public class OnePageView extends AbstractDocumentView {
 
     public OnePageView(DocumentViewController documentDocumentViewController,
                        JScrollPane documentScrollpane,
-                       DocumentViewModel documentViewModel) {
+                       DocumentViewModelImpl documentViewModel) {
 
         super(documentDocumentViewController, documentScrollpane, documentViewModel);
 
@@ -117,8 +116,9 @@ public class OnePageView extends AbstractDocumentView {
                 // add component to layout
                 pagesPanel.add(new PageViewDecorator(
                         (AbstractPageViewComponent) pageViewComponent));
-                ((AbstractPageViewComponent) pageViewComponent).validate();
+                pageViewComponent.invalidate();
             }
+            documentScrollpane.revalidate();
 
             // make sure we have setup all pages with callback call.
             for (PageViewComponent pageViewCom : pageComponents) {

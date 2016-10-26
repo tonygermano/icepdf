@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2013 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -18,7 +18,6 @@ package org.icepdf.ri.common.views;
 import org.icepdf.core.Memento;
 import org.icepdf.core.pobjects.Document;
 
-import javax.swing.*;
 import java.awt.*;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -83,64 +82,34 @@ public interface DocumentViewModel {
     public int DISPLAY_TOOL_LINE_ANNOTATION = 12;
 
     /**
-     * Display tool constant for creating new line with arrow annotation.
+     * Display tool constant for creating new line  annotation.
      */
     public int DISPLAY_TOOL_LINE_ARROW_ANNOTATION = 13;
 
     /**
-     * Display tool constant for creating new square annotation.
+     * Display tool constant for creating new line  annotation.
      */
     public int DISPLAY_TOOL_SQUARE_ANNOTATION = 14;
 
     /**
-     * Display tool constant for creating new circle annotation.
+     * Display tool constant for creating new line  annotation.
      */
     public int DISPLAY_TOOL_CIRCLE_ANNOTATION = 15;
 
     /**
-     * Display tool constant for creating new ink annotation.
+     * Display tool constant for creating new line  annotation.
      */
     public int DISPLAY_TOOL_INK_ANNOTATION = 16;
 
     /**
-     * Display tool constant for creating new free text annotation.
+     * Display tool constant for creating new line  annotation.
      */
     public int DISPLAY_TOOL_FREE_TEXT_ANNOTATION = 17;
 
     /**
-     * Display tool constant for creating new text annotation.
+     * Display tool constant for creating new line  annotation.
      */
     public int DISPLAY_TOOL_TEXT_ANNOTATION = 18;
-
-    /**
-     * Display tool constant for creating new text field acroform annotation.
-     */
-    public int DISPLAY_TOOL_TEXT_FIELD_ANNOTATION = 19;
-
-    /**
-     * Display tool constant for creating new radio button field acroform annotation.
-     */
-    public int DISPLAY_TOOL_BUTTON_RADIO_FIELD_ANNOTATION = 20;
-
-    /**
-     * Display tool constant for creating new checkbox button field acroform annotation.
-     */
-    public int DISPLAY_TOOL_BUTTON_CHECKBOX_FIELD_ANNOTATION = 21;
-
-    /**
-     * Display tool constant for creating new button field acroform annotation.
-     */
-    public int DISPLAY_TOOL_BUTTON_FIELD_ANNOTATION = 22;
-
-    /**
-     * Display tool constant for creating new signature field acroform annotation.
-     */
-    public int DISPLAY_TOOL_SIGNATURE_FIELD_ANNOTATION = 23;
-
-    /**
-     * Display tool constant for creating new choice field acroform annotation.
-     */
-    public int DISPLAY_TOOL_CHOICE_FIELD_ANNOTATION = 24;
 
     /**
      * Display tool constant for setting no tools
@@ -323,11 +292,4 @@ public interface DocumentViewModel {
      */
     public void addMemento(Memento oldMementoState,
                            Memento newMementoState);
-
-    /**
-     * Get an instance of the dirty Timer use by all child PageComponents.
-     *
-     * @return instance of Swing Timer
-     */
-    public Timer getDirtyTimer();
 }
