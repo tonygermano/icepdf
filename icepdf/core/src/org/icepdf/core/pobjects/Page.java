@@ -73,7 +73,7 @@ public class Page extends Dictionary {
     /**
      * Transparency value used to simulate text highlighting.
      */
-    public static final float selectionAlpha = 0.3f;
+    public static final float SELECTION_ALPHA = 0.3f;
 
     // text selection colour
     public static Color selectionColor;
@@ -82,11 +82,11 @@ public class Page extends Dictionary {
         // sets the shadow colour of the decorator.
         try {
             String color = Defs.sysProperty(
-                    "org.icepdf.core.views.page.text.selectionColor", "#0077FF");
+                    "org.icepdf.core.views.page.text.selectionColor", "#0077FF"); //#99c1da
             int colorValue = ColorUtil.convertColor(color);
             selectionColor =
                     new Color(colorValue >= 0 ? colorValue :
-                            Integer.parseInt("0077FF", 16));
+                            Integer.parseInt("99c1da", 16));
         } catch (NumberFormatException e) {
             if (logger.isLoggable(Level.WARNING)) {
                 logger.warning("Error reading text selection colour");
@@ -101,11 +101,11 @@ public class Page extends Dictionary {
         // sets the shadow colour of the decorator.
         try {
             String color = Defs.sysProperty(
-                    "org.icepdf.core.views.page.text.highlightColor", "#CC00FF");
+                    "org.icepdf.core.views.page.text.highlightColor", "#CC00FF");//ff99ff
             int colorValue = ColorUtil.convertColor(color);
             highlightColor =
                     new Color(colorValue >= 0 ? colorValue :
-                            Integer.parseInt("FFF600", 16));
+                            Integer.parseInt("ff99ff", 16));
         } catch (NumberFormatException e) {
             if (logger.isLoggable(Level.WARNING)) {
                 logger.warning("Error reading text highlight colour");
@@ -240,7 +240,7 @@ public class Page extends Dictionary {
         }
     }
 
-    private void initPageResources() throws InterruptedException {
+    public void initPageResources() throws InterruptedException {
         Resources res = library.getResources(entries, RESOURCES_KEY);
         PageTree pageTree;
         if (res == null) {
@@ -265,7 +265,6 @@ public class Page extends Dictionary {
      *
      * @return list of a pages annotation reference list.
      */
-    @SuppressWarnings("unchecked")
     public ArrayList<Reference> getAnnotationReferences() {
         Object annots = library.getObject(entries, ANNOTS_KEY);
         if (annots != null && annots instanceof ArrayList) {
@@ -615,9 +614,10 @@ public class Page extends Dictionary {
         if (paintSearchHighlight) {
             PageText pageText = getViewText();
             if (pageText != null) {
+                //g2.setComposite(BlendComposite.getInstance(BlendComposite.BlendingMode.MULTIPLY, 1.0f));
                 g2.setComposite(AlphaComposite.getInstance(
                         AlphaComposite.SRC_OVER,
-                        selectionAlpha));
+                        SELECTION_ALPHA));
                 // paint the sprites
                 GeneralPath textPath;
                 // iterate over the data structure.
@@ -643,6 +643,7 @@ public class Page extends Dictionary {
                         }
                     }
                 }
+                //g2.setComposite(BlendComposite.getInstance(BlendComposite.BlendingMode.NORMAL, 1.0f));
             }
         }
         pagePainted = true;
@@ -668,7 +669,7 @@ public class Page extends Dictionary {
      * As well, PDFs can be displayed both rotated and zoomed.
      * This method gives an AffineTransform which can be passed to
      * java.awt.Graphics2D.transform(AffineTransform) so that one can then
-     * use that Graphics2D in the user-perspectived PDF coordinate space.
+     * use that Graphics2D in the user-perspective PDF coordinate space.
      *
      * @param boundary     Constant specifying the page boundary to use when
      *                     painting the page content.
@@ -764,7 +765,7 @@ public class Page extends Dictionary {
      * the method @link{#createAnnotation} for creating new annotations.
      *
      * @param newAnnotation annotation object to add
-     * @return reference to annotaiton that was added.
+     * @return reference to annotation that was added.
      */
     @SuppressWarnings("unchecked")
     public Annotation addAnnotation(Annotation newAnnotation) {
@@ -843,10 +844,12 @@ public class Page extends Dictionary {
 
     /**
      * Deletes the specified annotation instance from his page.  If the
-     * annotation was origional then either the page or the annot ref object
-     * is also added to the state maanger.  If the annotation was new then
+     * annotation was original then either the page or the annot ref object
+     * is also added to the state manager.  If the annotation was new then
      * we just have to update the page and or annot reference as the objects
-     * will allready be in the state manager.
+     * will already be in the state manager.
+     *
+     * @param annot annotation to delete.
      */
     public void deleteAnnotation(Annotation annot) {
 
@@ -946,12 +949,12 @@ public class Page extends Dictionary {
 
         StateManager stateManager = library.getStateManager();
         // if we are doing an update we have at least on annot
-        List<Reference> annotations = (List)
+        List<Object> annotations = (List)
                 library.getObject(entries, ANNOTS_KEY);
 
         // make sure annotations is in part of page.
         boolean found = false;
-        for (Reference ref : annotations) {
+        for (Object ref : annotations) {
             if (ref.equals(annotation.getPObjectReference())) {
                 found = true;
                 break;
@@ -1037,7 +1040,7 @@ public class Page extends Dictionary {
      *
      * @param userRotation rotation factor specified by the user under which the
      *                     page will be rotated.
-     * @param userZoom     zoom factor specifed by the user under which the page will
+     * @param userZoom     zoom factor specified by the user under which the page will
      *                     be rotated.
      * @return Dimension of width and height of the page represented in point units.
      */
@@ -1170,7 +1173,8 @@ public class Page extends Dictionary {
     }
 
     /**
-     * Utility method for appling the page boundary rules.
+     * Utility method for applying the page boundary rules. If no matching specifiedBox type is found then
+     * the BOUNDARY_CROPBOX bound will be returned.
      *
      * @param specifiedBox page boundary constant
      * @return bounds of page after the chain of rules have been applied.
@@ -1199,7 +1203,7 @@ public class Page extends Dictionary {
         }
         // encase of bad usage, default to crop box
         else {
-            userSpecifiedBox = (PRectangle) getMediaBox();
+            userSpecifiedBox = (PRectangle) getCropBox();
         }
 
         // just in case, make sure we return a non null boundary, and the
@@ -1227,7 +1231,7 @@ public class Page extends Dictionary {
      * of 0 to 360 degrees.
      *
      * @param userRotation rotation factor to be applied to page
-     * @return Total Rotation, representing pageRoation + user rotation
+     * @return Total Rotation, representing pageRotation + user rotation
      * factor applied to the whole document.
      */
     public float getTotalRotation(float userRotation) {
@@ -1514,7 +1518,7 @@ public class Page extends Dictionary {
     }
 
     /**
-     * Gest the PageText data structure for this page using an accelerated
+     * Gets the PageText data structure for this page using an accelerated
      * parsing technique that ignores some text elements. This method should
      * be used for straight text extraction.
      *
@@ -1587,7 +1591,7 @@ public class Page extends Dictionary {
     }
 
     /**
-     * Gets the xObject image cound for this page which does not include
+     * Gets the xObject image found for this page which does not include
      * any inline images.
      *
      * @return xObject image count.
