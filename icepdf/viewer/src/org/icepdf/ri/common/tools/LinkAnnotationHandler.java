@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -66,7 +66,7 @@ public class LinkAnnotationHandler extends SelectionBoxHandler
     }
 
     public void mouseReleased(MouseEvent e) {
-        updateSelectionSize(e.getX(), e.getY(), pageViewComponent);
+        updateSelectionSize(e, pageViewComponent);
 
         // check the bounds on rectToDraw to try and avoid creating
         // an annotation that is very small.
@@ -117,7 +117,7 @@ public class LinkAnnotationHandler extends SelectionBoxHandler
     }
 
     public void mouseDragged(MouseEvent e) {
-        updateSelectionSize(e.getX(), e.getY(), pageViewComponent);
+        updateSelectionSize(e, pageViewComponent);
     }
 
     public void mouseMoved(MouseEvent e) {

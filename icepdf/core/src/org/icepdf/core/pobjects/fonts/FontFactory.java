@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -66,16 +66,22 @@ public class FontFactory {
             "org.icepdf.core.pobjects.fonts.nfont.Font";
     private static final String NFONT_CLASS =
             "org.icepdf.core.pobjects.fonts.nfont.NFont";
+
     private static final String NFONT_OPEN_TYPE =
             "org.icepdf.core.pobjects.fonts.nfont.NFontOpenType";
+
     private static final String NFONT_TRUE_TYPE =
             "org.icepdf.core.pobjects.fonts.nfont.NFontTrueType";
+
     private static final String NFONT_TRUE_TYPE_0 =
             "org.icepdf.core.pobjects.fonts.nfont.NFontType0";
+
     private static final String NFONT_TRUE_TYPE_1 =
             "org.icepdf.core.pobjects.fonts.nfont.NFontType1";
+
     private static final String NFONT_TRUE_TYPE_3 =
             "org.icepdf.core.pobjects.fonts.nfont.NFontType3";
+
     static {
         // check class bath for NFont library, and declare results.
         try {
@@ -129,57 +135,32 @@ public class FontFactory {
         return fontDictionary;
     }
 
-    public FontFile createFontFile(Stream fontStream, int fontType, String fontSubType) {
+    public FontFile createFontFile(Stream fontStream, int fontType) {
         FontFile fontFile = null;
         if (foundFontEngine()) {
             try {
                 Class<?> fontClass = getNFontClass(fontType);
                 if (fontClass != null) {
                     // convert the stream to byte[]
-                    Class[] bytArrayArg = {byte[].class, String.class};
+                    Class[] bytArrayArg = {byte[].class};
                     Constructor fontClassConstructor =
                             fontClass.getDeclaredConstructor(bytArrayArg);
                     byte[] data = fontStream.getDecodedStreamBytes(0);
-                    Object[] fontStreamBytes = {data, fontSubType};
+                    Object[] fontStreamBytes = {data};
                     if (data.length > 0) {
                         fontFile = (FontFile) fontClassConstructor
                                 .newInstance(fontStreamBytes);
                     }
                 }
             } catch (Throwable e) {
-                logger.log(Level.FINE, "Could not create instance of font file " + fontType);
-                if (fontType == FONT_TRUE_TYPE) {
-                    // we might have a very rare corner case where the file2 definition is actually a Open type font
-                    if (logger.isLoggable(Level.FINE)) {
-                        logger.fine("Trying to reload TrueType definition as OpenType.");
-                    }
-                    try {
-                        // force a OpentType font load.
-                        Class<?> fontClass = getNFontClass(FONT_OPEN_TYPE);
-                        if (fontClass != null) {
-                            // convert the stream to byte[]
-                            Class[] bytArrayArg = {byte[].class, String.class};
-                            Constructor fontClassConstructor =
-                                    fontClass.getDeclaredConstructor(bytArrayArg);
-                            byte[] data = fontStream.getDecodedStreamBytes(0);
-                            Object[] fontStreamBytes = {data, fontSubType};
-                            if (data.length > 0) {
-                                fontFile = (FontFile) fontClassConstructor
-                                        .newInstance(fontStreamBytes);
-                            }
-                        }
-                    } catch (Exception ex) {
-                        logger.log(Level.FINE, "Could not create instance of font file as OpenType." + fontType);
-                    }
-                }
+                logger.log(Level.FINE, "Could not create instance of font file " + fontType, e);
             }
         } else if (awtFontLoading) {
             // see if the font file can be loaded with Java Fonts
             InputStream in = null;
             try {
                 in = fontStream.getDecodedByteArrayInputStream();
-                // make sure we try to load open type fonts as well, done as true type.
-                if (fontType == FONT_OPEN_TYPE) fontType = FONT_TRUE_TYPE;
+                // disabling create font as it brings the JVM down a little too often. 
                 java.awt.Font javaFont = java.awt.Font.createFont(fontType, in);
                 if (javaFont != null) {
                     // create instance of OFont.
@@ -205,36 +186,34 @@ public class FontFactory {
         return fontFile;
     }
 
-    public FontFile createFontFile(File file, int fontType, String fontSubType) {
+    public FontFile createFontFile(File file, int fontType) {
         try {
-            return createFontFile(file.toURI().toURL(), fontType, fontSubType);
+            return createFontFile(file.toURI().toURL(), fontType);
         } catch (Throwable e) {
-            logger.log(Level.FINE, "Could not create instance of font file " + fontType, e);
+            logger.log(Level.FINE, "Could not create instance oof font file " + fontType, e);
         }
         return null;
     }
 
-    public FontFile createFontFile(URL url, int fontType, String fontSubType) {
+    public FontFile createFontFile(URL url, int fontType) {
         FontFile fontFile = null;
         if (foundFontEngine()) {
             try {
                 Class<?> fontClass = getNFontClass(fontType);
                 if (fontClass != null) {
                     // convert the stream to byte[]
-                    Class[] urlArg = {URL.class, String.class};
+                    Class[] urlArg = {URL.class};
                     Constructor fontClassConstructor =
                             fontClass.getDeclaredConstructor(urlArg);
-                    Object[] fontUrl = {url, fontSubType};
+                    Object[] fontUrl = {url};
                     fontFile = (FontFile) fontClassConstructor.newInstance(fontUrl);
                 }
             } catch (Throwable e) {
-                logger.log(Level.FINE, "Could not create instance of font file " + fontType, e);
+                logger.log(Level.FINE, "Could not create instance oof font file " + fontType, e);
             }
         } else {
             // see if the font file can be loaded with Java Fonts
             try {
-                // make sure we try to load open type fonts as well, done as true type.
-                if (fontType == FONT_OPEN_TYPE) fontType = FONT_TRUE_TYPE;
                 java.awt.Font javaFont = java.awt.Font.createFont(fontType, url.openStream());
                 if (javaFont != null) {
 
@@ -246,7 +225,7 @@ public class FontFactory {
                     }
                 }
             } catch (Throwable e) {
-                logger.log(Level.FINE, "Error reading font file with ", e);
+                logger.log(Level.FINE, "Error ready font file with ", e);
             }
         }
         return fontFile;
@@ -293,13 +272,13 @@ public class FontFactory {
         } else if (fontType == FONT_TYPE_3) {
             return "Type 3 Font";
         } else {
-            return "unknown font type: " + fontType;
+            return "unkown font type: " + fontType;
         }
     }
 
     /**
      * Test if font engine is available on the class path and it has been
-     * disabled with the property awtFontSubstitution.
+     * disabled with the proeprty awtFontSubstitution.
      *
      * @return true if font engine was found, false otherwise.
      */

@@ -727,7 +727,7 @@ public class CCITTFaxDecoder {
                 break;
             }
 
-            while (!isWhite) {
+            while (isWhite == false) {
                 // Black run
                 current = nextLesserThan8Bits(4);
                 entry = initBlack[current];

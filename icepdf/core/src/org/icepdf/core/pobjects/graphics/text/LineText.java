@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -64,8 +64,17 @@ public class LineText extends AbstractText implements TextSelect {
     protected void addText(GlyphText sprite) {
 
         // look for white space characters and insert whitespace word
-        if (WordText.detectWhiteSpace(sprite) ||
-                WordText.detectPunctuation(sprite, currentWord)) {
+        if (WordText.detectWhiteSpace(sprite)) {
+            // add as a new word, nothing special otherwise
+            WordText newWord = new WordText();
+            newWord.setWhiteSpace(true);
+            newWord.addText(sprite);
+            addWord(newWord);
+            // ready new word
+            currentWord = null;
+        }
+        //  add punctuation as new words
+        else if (WordText.detectPunctuation(sprite, currentWord)) {
             // add as a new word, nothing special otherwise
             WordText newWord = new WordText();
             newWord.setWhiteSpace(true);
@@ -91,15 +100,6 @@ public class LineText extends AbstractText implements TextSelect {
         else {
             getCurrentWord().addText(sprite);
         }
-    }
-
-    public void clearCurrentWord() {
-        // make sure we don't insert a new line if the previous has no words.
-        if (currentWord != null &&
-                currentWord.size() == 0) {
-            return;
-        }
-        currentWord = null;
     }
 
     /**

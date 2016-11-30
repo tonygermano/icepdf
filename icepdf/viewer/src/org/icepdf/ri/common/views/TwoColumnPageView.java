@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -51,7 +51,7 @@ public class TwoColumnPageView extends AbstractDocumentView {
 
     public TwoColumnPageView(DocumentViewController documentDocumentViewController,
                              JScrollPane documentScrollpane,
-                             DocumentViewModel documentViewModel,
+                             DocumentViewModelImpl documentViewModel,
                              final int viewAlignment) {
 
         super(documentDocumentViewController, documentScrollpane, documentViewModel);
@@ -83,7 +83,7 @@ public class TwoColumnPageView extends AbstractDocumentView {
     private void buildGUI() {
         // add all page components to gridlayout panel
         pagesPanel = new JPanel();
-        pagesPanel.setBackground(BACKGROUND_COLOUR);
+        pagesPanel.setBackground(backgroundColor);
         // two column equals facing page view continuous
         GridLayout gridLayout = new GridLayout(0, 2, horizontalSpace, verticalSpace);
         pagesPanel.setLayout(gridLayout);
@@ -123,7 +123,7 @@ public class TwoColumnPageView extends AbstractDocumentView {
         }
     }
 
-    // nothing needs to be done for a column view as all components are already
+    // nothing needs to be done for a column view as all components are allready
     // available
     public void updateDocumentView() {
     }
@@ -150,7 +150,7 @@ public class TwoColumnPageView extends AbstractDocumentView {
     public void dispose() {
         disposing = true;
 
-        // remove utilities
+        // removel utilities
         if (currentPageChanger != null) {
             currentPageChanger.dispose();
         }
@@ -236,7 +236,7 @@ public class TwoColumnPageView extends AbstractDocumentView {
 
     public void paintComponent(Graphics g) {
         Rectangle clipBounds = g.getClipBounds();
-        g.setColor(BACKGROUND_COLOUR);
+        g.setColor(backgroundColor);
         g.fillRect(clipBounds.x, clipBounds.y, clipBounds.width, clipBounds.height);
         // paint selection box
         super.paintComponent(g);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -82,7 +82,7 @@ public class CircleAnnotationHandler extends SquareAnnotationHandler {
      * @param e mouse event.
      */
     public void mouseReleased(MouseEvent e) {
-        updateSelectionSize(e.getX(), e.getY(), pageViewComponent);
+        updateSelectionSize(e, pageViewComponent);
 
         // convert the rectangle to page space
         rectangle = convertToPageSpace(rectangle);

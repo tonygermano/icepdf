@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -15,7 +15,9 @@
  */
 package org.icepdf.core.pobjects.security;
 
-import org.icepdf.core.pobjects.*;
+import org.icepdf.core.pobjects.Dictionary;
+import org.icepdf.core.pobjects.Name;
+import org.icepdf.core.pobjects.StringObject;
 import org.icepdf.core.util.Library;
 
 import java.util.HashMap;
@@ -409,7 +411,11 @@ public class EncryptionDictionary extends Dictionary {
      */
     public String getBigO() {
         Object tmp = library.getObject(entries, O_KEY);
-        return getLiteralString(tmp);
+        if (tmp instanceof StringObject) {
+            return ((StringObject) tmp).getLiteralString();
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -419,7 +425,11 @@ public class EncryptionDictionary extends Dictionary {
      */
     public String getBigU() {
         Object tmp = library.getObject(entries, U_KEY);
-        return getLiteralString(tmp);
+        if (tmp instanceof StringObject) {
+            return ((StringObject) tmp).getLiteralString();
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -531,7 +541,11 @@ public class EncryptionDictionary extends Dictionary {
      */
     public String getBigOE() {
         Object tmp = library.getObject(entries, OE_KEY);
-        return getLiteralString(tmp);
+        if (tmp instanceof StringObject) {
+            return ((StringObject) tmp).getLiteralString();
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -542,7 +556,11 @@ public class EncryptionDictionary extends Dictionary {
      */
     public String getBigUE() {
         Object tmp = library.getObject(entries, UE_KEY);
-        return getLiteralString(tmp);
+        if (tmp instanceof StringObject) {
+            return ((StringObject) tmp).getLiteralString();
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -553,14 +571,8 @@ public class EncryptionDictionary extends Dictionary {
      */
     public String getPerms() {
         Object tmp = library.getObject(entries, PERMS_KEY);
-        return getLiteralString(tmp);
-    }
-
-    public String getLiteralString(Object value) {
-        if (value instanceof LiteralStringObject) {
-            return ((StringObject) value).getLiteralString();
-        } else if (value instanceof HexStringObject) {
-            return ((HexStringObject) value).getRawHexToString().toString();
+        if (tmp instanceof StringObject) {
+            return ((StringObject) tmp).getLiteralString();
         } else {
             return null;
         }
@@ -574,12 +586,7 @@ public class EncryptionDictionary extends Dictionary {
      * @return true if document-level metadata is encrypted
      */
     public boolean isEncryptMetaData() {
-        if (entries.containsKey(ENCRYPT_METADATA_KEY)) {
-            return library.getBoolean(entries, ENCRYPT_METADATA_KEY);
-        }else{
-            // default value if not specified.
-            return true;
-        }
+        return library.getBoolean(entries, ENCRYPT_METADATA_KEY);
     }
 
     protected boolean isAuthenticatedUserPassword() {

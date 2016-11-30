@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -15,6 +15,7 @@
  */
 package org.icepdf.ri.util;
 
+import org.icepdf.core.pobjects.Document;
 import org.icepdf.core.pobjects.fonts.FontManager;
 
 import javax.swing.*;
@@ -48,15 +49,16 @@ public class FontPropertiesManager {
     private static final String LOCK_FILE = "_syslock";
     private final static String USER_FILENAME = "pdfviewerfontcache.properties";
 
-    // format version number
-    private final static String FORMAT_VERSION = "6.0";
-
     private FontManager fontManager;
+
+    //the version name, used in about dialog and start-up message
+    String versionName = Document.getLibraryVersion();
 
     private Properties sysProps;
     private PropertiesManager props;
+    private Properties fontProps;
 
-    private File userHome;
+    File userHome;
 
     //the swingri home directory
     private File dataDir;
@@ -69,31 +71,12 @@ public class FontPropertiesManager {
 
     private ResourceBundle messageBundle;
 
-    /**
-     * Create a new instance of the FontPropertiesManager class. This constructor will
-     * automatically scan the system for the available fonts.
-     * <p/>
-     * Typical usage would look like this:<br />
-     * <ul>
-     * // read/store the font cache.
-     * ResourceBundle messageBundle = ResourceBundle.getBundle(
-     * PropertiesManager.DEFAULT_MESSAGE_BUNDLE);
-     * PropertiesManager properties = new PropertiesManager(System.getProperties(),
-     * ResourceBundle.getBundle(PropertiesManager.DEFAULT_MESSAGE_BUNDLE));
-     * <p/>
-     * // creates a new cache properties file, does not read system fonts.
-     * FontPropertiesManager fontPropertiesManager =
-     * new FontPropertiesManager(properties, System.getProperties(), messageBundle, false);
-     * </ul>
-     *
-     * @param appProps      properties manager reference
-     * @param sysProps      system properties.
-     * @param messageBundle application message bundle.
-     */
+
     public FontPropertiesManager(PropertiesManager appProps, Properties sysProps,
                                  ResourceBundle messageBundle) {
         this.sysProps = sysProps;
         this.props = appProps;
+        this.fontProps = new Properties();
         this.messageBundle = messageBundle;
         // create a new Font Manager.
         this.fontManager = FontManager.getInstance();
@@ -103,104 +86,19 @@ public class FontPropertiesManager {
         recordMofifTime();
 
         setupLock();
-        // create the properties file and scan for font sif the
-        propertyFile = new File(dataDir, USER_FILENAME);
-        if (!propertyFile.exists()) {
-            // scan the system for know font locations.
-            readDefaulFontPaths(null);
-            // save the file
-            saveProperties();
-        }else{
-            loadProperties();
-        }
 
+        loadProperties();
     }
 
-    /**
-     * Create a new instance of the FontPropertiesManager class.  This constructor will not scan
-     * the system for fonts.  The users must call one of the following methods to scan for fonts;
-     * {@link #readFontPaths} or {@link #readDefaulFontPaths(String[])}
-     *
-     * <p/>
-     * Typical usage would look like this:<br />
-     * <ul>
-     * // read/store the font cache.
-     * ResourceBundle messageBundle = ResourceBundle.getBundle(
-     * PropertiesManager.DEFAULT_MESSAGE_BUNDLE);
-     * PropertiesManager properties = new PropertiesManager(System.getProperties(),
-     * ResourceBundle.getBundle(PropertiesManager.DEFAULT_MESSAGE_BUNDLE));
-     * <p/>
-     * // creates a new cache properties file, does not read system fonts.
-     * FontPropertiesManager fontPropertiesManager = new FontPropertiesManager(properties, messageBundle, false);
-     * fontPropertiesManager.readFontPaths(null);
-     * </ul>
-     *
-     * @param appProps      properties manager reference
-     * @param messageBundle application message bundle.
-     */
-    public FontPropertiesManager(PropertiesManager appProps, ResourceBundle messageBundle) {
-        this.sysProps = appProps.getSystemProperties();
-        this.props = appProps;
-        this.messageBundle = messageBundle;
-        // create a new Font Manager.
-        this.fontManager = FontManager.getInstance();
+    public synchronized void loadProperties() {
 
-        setupHomeDir(null);
-
-        recordMofifTime();
-
-        setupLock();
-        // create the properties file
-        if (ownLock()) {
-            propertyFile = new File(dataDir, USER_FILENAME);
-        }
-    }
-
-    /**
-     * Removes the the properties file from the file system.
-     */
-    public synchronized void removeFontCacheFile() {
-        if (ownLock()) {
+        if (dataDir != null) {
             propertyFile = new File(dataDir, USER_FILENAME);
             // load font properties from last invocation
-            boolean deleted = false;
             if (propertyFile.exists()) {
-                try {
-                    deleted = propertyFile.delete();
-                } catch (SecurityException ex) {
-                    // log the error
-                    if (!deleted && logger.isLoggable(Level.WARNING)) {
-                        logger.log(Level.WARNING, "Error removing font properties file.", ex);
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Clears any font references from the font managers internal cache.
-     */
-    public synchronized void clearProperties() {
-        fontManager.clearFontList();
-    }
-
-    /**
-     * Loads the properties file and loads any font data that it contains. If no font
-     * cache file is found then a new one is created and false is returned.  If a file
-     * is found the properties in it are loaded and added to the fontManager class, true is
-     * returned.
-     *
-     * @return true if font file has been found and loaded, false otherwise.
-     */
-    public synchronized boolean loadProperties() {
-
-        if (ownLock()) {
-            // load font properties from last invocation
-            if (propertyFile != null && propertyFile.exists()) {
                 try {
                     InputStream in = new FileInputStream(propertyFile);
                     try {
-                        Properties fontProps = fontManager.getFontProperties();
                         fontProps.load(in);
                         fontManager.setFontProperties(fontProps);
                     } finally {
@@ -219,50 +117,26 @@ public class FontPropertiesManager {
                     if (logger.isLoggable(Level.WARNING)) {
                         logger.log(Level.WARNING, "Error loading font properties cache", ex);
                     }
-                    return false;
                 } catch (IllegalArgumentException e) {
-                    return false;
+                    // propblem parsing fontProps, reread teh file
+                    setupDefaultProperties();
+                    saveProperties();
                 }
-                return true;
             }
             // If no font data, then read font data and save the new file.
             else {
-                return false;
-            }
-        } else {
-            return false;
-        }
-    }
-
-    /**
-     * Reads the specified file paths and loads any found font fonts in the font Manager.
-     * In order to persist the results a call to {@link #saveProperties()} needs to be called.
-     *
-     * @param fontPaths array of paths containing folders
-     */
-    public void readFontPaths(String[] fontPaths) {
-        // create program properties with default
-        try {
-            // If you application needs to look at other font directories
-            // they can be added via the readSystemFonts method.
-            fontManager.readFonts(fontPaths);
-        } catch (Exception ex) {
-            if (logger.isLoggable(Level.WARNING)) {
-                logger.log(Level.WARNING, "Error reading system paths:", ex);
+                setupDefaultProperties();
+                saveProperties();
             }
         }
     }
 
-    /**
-     * Touches the properties file, writing out any font properties.
-     */
     public synchronized void saveProperties() {
         if (ownLock()) {
             try {
                 FileOutputStream out = new FileOutputStream(propertyFile);
                 try {
-                    Properties fontProps = fontManager.getFontProperties();
-                    fontProps.store(out, "-- ICEpdf Font properties --\n " + FORMAT_VERSION);
+                    fontProps.store(out, "-- ICEpf Font properties --");
                 } finally {
                     out.close();
                 }
@@ -317,18 +191,16 @@ public class FontPropertiesManager {
         }
     }
 
-    /**
-     * Sets the default font properties files by readying available system font paths.
-     *
-     * @param extraFontPaths extra font paths to load on top of the default paths.
-     * @return true if system font search returned without error, otherwise false.
-     */
-    public boolean readDefaulFontPaths(String[] extraFontPaths) {
+    private boolean setupDefaultProperties() {
+        fontProps = new Properties();
+
         // create program properties with default
         try {
             // If you application needs to look at other font directories
             // they can be added via the readSystemFonts method.
-            fontManager.readSystemFonts(extraFontPaths);
+            fontManager.readSystemFonts(null);
+            fontProps = fontManager.getFontProperties();
+
         } catch (Exception ex) {
             if (getBoolean("application.showLocalStorageDialogs", true)) {
                 Resources.showMessageDialog(null,

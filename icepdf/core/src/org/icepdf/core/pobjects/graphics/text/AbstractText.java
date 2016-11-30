@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -16,12 +16,11 @@
 package org.icepdf.core.pobjects.graphics.text;
 
 import java.awt.geom.GeneralPath;
-import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 
 /**
- * Abstract text is the base class for all Text extraction data.  Its main
- * purpose to is hold common data for GeneralPath and Bounds and common
+ * Abstarct text is the base class for all Text extraction data.  Its main
+ * purpose to is hold common data for GeneralPath and Bounds and commong
  * contains and intersect calculations.
  * <p/>
  * Some paintable properties are also defined here, such as selected, has selected
@@ -32,14 +31,8 @@ import java.awt.geom.Rectangle2D;
  */
 public abstract class AbstractText implements Text {
 
-    // Bounds of text converted to page space.
+    // white space sentences etc.
     protected Rectangle2D.Float bounds;
-
-    // original bounds as plotted by the PDF,  can be used for space and
-    // line break detection.  Once normalized to page space (bounds instance var)
-    // it may not be possible to make the formatting detection.  However normalized
-    // bounds are used for text selection.
-    protected Rectangle2D.Float textExtractionBounds;
 
     // selected states
     protected boolean selected;
@@ -52,8 +45,7 @@ public abstract class AbstractText implements Text {
     protected boolean hasHighlight;
 
     /**
-     * Gets the bounds of the respective text object normalized to page
-     * space.  This is mainly used for text selection calculations.
+     * Gets the bounds of the respective text object.
      *
      * @return bounds of text object.
      */
@@ -66,7 +58,7 @@ public abstract class AbstractText implements Text {
     /**
      * Creates a new instance of GeneralPath for this AbstractText object and
      * applies the current pageTransformation to it.  The containment
-     * calculation is then applied the newly transformed path for the given
+     * calculation is then applied the newly tranformed path for the given
      * rectangle.
      * <p/>
      * This method is usually used for text selection via a selection box.
@@ -81,19 +73,7 @@ public abstract class AbstractText implements Text {
     }
 
     /**
-     * Tests if the point intersects the text bounds.
-     *
-     * @param point point to test for intersection.
-     * @return true if the point intersects the text bounds,  otherwise false.
-     */
-    public boolean intersects(Point2D.Float point) {
-        // bounds is lazy loaded so getBounds is need to get the value correctly.
-        GeneralPath shapePath = new GeneralPath(getBounds());
-        return shapePath.contains(point);
-    }
-
-    /**
-     * Is the AbstractText selected, all of its children must also be selected.
+     * Is the AbstarctText selected, all of its children must also be selected.
      *
      * @return true if selected false otherwise.
      */
@@ -112,7 +92,7 @@ public abstract class AbstractText implements Text {
     }
 
     /**
-     * Is the AbstractText highlighted, all of its children must also be
+     * Is the AbstarctText highlighted, all of its children must also be
      * highlighted.
      *
      * @return true if highlighted false otherwise.
@@ -136,7 +116,7 @@ public abstract class AbstractText implements Text {
      * is highlighted.
      *
      * @return true if one or more root or parent elements are in a highlighted
-     * state.
+     *         state.
      */
     public boolean hasHighligh() {
         return hasHighlight;
@@ -147,14 +127,14 @@ public abstract class AbstractText implements Text {
      * is selected.
      *
      * @return true if one or more root or parent elements are in a highlighted
-     * state.
+     *         state.
      */
     public boolean hasSelected() {
         return hasSelected;
     }
 
     /**
-     * Set the highlighted state, meaning that this instance or one of the child
+     * Set the highlited state, meaning that this instance or one of the child
      * AbstractText objects has a highlighted state.
      *
      * @param hasHighlight true to indicates a highlighted states.
@@ -171,17 +151,5 @@ public abstract class AbstractText implements Text {
      */
     public void setHasSelected(boolean hasSelected) {
         this.hasSelected = hasSelected;
-    }
-
-    /**
-     * Gets the original bounds of the text unit, this value is not normalized
-     * to page space and represents the raw layout coordinates of the text as
-     * defined in the Post Script notation. This is primarily used for text
-     * extraction line and word break calculations.
-     *
-     * @return text bounds.
-     */
-    public Rectangle2D.Float getTextExtractionBounds() {
-        return textExtractionBounds;
     }
 }

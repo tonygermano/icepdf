@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -100,23 +100,21 @@ public abstract class SelectionBoxHandler extends CommonToolHandler {
     /**
      * Update the size of the selection rectangle.
      *
-     * @param x x-coordinate of the selection size update.
-     * @param y y-coordinate of the selection size update.
+     * @param e
      */
-    public void updateSelectionSize(int x, int y, Component component) {
+    public void updateSelectionSize(MouseEvent e, Component component) {
+        int x = e.getX();
+        int y = e.getY();
         // dragging across pages will result in null pointer if don't init.
         if (currentRect == null) {
             currentRect = new Rectangle(x, y, 0, 0);
         }
         currentRect.setSize(x - currentRect.x,
                 y - currentRect.y);
-
-        if (component != null) {
-            updateDrawableRect(component.getWidth(), component.getHeight());
-            Rectangle totalRepaint = rectToDraw.union(previousRectDrawn);
-            component.repaint(totalRepaint.x, totalRepaint.y,
-                    totalRepaint.width + 10, totalRepaint.height + 10);
-        }
+        updateDrawableRect(component.getWidth(), component.getHeight());
+        Rectangle totalRepaint = rectToDraw.union(previousRectDrawn);
+        component.repaint(totalRepaint.x, totalRepaint.y,
+                totalRepaint.width + 10, totalRepaint.height + 10);
     }
 
     public void setSelectionSize(Rectangle rect, Component component) {

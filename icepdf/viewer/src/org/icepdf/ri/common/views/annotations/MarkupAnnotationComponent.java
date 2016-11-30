@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -82,14 +82,14 @@ public abstract class MarkupAnnotationComponent extends AbstractAnnotationCompon
                     // toggle the visibility of the popup
                     popup.setOpen(!popup.isOpen());
                     // find the popup component
-                    ArrayList<AbstractAnnotationComponent> annotationComponents =
+                    ArrayList<AnnotationComponent> annotationComponents =
                             pageViewComponent.getAnnotationComponents();
                     Reference compReference;
                     Reference popupReference = popup.getPObjectReference();
                     for (AnnotationComponent annotationComponent : annotationComponents) {
                         compReference = annotationComponent.getAnnotation().getPObjectReference();
-                        // find the component and toggle it's visibility, null check just encase compRef is direct.
-                        if (compReference != null && compReference.equals(popupReference)) {
+                        // find the component and toggle it's visibility.
+                        if (compReference.equals(popupReference)) {
                             if (annotationComponent instanceof PopupAnnotationComponent) {
                                 PopupAnnotationComponent popupComponent = ((PopupAnnotationComponent) annotationComponent);
                                 popupComponent.setVisible(popup.isOpen());
@@ -183,10 +183,6 @@ public abstract class MarkupAnnotationComponent extends AbstractAnnotationCompon
 
         return shape;
 
-    }
-
-    public boolean isActive() {
-        return false;
     }
 
 }

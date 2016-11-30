@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -198,19 +198,6 @@ public class Dictionary {
 
     public void setNew(boolean aNew) {
         isNew = aNew;
-    }
-
-    /**
-     * Sets the dictionary key value, handling any encryption so dictionary can be written correctly.
-     *
-     * @param key   dictionary key
-     * @param value key value.
-     * @return string value of the newly set string which will always be decrypted.
-     */
-    protected String setString(final Name key, String value) {
-        // make sure we store an encrypted documents string as encrypted
-        entries.put(key, new LiteralStringObject(value, getPObjectReference(), library.getSecurityManager()));
-        return value;
     }
 
     /**

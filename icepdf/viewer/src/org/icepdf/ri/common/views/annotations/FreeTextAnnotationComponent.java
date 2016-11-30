@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -24,7 +24,6 @@ import org.icepdf.core.pobjects.graphics.TextSprite;
 import org.icepdf.core.pobjects.graphics.commands.DrawCmd;
 import org.icepdf.core.pobjects.graphics.commands.TextSpriteDrawCmd;
 import org.icepdf.ri.common.views.AbstractPageViewComponent;
-import org.icepdf.ri.common.views.AnnotationCallback;
 import org.icepdf.ri.common.views.DocumentViewController;
 import org.icepdf.ri.common.views.DocumentViewModel;
 
@@ -68,11 +67,15 @@ public class FreeTextAnnotationComponent extends MarkupAnnotationComponent
 
     private static final Logger logger =
             Logger.getLogger(FreeTextAnnotation.class.toString());
+
+    private FreeTextArea freeTextPane;
+
+    private boolean contentTextChange;
+
+    private FreeTextAnnotation freeTextAnnotation;
+
     // font file cache.
     protected Font fontFile;
-    private ScalableTextArea freeTextPane;
-    private boolean contentTextChange;
-    private FreeTextAnnotation freeTextAnnotation;
 
     public FreeTextAnnotationComponent(Annotation annotation, DocumentViewController documentViewController,
                                        final AbstractPageViewComponent pageViewComponent,
@@ -103,7 +106,17 @@ public class FreeTextAnnotationComponent extends MarkupAnnotationComponent
             ((FreeTextAnnotation) annotation).clearShapes();
         }
         // create the textArea to display the text.
-        freeTextPane = new ScalableTextArea(documentViewModel);
+        freeTextPane = new FreeTextArea(new FreeTextArea.ZoomProvider() {
+            private DocumentViewModel model;
+
+            {
+                this.model = documentViewModel;
+            }
+
+            public float getZoom() {
+                return this.model.getViewZoom();
+            }
+        });
         // line wrap false to force users to add line breaks.
         freeTextPane.setLineWrap(false);
         freeTextPane.setBackground(new Color(0, 0, 0, 0));
@@ -145,6 +158,7 @@ public class FreeTextAnnotationComponent extends MarkupAnnotationComponent
         if (annotation.getBbox() != null) {
             setBounds(annotation.getBbox().getBounds());
         }
+
         resetAppearanceShapes();
         revalidate();
     }
@@ -152,7 +166,7 @@ public class FreeTextAnnotationComponent extends MarkupAnnotationComponent
     public void setAppearanceStream() {
         // copy over annotation properties from the free text annotation.
         if (fontFile == null || freeTextAnnotation.isFontPropertyChanged()) {
-            fontFile = FontManager.getInstance().initialize().getType1AWTFont(
+            fontFile = FontManager.getInstance().getType1AWTFont(
                     freeTextAnnotation.getFontName(), freeTextAnnotation.getFontSize());
         }
         freeTextPane.setFont(fontFile);
@@ -213,15 +227,9 @@ public class FreeTextAnnotationComponent extends MarkupAnnotationComponent
                 if (contentTextChange) {
                     contentTextChange = false;
                     resetAppearanceShapes();
-                    if (documentViewController.getAnnotationCallback() != null) {
-                        AnnotationCallback annotationCallback =
-                                documentViewController.getAnnotationCallback();
-                        // notification that annotation was updated.
-                        annotationCallback.updateAnnotation(this);
-                    }
                 }
-                if (freeText instanceof ScalableTextArea) {
-                    ((ScalableTextArea) freeText).setActive(false);
+                if (freeText instanceof FreeTextArea) {
+                    ((FreeTextArea) freeText).setActive(false);
                 }
             }
         } else if ("focusOwner".equals(prop) &&
@@ -229,8 +237,8 @@ public class FreeTextAnnotationComponent extends MarkupAnnotationComponent
             JTextArea freeText = (JTextArea) newValue;
             if (freeText.equals(freeTextPane) && !annotation.getFlagReadOnly()) {
                 freeText.setEditable(true);
-                if (freeText instanceof ScalableTextArea) {
-                    ((ScalableTextArea) freeText).setActive(true);
+                if (freeText instanceof FreeTextArea) {
+                    ((FreeTextArea) freeText).setActive(true);
                 }
             }
         }

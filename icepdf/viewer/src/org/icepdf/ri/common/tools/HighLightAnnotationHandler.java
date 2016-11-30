@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -25,7 +25,6 @@ import org.icepdf.core.pobjects.graphics.text.GlyphText;
 import org.icepdf.core.pobjects.graphics.text.LineText;
 import org.icepdf.core.pobjects.graphics.text.PageText;
 import org.icepdf.core.pobjects.graphics.text.WordText;
-import org.icepdf.core.util.Defs;
 import org.icepdf.ri.common.views.AbstractPageViewComponent;
 import org.icepdf.ri.common.views.AnnotationCallback;
 import org.icepdf.ri.common.views.DocumentViewController;
@@ -56,20 +55,6 @@ import java.util.logging.Level;
  * @since 5.0
  */
 public class HighLightAnnotationHandler extends TextSelectionPageHandler {
-
-    /**
-     * Property when enabled will set the /contents key value to the selected text of the markup annotation.
-     */
-    private static boolean enableHighlightContents;
-
-    static {
-        try {
-            enableHighlightContents = Defs.booleanProperty(
-                    "org.icepdf.core.views.page.annotation.highlightContent.enabled", false);
-        } catch (NumberFormatException e) {
-            logger.warning("Error reading highlight selection content enabled property.");
-        }
-    }
 
     protected Name highLightType;
 
@@ -124,8 +109,6 @@ public class HighLightAnnotationHandler extends TextSelectionPageHandler {
         if (highlightBounds == null) {
             highlightBounds = getSelectedTextBounds();
         }
-        // grab the selected text
-        String contents = enableHighlightContents && highlightBounds != null ? getSelectedText() : "";
 
         // clear the selected text
         documentViewController.clearSelectedText();
@@ -151,7 +134,7 @@ public class HighLightAnnotationHandler extends TextSelectionPageHandler {
                             tBbox);
 
             // pass outline shapes and bounds to create the highlight shapes
-            annotation.setContents(contents != null && enableHighlightContents ? contents : highLightType.toString());
+            annotation.setContents(highLightType.toString());
             annotation.setColor(annotation.getTextMarkupColor());
             annotation.setCreationDate(PDate.formatDateTime(new Date()));
             annotation.setTitleText(System.getProperty("user.name"));
@@ -183,9 +166,8 @@ public class HighLightAnnotationHandler extends TextSelectionPageHandler {
         pageViewComponent.repaint();
     }
 
-    private String getSelectedText() {
-        Page currentPage = pageViewComponent.getPage();
-        return currentPage.getViewText().getSelected().toString();
+    public void paintTool(Graphics g) {
+        paintSelectionBox(g, rectToDraw);
     }
 
     private ArrayList<Shape> getSelectedTextBounds() {
@@ -246,7 +228,7 @@ public class HighLightAnnotationHandler extends TextSelectionPageHandler {
      * Convert the shapes that make up the annotation to page space so that
      * they will scale correctly at different zooms.
      *
-     * @return transformed bBox.
+     * @return transformed bbox.
      */
     protected Rectangle convertToPageSpace(ArrayList<Shape> bounds,
                                            GeneralPath path) {
@@ -276,5 +258,7 @@ public class HighLightAnnotationHandler extends TextSelectionPageHandler {
         path.transform(at);
 
         return tBbox;
+
     }
+
 }

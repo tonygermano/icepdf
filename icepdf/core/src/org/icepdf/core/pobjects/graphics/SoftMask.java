@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -18,7 +18,6 @@ package org.icepdf.core.pobjects.graphics;
 import org.icepdf.core.pobjects.Dictionary;
 import org.icepdf.core.pobjects.Form;
 import org.icepdf.core.pobjects.Name;
-import org.icepdf.core.pobjects.functions.Function;
 import org.icepdf.core.util.Library;
 
 import java.util.HashMap;
@@ -58,10 +57,10 @@ public class SoftMask extends Dictionary {
     public static final Name S_KEY = new Name("S");
     public static final Name G_KEY = new Name("G");
     public static final Name BC_KEY = new Name("BC");
-    public static final String SOFT_MASK_TYPE_ALPHA = "Alpha";
-    public static final String SOFT_MASK_TYPE_LUMINOSITY = "Luminosity";
 
-    private Form softMask;
+    public static final String SOFT_MASK_TYPE_ALPHA = "Alpha";
+
+    public static final String SOFT_MASK_TYPE_LUMINOSITY = "Luminosity";
 
     public SoftMask(Library library, HashMap dictionary) {
         super(library, dictionary);
@@ -94,14 +93,11 @@ public class SoftMask extends Dictionary {
      * @return Xobject associated with G, null otherwise.
      */
     public Form getG() {
-        if (softMask != null) {
-            return softMask;
-        }
         Object GKey = library.getObject(entries, G_KEY);
         if (GKey != null && GKey instanceof Form) {
-            softMask = (Form) GKey;
-            softMask.init();
-            return softMask;
+            Form smaskForm = (Form) GKey;
+            smaskForm.init();
+            return smaskForm;
         }
         return null;
     }
@@ -140,12 +136,5 @@ public class SoftMask extends Dictionary {
      *
      * Type: function or name.
      */
-    public Object getTR() {
-        Object object = library.getObject(entries, BC_KEY);
-        if (object != null) {
-            return Function.getFunction(library, object);
-        }
-        return null;
-    }
 
 }

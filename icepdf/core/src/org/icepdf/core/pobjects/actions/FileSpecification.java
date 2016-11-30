@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -16,7 +16,6 @@
 package org.icepdf.core.pobjects.actions;
 
 import org.icepdf.core.pobjects.Dictionary;
-import org.icepdf.core.pobjects.LiteralStringObject;
 import org.icepdf.core.pobjects.Name;
 import org.icepdf.core.pobjects.StringObject;
 import org.icepdf.core.util.Library;
@@ -94,7 +93,7 @@ public class FileSpecification extends Dictionary {
      * be included in the referenced file.
      * <p/>
      * <b>NOTE</b>
-     * The use of this entry improves an application's chances of finding the
+     * The use of this entry improves an application’s chances of finding the
      * intended file and allows it to warn the user if the file has changed
      * since the link was made.
      */
@@ -178,16 +177,6 @@ public class FileSpecification extends Dictionary {
     }
 
     /**
-     * Sets the the file system name,  URL, FILE etc.  Value is added directly to the
-     * dictionary so that teh value can be saved
-     *
-     * @param name name of file system,  not restrictions on name value.
-     */
-    public void setFileSystemName(Name name){
-        entries.put(FS_KEY, name);
-    }
-
-    /**
      * Gets the file specification string.
      *
      * @return file specification string.
@@ -201,15 +190,6 @@ public class FileSpecification extends Dictionary {
         } else {
             return null;
         }
-    }
-
-    /**
-     * Sets the file specification string which is generally a path or URL.
-     *
-     * @param fileSpecification string to be asinged to the 'F' key.
-     */
-    public void setFileSpecification(String fileSpecification){
-        entries.put(F_KEY, new LiteralStringObject(fileSpecification));
     }
 
     /**
@@ -333,7 +313,7 @@ public class FileSpecification extends Dictionary {
         Object description = library.getObject(entries, DESC_KEY);
         if (description instanceof StringObject) {
             StringObject tmp = (StringObject) description;
-            return tmp.getDecryptedLiteralString(library.getSecurityManager());
+            return tmp.getDecryptedLiteralString(library.securityManager);
         } else if (description instanceof String) {
             return description.toString();
         } else {

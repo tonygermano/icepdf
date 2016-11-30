@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -15,6 +15,7 @@
  */
 package org.icepdf.core.pobjects.annotations;
 
+import org.icepdf.core.pobjects.LiteralStringObject;
 import org.icepdf.core.pobjects.Name;
 import org.icepdf.core.pobjects.PDate;
 import org.icepdf.core.pobjects.StringObject;
@@ -170,18 +171,12 @@ public abstract class MarkupAnnotation extends Annotation {
     public void init() {
         super.init();
         // title text
-        titleText = getString(T_KEY);
-
-        // rich text
-        richText = getString(RC_KEY);
-
-        // subject text
-        subject = getString(SUBJ_KEY);
-
-        // creation date
-        Object value = library.getObject(entries, CREATION_DATE_KEY);
+        Object value = library.getObject(entries, T_KEY);
         if (value != null && value instanceof StringObject) {
-            creationDate = new PDate(securityManager, getString(CREATION_DATE_KEY));
+            StringObject text = (StringObject) value;
+            titleText = text.getDecryptedLiteralString(securityManager);
+        } else if (value instanceof String) {
+            titleText = (String) value;
         }
 
         // popup child
@@ -196,10 +191,36 @@ public abstract class MarkupAnnotation extends Annotation {
             opacity = ca;
         }
 
+        // title text
+        value = library.getObject(entries, RC_KEY);
+        if (value != null && value instanceof StringObject) {
+            StringObject text = (StringObject) value;
+            richText = text.getDecryptedLiteralString(securityManager);
+        } else if (value instanceof String) {
+            richText = (String) value;
+        }
+
+        // creation date
+        value = library.getObject(entries, CREATION_DATE_KEY);
+        if (value != null && value instanceof StringObject) {
+            StringObject text = (StringObject) value;
+            creationDate = new PDate(securityManager,
+                    text.getDecryptedLiteralString(securityManager));
+        }
+
         // in reply to annotation
         value = library.getObject(entries, IRT_KEY);
         if (value != null && value instanceof MarkupAnnotation) {
             inReplyToAnnotation = (MarkupAnnotation) value;
+        }
+
+        // subject text
+        value = library.getObject(entries, SUBJ_KEY);
+        if (value != null && value instanceof StringObject) {
+            StringObject text = (StringObject) value;
+            subject = text.getDecryptedLiteralString(securityManager);
+        } else if (value instanceof String) {
+            subject = (String) value;
         }
 
         // in reply to annotation
@@ -253,7 +274,8 @@ public abstract class MarkupAnnotation extends Annotation {
     }
 
     public void setTitleText(String titleText) {
-        this.titleText = setString(T_KEY, titleText);
+        this.titleText = titleText;
+        entries.put(T_KEY, new LiteralStringObject(titleText));
     }
 
     public void setPopupAnnotation(PopupAnnotation popupAnnotation) {
@@ -262,12 +284,13 @@ public abstract class MarkupAnnotation extends Annotation {
     }
 
     public void setRichText(String richText) {
-        this.richText = setString(RC_KEY, richText);
+        this.richText = richText;
+        entries.put(RC_KEY, new LiteralStringObject(richText));
     }
 
     public void setCreationDate(String creationDate) {
         this.creationDate = new PDate(securityManager, creationDate);
-        setString(CREATION_DATE_KEY, creationDate);
+        entries.put(CREATION_DATE_KEY, new LiteralStringObject(creationDate));
     }
 
     public void setInReplyToAnnotation(MarkupAnnotation inReplyToAnnotation) {
@@ -276,7 +299,8 @@ public abstract class MarkupAnnotation extends Annotation {
     }
 
     public void setSubject(String subject) {
-        this.subject = setString(SUBTYPE_KEY, subject);
+        this.subject = subject;
+        entries.put(SUBTYPE_KEY, new LiteralStringObject(subject));
     }
 
     public String toString() {

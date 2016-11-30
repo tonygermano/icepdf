@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -16,6 +16,7 @@
 package org.icepdf.core.util.content;
 
 import org.icepdf.core.pobjects.*;
+import org.icepdf.core.pobjects.fonts.FontFactory;
 import org.icepdf.core.pobjects.fonts.FontFile;
 import org.icepdf.core.pobjects.graphics.*;
 import org.icepdf.core.pobjects.graphics.commands.*;
@@ -44,8 +45,10 @@ import java.util.logging.Logger;
 public abstract class AbstractContentParser implements ContentParser {
     private static final Logger logger =
             Logger.getLogger(AbstractContentParser.class.toString());
+
     private static boolean disableTransparencyGroups;
     private static boolean enabledOverPrint;
+
     static {
         // decide if large images will be scaled
         disableTransparencyGroups =
@@ -198,35 +201,31 @@ public abstract class AbstractContentParser implements ContentParser {
 
     protected static void consume_rg(GraphicsState graphicState, Stack stack,
                                      Library library) {
-        if (stack.size() >= 3) {
-            float b = ((Number) stack.pop()).floatValue();
-            float gg = ((Number) stack.pop()).floatValue();
-            float r = ((Number) stack.pop()).floatValue();
-            b = Math.max(0.0f, Math.min(1.0f, b));
-            gg = Math.max(0.0f, Math.min(1.0f, gg));
-            r = Math.max(0.0f, Math.min(1.0f, r));
-            // set fill colour
-            graphicState.setFillColorSpace(
-                    PColorSpace.getColorSpace(library, DeviceRGB.DEVICERGB_KEY));
-            graphicState.setFillColor(new Color(r, gg, b));
-        }
+        float b = ((Number) stack.pop()).floatValue();
+        float gg = ((Number) stack.pop()).floatValue();
+        float r = ((Number) stack.pop()).floatValue();
+        b = Math.max(0.0f, Math.min(1.0f, b));
+        gg = Math.max(0.0f, Math.min(1.0f, gg));
+        r = Math.max(0.0f, Math.min(1.0f, r));
+        // set fill colour
+        graphicState.setFillColorSpace(
+                PColorSpace.getColorSpace(library, DeviceRGB.DEVICERGB_KEY));
+        graphicState.setFillColor(new Color(r, gg, b));
     }
 
     protected static void consume_K(GraphicsState graphicState, Stack stack,
                                     Library library) {
-        if (stack.size() >= 4) {
-            float k = ((Number) stack.pop()).floatValue();
-            float y = ((Number) stack.pop()).floatValue();
-            float m = ((Number) stack.pop()).floatValue();
-            float c = ((Number) stack.pop()).floatValue();
+        float k = ((Number) stack.pop()).floatValue();
+        float y = ((Number) stack.pop()).floatValue();
+        float m = ((Number) stack.pop()).floatValue();
+        float c = ((Number) stack.pop()).floatValue();
 
-            PColorSpace pColorSpace =
-                    PColorSpace.getColorSpace(library, DeviceCMYK.DEVICECMYK_KEY);
-            // set stroke colour
-            graphicState.setStrokeColorSpace(pColorSpace);
-            graphicState.setStrokeColor(pColorSpace.getColor(
-                    new float[]{k, y, m, c}, true));
-        }
+        PColorSpace pColorSpace =
+                PColorSpace.getColorSpace(library, DeviceCMYK.DEVICECMYK_KEY);
+        // set stroke colour
+        graphicState.setStrokeColorSpace(pColorSpace);
+        graphicState.setStrokeColor(pColorSpace.getColor(
+                new float[]{k, y, m, c}, true));
     }
 
     protected static void consume_k(GraphicsState graphicState, Stack stack,
@@ -342,6 +341,7 @@ public abstract class AbstractContentParser implements ContentParser {
             graphicState.setStrokeColor(graphicState.getStrokeColorSpace().getColor(f, isTint));
         }
     }
+
 
     protected static void consume_sc(GraphicsState graphicState, Stack stack,
                                      Library library, Resources resources, boolean isTint) {
@@ -479,9 +479,7 @@ public abstract class AbstractContentParser implements ContentParser {
     }
 
     protected static void consume_i(Stack stack) {
-        if (stack.size() >= 1) {
-            stack.pop();
-        }
+        stack.pop();
     }
 
     protected static void consume_J(GraphicsState graphicState, Stack stack, Shapes shapes) {
@@ -526,14 +524,13 @@ public abstract class AbstractContentParser implements ContentParser {
         Name xobjectName = (Name) stack.pop();
         if (resources == null) return graphicState;
         // Form XObject
-        Object xObject = resources.getXObject(xobjectName);
-        if (xObject instanceof Form) {
+        if (resources != null && resources.isForm(xobjectName)) {
             // Do operator steps:
             //  1.)save the graphics context
             graphicState = graphicState.save();
             // Try and find the named reference 'xobjectName', pass in a copy
             // of the current graphics state for the new content stream
-            Form formXObject = (Form) xObject;
+            Form formXObject = resources.getForm(xobjectName);
             if (formXObject != null) {
                 // check if the form is an optional content group.
                 Object oc = formXObject.getObject(OptionalContent.OC_KEY);
@@ -544,7 +541,7 @@ public abstract class AbstractContentParser implements ContentParser {
                         return graphicState;
                     }
                 }
-                // init form XObject with current gs state but we need to keep the original state for blending
+                // init formXobject
                 GraphicsState xformGraphicsState =
                         new GraphicsState(graphicState);
                 formXObject.setGraphicsState(xformGraphicsState);
@@ -587,27 +584,19 @@ public abstract class AbstractContentParser implements ContentParser {
                 }
                 shapes.add(clipDrawCmd);
                 // 4.) Paint the graphics objects in font stream.
-                // still some work to do do here with regards to BM vs. alpha comp.
-                if ((formXObject.getExtGState() != null &&
-                        (formXObject.getExtGState().getBlendingMode() == null ||
-                                formXObject.getExtGState().getBlendingMode().equals(BlendComposite.NORMAL_VALUE)))) {
-                    setAlpha(formXObject.getShapes(), graphicState, graphicState.getAlphaRule(),
-                            graphicState.getFillAlpha());
-                    setAlpha(shapes, graphicState, graphicState.getAlphaRule(),
-                            graphicState.getFillAlpha());
-                }
+                setAlpha(shapes, graphicState.getAlphaRule(),
+                        graphicState.getFillAlpha());
                 // If we have a transparency group we paint it
                 // slightly different then a regular xObject as we
                 // need to capture the alpha which is only possible
                 // by paint the xObject to an image.
-                if (!disableTransparencyGroups &&
-                        ((formXObject.getBBox().getWidth() < Short.MAX_VALUE && formXObject.getBBox().getWidth() > 1) &&
-                                (formXObject.getBBox().getHeight() < Short.MAX_VALUE && formXObject.getBBox().getHeight() > 1)
-                                && (formXObject.getExtGState() != null &&
-                                (formXObject.getExtGState().getSMask() != null || formXObject.getExtGState().getBlendingMode() != null
-                                        || (formXObject.getExtGState().getNonStrokingAlphConstant() < 1
-                                        && formXObject.getExtGState().getNonStrokingAlphConstant() > 0)))
-                        )) {
+                if ((!disableTransparencyGroups ||
+                        (formXObject.getGraphicsState() != null &&
+                                formXObject.getGraphicsState().getSoftMask() != null)) &&
+                        formXObject.isTransparencyGroup() &&
+                        // limit size, as buffer is needed
+                        (formXObject.getBBox().getWidth() < Short.MAX_VALUE &&
+                                formXObject.getBBox().getHeight() < Short.MAX_VALUE)) {
                     // add the hold form for further processing.
                     shapes.add(new FormDrawCmd(formXObject));
                 }
@@ -641,7 +630,9 @@ public abstract class AbstractContentParser implements ContentParser {
         }
         // Image XObject
         else if (viewParse) {
-            ImageStream imageStream = (ImageStream) xObject;
+            setAlpha(shapes, graphicState.getAlphaRule(), graphicState.getFillAlpha());
+
+            ImageStream imageStream = resources.getImageStream(xobjectName);
             if (imageStream != null) {
                 Object oc = imageStream.getObject(OptionalContent.OC_KEY);
                 if (oc != null) {
@@ -650,14 +641,14 @@ public abstract class AbstractContentParser implements ContentParser {
                     // avoid loading the image if oc is not visible
                     // may have to add this logic to the stack for dynamic content
                     // if we get an example.
-                    if (!optionalContent.isEmptyDefinition() && !optionalContent.isVisible(oc)) {
+                    if (!optionalContent.isVisible(oc)) {
                         return graphicState;
                     }
                 }
 
                 // create an ImageReference for future decoding
                 ImageReference imageReference = ImageReferenceFactory.getImageReference(
-                        imageStream, resources, graphicState,
+                        imageStream, resources, graphicState.getFillColor(),
                         imageIndex.get(), page);
                 imageIndex.incrementAndGet();
 
@@ -666,8 +657,6 @@ public abstract class AbstractContentParser implements ContentParser {
                             new AffineTransform(graphicState.getCTM());
                     graphicState.scale(1, -1);
                     graphicState.translate(0, -1);
-                    setAlpha(shapes, graphicState, graphicState.getAlphaRule(),
-                            graphicState.getFillAlpha());
                     // add the image
                     shapes.add(new ImageDrawCmd(imageReference));
                     graphicState.set(af);
@@ -692,18 +681,19 @@ public abstract class AbstractContentParser implements ContentParser {
                 final int sz = dashVector.size();
                 dashArray = new float[sz];
                 Object tmp;
-                boolean nullArray = false;
                 for (int i = 0; i < sz; i++) {
                     tmp = dashVector.get(i);
                     float dash;
                     if (tmp != null && tmp instanceof Number) {
                         dash = Math.abs(((Number) dashVector.get(i)).floatValue());
-                        // java has a hard time with painting dash array with values < 0.05.
-                        // null the dash array as we can't pain it PDF-966.
-                        if (dash < 0.05f) {
-                            nullArray = true;
+                        // java has a hard time with painting dash array with values < 1.
+                        // we have a few examples where converting the value to user space
+                        // correct the problem PDF-966.
+                        if (dash < 0.5f){
+                            dash = dash * 1000;
                         }
                         dashArray[i] = dash;
+
                     }
                 }
                 // corner case check to see if the dash array contains a first element
@@ -713,10 +703,6 @@ public abstract class AbstractContentParser implements ContentParser {
                 if (dashArray.length > 1 && dashArray[0] != 0 &&
                         dashArray[0] < dashArray[1] / 10000) {
                     dashArray[0] = dashArray[1];
-                }
-                // null the dash array if one of the dash values was less then 0.05.
-                if (nullArray) {
-                    dashArray = null;
                 }
             }
             // default to standard black line
@@ -774,7 +760,7 @@ public abstract class AbstractContentParser implements ContentParser {
         setStroke(shapes, graphicState);
     }
 
-    protected static void consume_gs(GraphicsState graphicState, Stack stack, Resources resources, Shapes shapes) {
+    protected static void consume_gs(GraphicsState graphicState, Stack stack, Resources resources) {
         Object gs = stack.pop();
         if (gs instanceof Name && resources != null) {
             // Get ExtGState and merge it with
@@ -783,16 +769,6 @@ public abstract class AbstractContentParser implements ContentParser {
             if (extGState != null) {
                 graphicState.concatenate(extGState);
             }
-            float alpha = graphicState.getFillAlpha();
-            if (graphicState.getExtGState() != null
-                    && graphicState.getExtGState().getBlendingMode() != null // && graphicState.getExtGState().getOverprintMode() == 1
-                    ) {
-                // BlendComposite is still having trouble with alpha values < 1.0.
-                shapes.add(new BlendCompositeDrawCmd(graphicState.getExtGState().getBlendingMode(), alpha));
-            }
-            // apply the alpha as it's own composite
-            if (alpha > 0 && alpha < 1.0)
-                setAlpha(shapes, graphicState, graphicState.getAlphaRule(), graphicState.getFillAlpha());
         }
     }
 
@@ -800,15 +776,13 @@ public abstract class AbstractContentParser implements ContentParser {
         float size = ((Number) stack.pop()).floatValue();
         Name name2 = (Name) stack.pop();
         // build the new font and initialize it.
-        graphicState.getTextState().tsize = size;
-        graphicState.getTextState().fontName = name2;
         graphicState.getTextState().font = resources.getFont(name2);
         // in the rare case that the font can't be found then we try and build
         // one so the document can be rendered in some shape or form.
         if (graphicState.getTextState().font == null ||
                 graphicState.getTextState().font.getFont() == null) {
             // turn on the old awt font engine, as we have a null font
-//            FontFactory fontFactory = FontFactory.getInstance();
+            FontFactory fontFactory = FontFactory.getInstance();
 //            boolean awtState = fontFactory.isAwtFontSubstitution();
 //            fontFactory.setAwtFontSubstitution(true);
             try {
@@ -816,14 +790,14 @@ public abstract class AbstractContentParser implements ContentParser {
                 // corner cases:
                 // get the first pages resources, no need to lock the page, already locked.
                 Page page = resources.getLibrary().getCatalog().getPageTree().getPage(0);
+                // make sure page resources are available.
+//                while(!page.isInitiated()){
+//                    Thread.currentThread().wait(100);
+//                }
                 page.init();
                 Resources res = page.getResources();
                 // try and get a font off the first page.
                 Object pageFonts = res.getEntries().get(Resources.FONT_KEY);
-                // check for an indirect reference
-                if (pageFonts instanceof Reference) {
-                    pageFonts = resources.getLibrary().getObject((Reference) pageFonts);
-                }
                 if (pageFonts instanceof HashMap) {
                     // get first font
                     Reference fontRef = (Reference) ((HashMap) pageFonts).get(name2);
@@ -846,14 +820,6 @@ public abstract class AbstractContentParser implements ContentParser {
         if (graphicState.getTextState().font != null) {
             graphicState.getTextState().currentfont =
                     graphicState.getTextState().font.getFont().deriveFont(size);
-        } else {
-            // not font found which is a problem,  so we need to check for interactive form dictionary
-            graphicState.getTextState().font = resources.getLibrary().getInteractiveFormFont(name2.getName());
-            if (graphicState.getTextState().font != null) {
-                graphicState.getTextState().currentfont = graphicState.getTextState().font.getFont();
-                graphicState.getTextState().currentfont =
-                        graphicState.getTextState().font.getFont().deriveFont(size);
-            }
         }
     }
 
@@ -902,9 +868,6 @@ public abstract class AbstractContentParser implements ContentParser {
             textMetrics.setYstart(false);
         }
 
-        // update the extract text
-        pageText.setTextTransform(new AffineTransform(tm));
-
     }
 
     protected static void consume_T_star(GraphicsState graphicState,
@@ -950,7 +913,7 @@ public abstract class AbstractContentParser implements ContentParser {
         graphicState.translate(-textMetrics.getShift(), graphicState.getTextState().leading);
 
         // apply transparency
-        setAlpha(shapes, graphicState, graphicState.getAlphaRule(), graphicState.getFillAlpha());
+        setAlpha(shapes, graphicState.getAlphaRule(), graphicState.getFillAlpha());
 
         textMetrics.setShift(0);
         textMetrics.setPreviousAdvance(0);
@@ -959,8 +922,8 @@ public abstract class AbstractContentParser implements ContentParser {
 
         AffineTransform tmp = applyTextScaling(graphicState);
         drawString(stringObject.getLiteralStringBuffer(
-                textState.font.getSubTypeFormat(),
-                textState.font.getFont()),
+                        textState.font.getSubTypeFormat(),
+                        textState.font.getFont()),
                 textMetrics, graphicState.getTextState(),
                 shapes, glyphOutlineClip, graphicState, oCGs);
         graphicState.set(tmp);
@@ -1044,11 +1007,9 @@ public abstract class AbstractContentParser implements ContentParser {
         if (geometricPath == null) {
             geometricPath = new GeneralPath();
         }
-        if (stack.size() >= 2) {
-            float y = ((Number) stack.pop()).floatValue();
-            float x = ((Number) stack.pop()).floatValue();
-            geometricPath.moveTo(x, y);
-        }
+        float y = ((Number) stack.pop()).floatValue();
+        float x = ((Number) stack.pop()).floatValue();
+        geometricPath.moveTo(x, y);
         return geometricPath;
     }
 
@@ -1373,17 +1334,17 @@ public abstract class AbstractContentParser implements ContentParser {
             Name patternName = (Name) stack.pop();
             Pattern pattern = resources.getShading(patternName);
             if (pattern != null) {
-                pattern.init(graphicState);
+                pattern.init();
                 // we paint the shape and color shading as defined
                 // by the pattern dictionary and respect the current clip
-                // TODO further work is needed here to build out the pattern fill.
-                if (graphicState.getExtGState() != null &&
-                        graphicState.getExtGState().getSMask() != null) {
-                    setAlpha(shapes, graphicState,
+
+                // apply a rudimentary softmask for an shading .
+                if (graphicState.getSoftMask() != null) {
+                    setAlpha(shapes,
                             graphicState.getAlphaRule(),
                             0.50f);
                 } else {
-                    setAlpha(shapes, graphicState,
+                    setAlpha(shapes,
                             graphicState.getAlphaRule(),
                             graphicState.getFillAlpha());
                 }
@@ -1394,7 +1355,7 @@ public abstract class AbstractContentParser implements ContentParser {
                 // apply the current fill color along ith a little alpha
                 // to at least try to paint a colour for an unsupported mesh
                 // type pattern.
-                setAlpha(shapes, graphicState,
+                setAlpha(shapes,
                         graphicState.getAlphaRule(),
                         0.50f);
                 shapes.add(new PaintDrawCmd(graphicState.getFillColor()));
@@ -1412,7 +1373,7 @@ public abstract class AbstractContentParser implements ContentParser {
         // apply scaling
         AffineTransform tmp = applyTextScaling(graphicState);
         // apply transparency
-        setAlpha(shapes, graphicState, graphicState.getAlphaRule(), graphicState.getFillAlpha());
+        setAlpha(shapes, graphicState.getAlphaRule(), graphicState.getFillAlpha());
         java.util.List v = (java.util.List) stack.pop();
         Number f;
         StringObject stringObject;
@@ -1423,8 +1384,8 @@ public abstract class AbstractContentParser implements ContentParser {
                 textState = graphicState.getTextState();
                 // draw string takes care of PageText extraction
                 drawString(stringObject.getLiteralStringBuffer(
-                        textState.font.getSubTypeFormat(),
-                        textState.font.getFont()),
+                                textState.font.getSubTypeFormat(),
+                                textState.font.getFont()),
                         textMetrics,
                         graphicState.getTextState(), shapes, glyphOutlineClip,
                         graphicState, oCGs);
@@ -1452,23 +1413,23 @@ public abstract class AbstractContentParser implements ContentParser {
             // apply scaling
             AffineTransform tmp = applyTextScaling(graphicState);
             // apply transparency
-            setAlpha(shapes, graphicState, graphicState.getAlphaRule(), graphicState.getFillAlpha());
+            setAlpha(shapes, graphicState.getAlphaRule(), graphicState.getFillAlpha());
             // draw string will take care of text pageText construction
             drawString(stringObject.getLiteralStringBuffer(
-                    textState.font.getSubTypeFormat(),
-                    textState.font.getFont()),
+                            textState.font.getSubTypeFormat(),
+                            textState.font.getFont()),
                     textMetrics,
                     graphicState.getTextState(),
                     shapes,
                     glyphOutlineClip,
                     graphicState, oCGs);
             graphicState.set(tmp);
-//            graphicState.translate(textMetrics.getAdvance().x, 0);
-//            float shift = textMetrics.getShift();
-//            shift += textMetrics.getAdvance().x;
-//            textMetrics.setShift(shift);
-//            textMetrics.setPreviousAdvance(0);
-//            textMetrics.getAdvance().setLocation(0, 0);
+            graphicState.translate(textMetrics.getAdvance().x, 0);
+            float shift = textMetrics.getShift();
+            shift += textMetrics.getAdvance().x;
+            textMetrics.setShift(shift);
+            textMetrics.setPreviousAdvance(0);
+            textMetrics.getAdvance().setLocation(0, 0);
         }
     }
 
@@ -1529,8 +1490,7 @@ public abstract class AbstractContentParser implements ContentParser {
         TextSprite textSprites =
                 new TextSprite(currentFont,
                         textLength,
-                        new AffineTransform(graphicState.getCTM()),
-                        new AffineTransform(textState.tmatrix));
+                        new AffineTransform(graphicState.getCTM()));
 
         // glyph placement params
         float currentX, currentY;
@@ -1542,7 +1502,6 @@ public abstract class AbstractContentParser implements ContentParser {
             // Position of the specified glyph relative to the origin of glyphVector
             // advance is handled by the particular font implementation.
             newAdvanceX = (float) currentFont.echarAdvance(currentChar).getX();
-
             newAdvanceY = newAdvanceX;
             if (!isVerticalWriting) {
                 // add fonts rise to the to glyph position (sup,sub scripts)
@@ -1701,12 +1660,8 @@ public abstract class AbstractContentParser implements ContentParser {
 
         // set the line width for the glyph
         float lineWidth = graphicState.getLineWidth();
-        double scale = textState.tmatrix.getScaleX();
-        // double check for a near zero value as it will really mess up the division result, zero is just fine.
-        if (scale > 0.0001 || scale == 0) {
-            lineWidth /= scale;
-            graphicState.setLineWidth(lineWidth);
-        }
+        lineWidth /= textState.tmatrix.getScaleX();
+        graphicState.setLineWidth(lineWidth);
         // update the stroke and add the text to shapes
         setStroke(shapes, graphicState);
         shapes.add(new ColorDrawCmd(graphicState.getFillColor()));
@@ -1728,7 +1683,7 @@ public abstract class AbstractContentParser implements ContentParser {
 
         // get current fill alpha and concatenate with overprinting if present
         if (graphicState.isOverprintStroking()) {
-            setAlpha(shapes, graphicState, graphicState.getAlphaRule(),
+            setAlpha(shapes, graphicState.getAlphaRule(),
                     commonOverPrintAlpha(graphicState.getStrokeAlpha(),
                             graphicState.getStrokeColorSpace()));
         }
@@ -1736,7 +1691,7 @@ public abstract class AbstractContentParser implements ContentParser {
         // composite to source.  I don't have a test case for this for stroke
         // but what we do for stroke is usually what we do for fill...
         else if (graphicState.isKnockOut()) {
-            setAlpha(shapes, graphicState, AlphaComposite.SRC, graphicState.getStrokeAlpha());
+            setAlpha(shapes, AlphaComposite.SRC, graphicState.getStrokeAlpha());
         }
 
         // found a PatternColor
@@ -1755,7 +1710,7 @@ public abstract class AbstractContentParser implements ContentParser {
                 graphicState = graphicState.save();
                 // 2.) install the graphic state
                 tilingPattern.setParentGraphicState(graphicState);
-                tilingPattern.init(graphicState);
+                tilingPattern.init();
                 // 4.) Restore the saved graphics state
                 graphicState = graphicState.restore();
                 // 1x1 tiles don't seem to paint so we'll resort to using the
@@ -1777,27 +1732,27 @@ public abstract class AbstractContentParser implements ContentParser {
                 shapes.add(new DrawDrawCmd());
             } else if (pattern != null &&
                     pattern.getPatternType() == Pattern.PATTERN_TYPE_SHADING) {
-                pattern.init(graphicState);
+                pattern.init();
                 shapes.add(new PaintDrawCmd(pattern.getPaint()));
                 shapes.add(new ShapeDrawCmd(geometricPath));
                 shapes.add(new DrawDrawCmd());
             }
         } else {
-            setAlpha(shapes, graphicState, graphicState.getAlphaRule(), graphicState.getStrokeAlpha());
+            setAlpha(shapes, graphicState.getAlphaRule(), graphicState.getStrokeAlpha());
             shapes.add(new ColorDrawCmd(graphicState.getStrokeColor()));
             shapes.add(new ShapeDrawCmd(geometricPath));
             shapes.add(new DrawDrawCmd());
         }
         // set alpha back to original value.
-//        if (graphicState.isOverprintStroking()) {
-//            setAlpha(shapes, graphicState, AlphaComposite.SRC_OVER, graphicState.getFillAlpha());
-//        }
+        if (graphicState.isOverprintStroking()) {
+            setAlpha(shapes, AlphaComposite.SRC_OVER, graphicState.getFillAlpha());
+        }
     }
 
     /**
      * Utility method for fudging overprinting calculation for screen
      * representation.  This feature is optional an off by default.
-     * <p>
+     * <p/>
      * Can be enable with -Dorg.icepdf.core.enabledOverPrint=true
      *
      * @param alpha alph constant
@@ -1831,27 +1786,20 @@ public abstract class AbstractContentParser implements ContentParser {
      * @param graphicState  current graphics state.
      * @param geometricPath current path.
      */
-    protected static void commonFill(Shapes shapes, GraphicsState graphicState, GeneralPath geometricPath)
-            throws NoninvertibleTransformException {
+    protected static void commonFill(Shapes shapes, GraphicsState graphicState, GeneralPath geometricPath) throws NoninvertibleTransformException {
 
         // get current fill alpha and concatenate with overprinting if present
         if (graphicState.isOverprintOther()) {
-            setAlpha(shapes, graphicState, graphicState.getAlphaRule(),
+            setAlpha(shapes, graphicState.getAlphaRule(),
                     commonOverPrintAlpha(graphicState.getFillAlpha(),
                             graphicState.getFillColorSpace()));
-        }
-        // avoid doing fill, as we likely have  blending mode that will obfuscate the underlying
-        // content.
-        if (graphicState.getExtGState() != null &&
-                graphicState.getExtGState().getSMask() != null) {
-            return;
         }
         // The knockout effect can only be achieved by changing the alpha
         // composite to source.
         else if (graphicState.isKnockOut()) {
-            setAlpha(shapes, graphicState, AlphaComposite.SRC, graphicState.getFillAlpha());
+            setAlpha(shapes, AlphaComposite.SRC, graphicState.getFillAlpha());
         } else {
-            setAlpha(shapes, graphicState, graphicState.getAlphaRule(), graphicState.getFillAlpha());
+            setAlpha(shapes, graphicState.getAlphaRule(), graphicState.getFillAlpha());
         }
 
         // found a PatternColor
@@ -1870,14 +1818,14 @@ public abstract class AbstractContentParser implements ContentParser {
                 graphicState = graphicState.save();
                 // 2.) install the graphic state
                 tilingPattern.setParentGraphicState(graphicState);
-                tilingPattern.init(graphicState);
+                tilingPattern.init();
                 // 4.) Restore the saved graphics state
                 graphicState = graphicState.restore();
                 // tiles nee to be 1x1 or larger to paint so we'll resort to using the
                 // first pattern colour or the uncolour.
                 if (tilingPattern.getbBoxMod() != null &&
-                        (tilingPattern.getbBoxMod().getWidth() >= 0.5 ||
-                                tilingPattern.getbBoxMod().getHeight() >= 0.5)) {
+                        (tilingPattern.getbBoxMod().getWidth() >= 1 ||
+                                tilingPattern.getbBoxMod().getHeight() >= 1)) {
                     shapes.add(new TilingPatternDrawCmd(tilingPattern));
                 } else {
                     // draw partial fill colour
@@ -1892,27 +1840,21 @@ public abstract class AbstractContentParser implements ContentParser {
                 shapes.add(new FillDrawCmd());
             } else if (pattern != null &&
                     pattern.getPatternType() == Pattern.PATTERN_TYPE_SHADING) {
-                pattern.init(graphicState);
+                pattern.init();
                 shapes.add(new PaintDrawCmd(pattern.getPaint()));
                 shapes.add(new ShapeDrawCmd(geometricPath));
                 shapes.add(new FillDrawCmd());
             }
 
         } else {
-//            if (graphicState.getExtGState() != null
-//                    && graphicState.getExtGState().getBlendingMode() != null
-//                && graphicState.getExtGState().getOverprintMode() == 1 ) {
-//                shapes.add(new BlendCompositeDrawCmd(graphicState.getExtGState().getBlendingMode(),
-//                        graphicState.getFillAlpha()));
-//            }
             shapes.add(new ColorDrawCmd(graphicState.getFillColor()));
             shapes.add(new ShapeDrawCmd(geometricPath));
             shapes.add(new FillDrawCmd());
         }
         // add old alpha back to stack
-//        if (graphicState.isOverprintOther()) {
-//            setAlpha(shapes, graphicState, graphicState.getAlphaRule(), graphicState.getFillAlpha());
-//        }
+        if (graphicState.isOverprintOther()) {
+            setAlpha(shapes, graphicState.getAlphaRule(), graphicState.getFillAlpha());
+        }
     }
 
     /**
@@ -1941,8 +1883,8 @@ public abstract class AbstractContentParser implements ContentParser {
      * use but it appears that the scaling has to bee applied before a text
      * write operand occurs, otherwise a call to Tm seems to break text
      * positioning.
-     * <p>
-     * Scaling is special as it can be negative and thus apply a horizontal
+     * <p/>
+     * Scalling is special as it can be negative and thus apply a horizontal
      * flip on the graphic state.
      *
      * @param graphicState current graphics state.
@@ -1954,10 +1896,10 @@ public abstract class AbstractContentParser implements ContentParser {
         // value of tz is actually used.  If the original non 1 number is used the
         // layout will be messed up.
         AffineTransform oldHScaling = new AffineTransform(graphicState.getCTM());
-        float hScaling = graphicState.getTextState().hScalling;
+        float hScalling = graphicState.getTextState().hScalling;
         AffineTransform horizontalScalingTransform =
                 new AffineTransform(
-                        af.getScaleX() * hScaling,
+                        af.getScaleX() * hScalling,
                         af.getShearY(),
                         af.getShearX(),
                         af.getScaleY(),
@@ -1975,7 +1917,7 @@ public abstract class AbstractContentParser implements ContentParser {
      * @param rule   - rule to apply to the alphaComposite.
      * @param alpha  - alpha value, opaque = 1.0f.
      */
-    protected static void setAlpha(Shapes shapes, GraphicsState graphicsState, int rule, float alpha) {
+    protected static void setAlpha(Shapes shapes, int rule, float alpha) {
         // Build the alpha composite object and add it to the shapes but only
         // if it hash changed.
         if (shapes != null && (shapes.getAlpha() != alpha || shapes.getRule() != rule)) {

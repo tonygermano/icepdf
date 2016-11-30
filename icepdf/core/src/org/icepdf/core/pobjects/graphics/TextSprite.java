@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -40,11 +40,8 @@ import java.util.ArrayList;
 public class TextSprite {
 
     // ability to turn off optimized drawing for text.
-    private static boolean optimizedDrawingEnabled =
+    private final static boolean OPTIMIZED_DRAWING_ENABLED =
             Defs.booleanProperty("org.icepdf.core.text.optimized", true);
-
-    private final static boolean OPTIMIZED_DRAWING_TYPE_3_ENABLED =
-            Defs.booleanProperty("org.icepdf.core.text.optimized.type3", true);
 
     // child GlyphText objects
     private ArrayList<GlyphText> glyphTexts;
@@ -55,7 +52,6 @@ public class TextSprite {
 
     // space reference for where glyph
     private AffineTransform graphicStateTransform;
-    private AffineTransform tmTransform;
 
     // stroke color
     private Color strokeColor;
@@ -67,23 +63,17 @@ public class TextSprite {
     private String fontName;
     private int fontSize;
 
-    private static final String TYPE_3 = "Type3";
-
     /**
-     * <p>Creates a new TextSprite object.</p>
+     * <p>Creates a new TextSprit object.</p>
      *
      * @param font font used when painting glyphs.
-     * @param contentLength length of text content.
+     * @param size size of the font in user space
      */
-    public TextSprite(FontFile font, int contentLength, AffineTransform graphicStateTransform, AffineTransform tmTransform) {
-        glyphTexts = new ArrayList<GlyphText>(contentLength);
+    public TextSprite(FontFile font, int size, AffineTransform graphicStateTransform) {
+        glyphTexts = new ArrayList<GlyphText>(size);
         // all glyphs in text share this ctm
         this.graphicStateTransform = graphicStateTransform;
-        this.tmTransform = tmTransform;
         this.font = font;
-        if (optimizedDrawingEnabled && !OPTIMIZED_DRAWING_TYPE_3_ENABLED) {
-            optimizedDrawingEnabled = !(font.getFormat() != null && font.getFormat().equals(TYPE_3));
-        }
         bounds = new Rectangle2D.Float();
     }
 
@@ -92,7 +82,7 @@ public class TextSprite {
      * the current CTM</p>
      *
      * @param cid     cid to paint.
-     * @param unicode unicode representation of cid.
+     * @param unicode unicode represention of cid.
      * @param x       x-coordinate to paint.
      * @param y       y-coordinate to paint.
      * @param width   width of cid from font.
@@ -106,33 +96,22 @@ public class TextSprite {
 
         float h = (float) (font.getAscent() + font.getDescent());
 
-        double ascent = font.getAscent();
-
         if (h <= 0.0f) {
             h = (float) (font.getMaxCharBounds().getHeight());
         }
         if (w <= 0.0f) {
             w = (float) font.getMaxCharBounds().getWidth();
         }
-        // zero height will not intersect with clip rectangle and maybe have visibility issues.
-        // we generally get here if the font.getAscent is zero and as a result must compensate.
+        // zero height will not intersect with clip rectangle
+        // todo: test if this can occur, might be legacy code from old bug...
         if (h <= 0.0f) {
-            Rectangle2D bounds = font.getEstringBounds(cid, 0, 1);
-            if (bounds != null && bounds.getHeight() > 0) {
-                h = (float) bounds.getHeight();
-            } else {
-                // match the width, as it will make text selection work a bit better.
-                h = w;//1.0f;
-            }
-            if (ascent == 0) {
-                ascent = h;
-            }
+            h = 1.0f;
         }
         if (w <= 0.0f) {
             w = 1.0f;
         }
         Rectangle2D.Float glyphBounds =
-                new Rectangle2D.Float(x, y - (float) ascent, w, h);
+                new Rectangle2D.Float(x, y - (float) font.getAscent(), w, h);
 
         // add bounds to total text bounds.
         bounds.add(glyphBounds);
@@ -140,7 +119,7 @@ public class TextSprite {
         // create glyph and normalize bounds.
         GlyphText glyphText =
                 new GlyphText(x, y, glyphBounds, cid, unicode);
-        glyphText.normalizeToUserSpace(graphicStateTransform, tmTransform);
+        glyphText.normalizeToUserSpace(graphicStateTransform);
         glyphTexts.add(glyphText);
         return glyphText;
     }
@@ -159,7 +138,7 @@ public class TextSprite {
     }
 
     /**
-     * Set the graphic state transform on all child sprites, This is used for
+     * Set the graphic state transorm on all child sprites, This is used for
      * xForm object parsing and text selection.  There is no need to do this
      * outside of the context parser.
      *
@@ -168,7 +147,7 @@ public class TextSprite {
     public void setGraphicStateTransform(AffineTransform graphicStateTransform) {
         this.graphicStateTransform = graphicStateTransform;
         for (GlyphText sprite : glyphTexts) {
-            sprite.normalizeToUserSpace(this.graphicStateTransform, tmTransform);
+            sprite.normalizeToUserSpace(this.graphicStateTransform);
         }
     }
 
@@ -348,7 +327,7 @@ public class TextSprite {
      */
     public boolean intersects(Shape shape) {
 //        return shape.intersects(bounds.toJava2dCoordinates());
-        return !(optimizedDrawingEnabled) ||
+        return !OPTIMIZED_DRAWING_ENABLED ||
                 (shape != null && shape.intersects(bounds));
     }
 }

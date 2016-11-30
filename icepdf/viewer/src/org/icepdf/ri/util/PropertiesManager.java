@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -51,16 +51,19 @@ public class PropertiesManager {
     private static final String PROPERTY_DEFAULT_URL = "application.defaultURL";
 
     // window properties
-    public static final String PROPERTY_UTILITY_DIVIDER_LOCATION = "application.divider.location";
-    public static final String PROPERTY_DIVIDER_LOCATION = "application.properties.divider.location";
+    public static final String PROPERTY_DIVIDER_LOCATION = "application.divider.location";
+
     // default page fit mode
     public static final String PROPERTY_DEFAULT_PAGEFIT = "document.pagefitMode";
+
     // default print media size.
     public static final String PROPERTY_PRINT_MEDIA_SIZE_WIDTH = "document.print.mediaSize.width";
     public static final String PROPERTY_PRINT_MEDIA_SIZE_HEIGHT = "document.print.mediaSize.height";
     public static final String PROPERTY_PRINT_MEDIA_SIZE_UNIT = "document.print.mediaSize.unit";
+
     // system properties
     public static final String SYSPROPERTY_HIGHLIGHT_COLOR = "org.icepdf.core.views.page.text.highlightColor";
+
     // properties used to hide/show toolbars
     public static final String PROPERTY_SHOW_TOOLBAR_UTILITY = "application.toolbar.show.utility";
     public static final String PROPERTY_SHOW_TOOLBAR_PAGENAV = "application.toolbar.show.pagenav";
@@ -69,23 +72,21 @@ public class PropertiesManager {
     public static final String PROPERTY_SHOW_TOOLBAR_ROTATE = "application.toolbar.show.rotate";
     public static final String PROPERTY_SHOW_TOOLBAR_TOOL = "application.toolbar.show.tool";
     public static final String PROPERTY_SHOW_TOOLBAR_ANNOTATION = "application.toolbar.show.annotation";
-    public static final String PROPERTY_SHOW_TOOLBAR_FORMS = "application.toolbar.show.forms";
+
     // properties used to hide/show status bar buttons
     public static final String PROPERTY_SHOW_STATUSBAR = "application.statusbar";
     // properties used to hide/show status bar status label
     public static final String PROPERTY_SHOW_STATUSBAR_STATUSLABEL = "application.statusbar.show.statuslabel";
     // properties used to hide/show status bar buttons
     public static final String PROPERTY_SHOW_STATUSBAR_VIEWMODE = "application.statusbar.show.viewmode";
-    public static final String PROPERTY_SHOW_STATUSBAR_VIEWMODE_SINGLE = "application.statusbar.show.viewmode.singlePage";
-    public static final String PROPERTY_SHOW_STATUSBAR_VIEWMODE_SINGLE_CONTINUOUS = "application.statusbar.show.viewmode.singlePageContinuous";
-    public static final String PROPERTY_SHOW_STATUSBAR_VIEWMODE_DOUBLE = "application.statusbar.show.viewmode.doublePage";
-    public static final String PROPERTY_SHOW_STATUSBAR_VIEWMODE_DOUBLE_CONTINUOUS = "application.statusbar.show.viewmode.doublePageContinuous";
+
     // properties used to hide/show the utility buttons (open, print, etc.)
     public static final String PROPERTY_SHOW_UTILITY_OPEN = "application.toolbar.show.utility.open";
     public static final String PROPERTY_SHOW_UTILITY_SAVE = "application.toolbar.show.utility.save";
     public static final String PROPERTY_SHOW_UTILITY_PRINT = "application.toolbar.show.utility.print";
     public static final String PROPERTY_SHOW_UTILITY_SEARCH = "application.toolbar.show.utility.search";
     public static final String PROPERTY_SHOW_UTILITY_UPANE = "application.toolbar.show.utility.upane";
+
     // properties used to hide/show utility pane tabs
     public static final String PROPERTY_HIDE_UTILITYPANE = "application.utilitypane.hide";
     public static final String PROPERTY_SHOW_UTILITYPANE_BOOKMARKS = "application.utilitypane.show.bookmarks";
@@ -94,40 +95,21 @@ public class PropertiesManager {
     public static final String PROPERTY_SHOW_UTILITYPANE_LAYERS = "application.utilitypane.show.layers";
     public static final String PROPERTY_SHOW_UTILITYPANE_ANNOTATION = "application.utilitypane.show.annotation";
     public static final String PROPERTY_SHOW_UTILITYPANE_ANNOTATION_FLAGS = "application.utilitypane.show.annotation.flags";
-    public static final String PROPERTY_SHOW_UTILITYPANE_SIGNATURES = "application.utilitypane.show.signatures";
-    public static final String PROPERTY_SHOW_UTILITYPANE_ACROFORM = "application.utilitypane.show.acroform";
+
     // default utility pane thumbnail zoom size for non-embedded files
     public static final String PROPERTY_UTILITYPANE_THUMBNAILS_ZOOM = "application.utilitypane.thumbnail.zoom";
+
     // properties used for default zoom levels
     public static final String PROPERTY_DEFAULT_ZOOM_LEVEL = "application.zoom.factor.default";
     public static final String PROPERTY_ZOOM_RANGES = "application.zoom.range.default";
+
     // property to hide/show menu keyboard accelerator shortcuts
     public static final String PROPERTY_SHOW_KEYBOARD_SHORTCUTS = "application.menuitem.show.keyboard.shortcuts";
+
     // properties used for overriding ViewerPreferences pulled from the document
     public static final String PROPERTY_VIEWPREF_HIDETOOLBAR = "application.viewerpreferences.hidetoolbar";
     public static final String PROPERTY_VIEWPREF_HIDEMENUBAR = "application.viewerpreferences.hidemenubar";
     public static final String PROPERTY_VIEWPREF_FITWINDOW = "application.viewerpreferences.fitwindow";
-    public static final String PROPERTY_VIEWPREF_FORM_HIGHLIGHT = "application.viewerpreferences.form.highlight";
-
-    // properties used to control visibility of annotation controls on main utility panel.
-    public static final String PROPERTY_SHOW_UTILITY_ANNOTATION_HIGHLIGHT = "application.toolbar.annotation.show.highlight";
-    public static final String PROPERTY_SHOW_UTILITY_ANNOTATION_UNDERLINE = "application.toolbar.annotation.show.underline";
-    public static final String PROPERTY_SHOW_UTILITY_ANNOTATION_STRIKE_OUT = "application.toolbar.annotation.show.strikeOut";
-    public static final String PROPERTY_SHOW_UTILITY_ANNOTATION_LINE = "application.toolbar.annotation.show.line";
-    public static final String PROPERTY_SHOW_UTILITY_ANNOTATION_LINK = "application.toolbar.annotation.show.link";
-    public static final String PROPERTY_SHOW_UTILITY_ANNOTATION_ARROW = "application.toolbar.annotation.show.arrow";
-    public static final String PROPERTY_SHOW_UTILITY_ANNOTATION_RECTANGLE = "application.toolbar.annotation.show.rectangle";
-    public static final String PROPERTY_SHOW_UTILITY_ANNOTATION_CIRCLE = "application.toolbar.annotation.show.circle";
-    public static final String PROPERTY_SHOW_UTILITY_ANNOTATION_INK = "application.toolbar.annotation.show.ink";
-    public static final String PROPERTY_SHOW_UTILITY_ANNOTATION_FREE_TEXT = "application.toolbar.annotation.show.freeText";
-    public static final String PROPERTY_SHOW_UTILITY_ANNOTATION_TEXT = "application.toolbar.annotation.show.text";
-    // Individual controls for the annotation toolbar button commands
-    public static final String PROPERTY_SHOW_TOOLBAR_ANNOTATION_SELECTION = "application.toolbar.show.annotation.selection";
-    public static final String PROPERTY_SHOW_TOOLBAR_ANNOTATION_HIGHLIGHT = "application.toolbar.show.annotation.highlight";
-    public static final String PROPERTY_SHOW_TOOLBAR_ANNOTATION_TEXT = "application.toolbar.show.annotation.text";
-    // Individual control of the markup annotation context menu
-    public static final String PROPERTY_SHOW_ANNOTATION_MARKUP_REPLY_TO = "application.annotation.show.markup.replyTo";
-    public static final String PROPERTY_SHOW_ANNOTATION_MARKUP_SET_STATUS = "application.annotation.show.markup.setStatus";
 
     //the version name, used in about dialog and start-up message
     String versionName = Document.getLibraryVersion();
@@ -245,10 +227,6 @@ public class PropertiesManager {
         unrecoverableError = false;
     }
 
-    public Properties getSystemProperties() {
-        return sysProps;
-    }
-
     private boolean setupDefaultProperties() {
         defaultProps = new Properties();
 
@@ -281,6 +259,7 @@ public class PropertiesManager {
         return true;
     }
 
+
     boolean hasUserRejectedCreatingLocalDataDir() {
         return userRejectedCreatingLocalDataDir;
     }
@@ -296,6 +275,7 @@ public class PropertiesManager {
     private boolean ownLock() {
         return lockDir != null;
     }
+
 
     private void setupHomeDir(String homeString) {
         if (homeString == null) {
@@ -345,6 +325,7 @@ public class PropertiesManager {
             }
         }
     }
+
 
     private void setupLock() {
         if (dataDir == null) {
@@ -504,6 +485,7 @@ public class PropertiesManager {
         }
         return result;
     }
+
 
     public void set(String propertyName, String value) {
         props.put(propertyName, value);

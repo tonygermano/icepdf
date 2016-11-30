@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -100,6 +100,7 @@ public class LineAnnotationHandler extends SelectionBoxHandler implements ToolHa
         }
     }
 
+
     protected static Name startLineEnding = LineAnnotation.LINE_END_NONE;
     protected static Name endLineEnding = LineAnnotation.LINE_END_NONE;
 
@@ -151,7 +152,7 @@ public class LineAnnotationHandler extends SelectionBoxHandler implements ToolHa
 
     public void mouseReleased(MouseEvent e) {
         endOfLine = e.getPoint();
-        updateSelectionSize(e.getX(), e.getY(), pageViewComponent);
+        updateSelectionSize(e, pageViewComponent);
 
         // check to make sure the bbox isn't zero height or width
         rectToDraw.setRect(rectToDraw.getX() - 8, rectToDraw.getY() - 8,
@@ -184,6 +185,7 @@ public class LineAnnotationHandler extends SelectionBoxHandler implements ToolHa
         annotation.setBBox(tBbox);
         annotation.resetAppearanceStream(getPageTransform());
 
+
         // create the annotation object.
         AbstractAnnotationComponent comp =
                 AnnotationComponentFactory.buildAnnotationComponent(
@@ -214,7 +216,7 @@ public class LineAnnotationHandler extends SelectionBoxHandler implements ToolHa
     }
 
     public void mouseDragged(MouseEvent e) {
-        updateSelectionSize(e.getX(), e.getY(), pageViewComponent);
+        updateSelectionSize(e, pageViewComponent);
         endOfLine = e.getPoint();
         pageViewComponent.repaint();
     }
@@ -223,7 +225,7 @@ public class LineAnnotationHandler extends SelectionBoxHandler implements ToolHa
      * Convert the shapes that make up the annotation to page space so that
      * they will scale correctly at different zooms.
      *
-     * @return transformed bBox.
+     * @return transformed bbox.
      */
     protected Rectangle convertToPageSpace() {
         Page currentPage = pageViewComponent.getPage();

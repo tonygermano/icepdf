@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -41,8 +41,6 @@ import java.util.HashMap;
  */
 public class CollectionDocumentView extends AbstractDocumentView {
 
-    private static final long serialVersionUID = 7220521612114533227L;
-
     private JPanel collectionDocumentPanel;
 
     public CollectionDocumentView(DocumentViewController documentViewController,
@@ -60,7 +58,7 @@ public class CollectionDocumentView extends AbstractDocumentView {
         layout.setHgap(15);
         layout.setVgap(15);
         collectionDocumentPanel = new JPanel(layout);
-        collectionDocumentPanel.setBackground(BACKGROUND_COLOUR);
+        collectionDocumentPanel.setBackground(backgroundColor);
         this.setLayout(new BorderLayout());
         this.add(collectionDocumentPanel,
                 BorderLayout.CENTER);
@@ -86,7 +84,7 @@ public class CollectionDocumentView extends AbstractDocumentView {
         DocumentViewComponent documentViewComponent;
         Library library = currentDocument.getCatalog().getLibrary();
         NameTree embeddedFilesNameTree = currentDocument.getCatalog().getNames().getEmbeddedFilesNameTree();
-        java.util.List filePairs = embeddedFilesNameTree.getNamesAndValues();
+        java.util.List filePairs = embeddedFilesNameTree.getRoot().getNamesAndValues();
 
         // add components for every page in the document
         for (int i = 0, max = filePairs.size(); i < max; i += 2) {
@@ -105,7 +103,7 @@ public class CollectionDocumentView extends AbstractDocumentView {
             documentViewComponent = new DocumentViewComponent(library, fileName, fileRef);
             JPanel documentViewPanel = new JPanel();
             documentViewPanel.setLayout(new BoxLayout(documentViewPanel, BoxLayout.Y_AXIS));
-            documentViewPanel.setBackground(BACKGROUND_COLOUR);
+            documentViewPanel.setBackground(backgroundColor);
             PageViewDecorator pageViewComponent = new PageViewDecorator(documentViewComponent);
             pageViewComponent.setAlignmentX(Component.CENTER_ALIGNMENT);
             documentViewPanel.add(pageViewComponent);

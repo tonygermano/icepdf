@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -165,20 +165,8 @@ class CMap extends Dictionary implements org.icepdf.core.pobjects.fonts.CMap {
         this.cMapInputStream = cMapInputStream;
     }
 
-    public boolean isOneByte() {
+    public boolean isOneByte(int cid) {
         return oneByte;
-    }
-
-    public boolean isTwoByte() {
-        return !oneByte;
-    }
-
-    public boolean isMixedByte() {
-        return false;
-    }
-
-    public boolean isEmptyMapping() {
-        return false;
     }
 
     /**
@@ -589,17 +577,13 @@ class CMap extends Dictionary implements org.icepdf.core.pobjects.fonts.CMap {
 
     // convert to characters.
     private char[] convertToString(CharSequence s) {
-        if (s == null || s.length() % 2 != 0) {
+        if (s == null && s.length() % 2 != 0) {
             throw new IllegalArgumentException();
         }
         int len = s.length();
-        if (len == 1) {
-            return new char[]{s.charAt(0)};
-        }
         char[] dest = new char[len / 2];
-        for (int i = 0, j = 0; i < len; i += 2, j++) {
+        for (int i = 0, j = 0; i < len; i += 2, j++)
             dest[j] = (char) ((s.charAt(i) << 8) | s.charAt(i + 1));
-        }
         return dest;
     }
 }
