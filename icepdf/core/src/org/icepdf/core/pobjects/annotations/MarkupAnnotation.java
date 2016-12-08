@@ -228,7 +228,7 @@ public abstract class MarkupAnnotation extends Annotation {
         return popupAnnotation;
     }
 
-    protected static void generateExternalGraphicsState(Form form, float opacity) {
+    protected static void generateExternalGraphicsState(Form form, float opacity){
         // add the transparency graphic context settings.
         if (form != null) {
             Resources resources = form.getResources();
@@ -246,9 +246,9 @@ public abstract class MarkupAnnotation extends Annotation {
         return opacity;
     }
 
-    public void setOpacity(int opacity) {
-        if (this.opacity >= 0 && this.opacity <= 255) {
-            this.opacity = Math.round(opacity / 2.55f) / 100.0f;
+    public void setOpacity(int opacity){
+        if (this.opacity >= 0 && this.opacity <= 255){
+            this.opacity = Math.round(opacity / 2.55f)/100.0f;
             entries.put(CA_KEY, this.opacity);
         }
     }

@@ -1,4 +1,5 @@
 /*
+/*
  * Copyright 2006-2016 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -159,7 +160,7 @@ public class Library {
             if (stateManager != null) {
                 if (stateManager.contains(reference)) {
                     ob = stateManager.getChange(reference);
-                    if (ob instanceof PObject) {
+                    if (ob instanceof PObject){
                         return ((PObject) ob).getObject();
                     }
                     return ob;

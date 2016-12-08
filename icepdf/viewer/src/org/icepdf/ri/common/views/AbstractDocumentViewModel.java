@@ -23,6 +23,7 @@ import org.icepdf.ri.common.UndoCaretaker;
 
 import javax.swing.*;
 import java.awt.*;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -128,7 +129,7 @@ public abstract class AbstractDocumentViewModel implements DocumentViewModel {
                 selectedPages.add(selectedPageText.get(pageIndex));
             }
             return selectedPages;
-        } else {
+        }else{
             return null;
         }
     }
@@ -342,12 +343,12 @@ public abstract class AbstractDocumentViewModel implements DocumentViewModel {
         // clear the previously selected state.
         if (this.currentAnnotation != null) {
             this.currentAnnotation.setSelected(false);
+            this.currentAnnotation.repaint();
         }
         this.currentAnnotation = currentAnnotation;
         // select the new selection if valid
         if (this.currentAnnotation != null) {
             this.currentAnnotation.setSelected(true);
-            this.currentAnnotation.repaint();
         }
     }
 

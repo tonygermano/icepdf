@@ -201,7 +201,7 @@ public class ImageUtility {
     }
 
     public static void writeImage(final BufferedImage bufferedImage, final String fileName,
-                                  String baseOutputPath) {
+                                  String baseOutputPath){
         try {
             ImageIO.write(bufferedImage, "PNG",
                     new File(baseOutputPath + fileName + ".png"));

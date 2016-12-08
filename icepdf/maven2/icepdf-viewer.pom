@@ -42,7 +42,7 @@
     <scm>
         <connection>scm:svn:http://anonsvn.icesoft.org/repo/icepdf/</connection>
         <url>http://sventon.icesoft.org/svn/repos/repo/list/icepdf/</url>
-        <tag>trunk</tag>
+        <tag>icepdf-%VERSION!-maven</tag>
     </scm>
 
     <dependencies>
@@ -51,6 +51,60 @@
             <groupId>org.icepdf.os</groupId>
             <artifactId>icepdf-core</artifactId>
             <version>%VERSION!</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk15on</artifactId>
+            <version>1.54</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk15on</artifactId>
+            <version>1.54</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-ext-jdk15on</artifactId>
+            <version>1.54</version>
+        </dependency>
+
+        <dependency>
+            <groupId>batik</groupId>
+            <artifactId>batik-awt-util</artifactId>
+            <version>1.6</version>
+        </dependency>
+
+        <dependency>
+            <groupId>batik</groupId>
+            <artifactId>batik-dom</artifactId>
+            <version>1.6</version>
+        </dependency>
+
+        <dependency>
+            <groupId>batik</groupId>
+            <artifactId>batik-svg-dom</artifactId>
+            <version>1.6</version>
+        </dependency>
+
+        <dependency>
+            <groupId>batik</groupId>
+            <artifactId>batik-svggen</artifactId>
+            <version>1.6</version>
+        </dependency>
+
+        <dependency>
+            <groupId>batik</groupId>
+            <artifactId>batik-util</artifactId>
+            <version>1.6</version>
+        </dependency>
+
+        <dependency>
+            <groupId>batik</groupId>
+            <artifactId>batik-xml</artifactId>
+            <version>1.6</version>
         </dependency>
 
     </dependencies>

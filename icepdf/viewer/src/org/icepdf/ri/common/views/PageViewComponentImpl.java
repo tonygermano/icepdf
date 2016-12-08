@@ -199,7 +199,7 @@ public class PageViewComponentImpl extends
         pageLoadingListener = new DefaultPageViewLoadingListener(this, documentViewController);
 
         // text selection handler
-        textSelectionPageHandler = new TextSelectionPageHandler(documentViewController, this, documentViewModel);
+        textSelectionPageHandler = new TextSelectionPageHandler(documentViewController, this,documentViewModel);
 
         // needed to propagate mouse events.
         this.documentViewModel = documentViewModel;
@@ -511,7 +511,7 @@ public class PageViewComponentImpl extends
             if (currentToolHandler != null) {
                 currentToolHandler.paintTool(g);
             }
-            if (documentViewModel.getViewToolMode() == DocumentViewModel.DISPLAY_TOOL_TEXT_SELECTION) {
+            if (documentViewModel.getViewToolMode() == DocumentViewModel.DISPLAY_TOOL_TEXT_SELECTION){
                 textSelectionPageHandler.paintTool(g);
             }
         }
@@ -579,7 +579,7 @@ public class PageViewComponentImpl extends
             ((SelectionBoxHandler) currentToolHandler).setSelectionRectangle(
                     cursorLocation, selection);
         }
-        if (textSelectionPageHandler != null) {
+        if (textSelectionPageHandler != null){
             textSelectionPageHandler.setSelectionRectangle(cursorLocation, selection);
         }
     }
