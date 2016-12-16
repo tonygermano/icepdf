@@ -336,14 +336,6 @@ public abstract class Annotation extends Dictionary {
     public static final Name TYPE = new Name("Annot");
     public static final Name RESOURCES_VALUE = new Name("Resources");
     public static final Name BBOX_VALUE = new Name("BBox");
-
-    /**
-     * (Required if this field is the child of another in the field hierarchy;
-     * absent otherwise) The field that is the immediate parent of this one (the
-     * field, if any, whose Kids array includes this field). A field can have at
-     * most one parent; that is, it can be included in the Kids array of at most
-     * one other field.
-     */
     public static final Name PARENT_KEY = new Name("Parent");
     /**
      * Dictionary constants for Annotations.
@@ -470,33 +462,6 @@ public abstract class Annotation extends Dictionary {
      */
     public static final Name APPEARANCE_STATE_KEY = new Name("AS");
     /**
-     * Key used to indicate highlight mode.
-     */
-    public static final Name HIGHLIGHT_MODE_KEY = new Name("H");
-    /**
-     * Indicates that the annotation has no highlight effect.
-     */
-    public static final Name HIGHLIGHT_NONE = new Name("N");
-
-    /**
-     * Indicates that the annotation rectangle colours should be inverted for
-     * its highlight effect.
-     */
-    public static final Name HIGHLIGHT_INVERT = new Name("I");
-
-    /**
-     * Indicates that the annotation rectangle border should be inverted for its
-     * highlight effect.
-     */
-    public static final Name HIGHLIGHT_OUTLINE = new Name("O");
-
-    /**
-     * Indicates that the annotation rectangle border should be pushed below the
-     * surface of th page.
-     */
-    public static final Name HIGHLIGHT_PUSH = new Name("P");
-
-    /**
      * Appearance dictionary specifying how the annotation is presented
      * visually on the page for normal display.
      */
@@ -567,8 +532,6 @@ public abstract class Annotation extends Dictionary {
     protected Name subtype;
     // content flag
     protected String content;
-    // unique name of annotation
-    protected String name;
     // borders style of the annotation, can be null
     protected BorderStyle borderStyle;
     // border defined by vector
@@ -629,7 +592,7 @@ public abstract class Annotation extends Dictionary {
                 Name fieldType = library.getName(hashMap, FieldDictionary.FT_KEY);
                 if (fieldType == null) {
                     // get type from parent object if we the widget and field dictionary aren't combined.
-                    Object tmp = library.getObject(hashMap, PARENT_KEY);
+                    Object tmp = library.getObject(hashMap, FieldDictionary.PARENT_KEY);
                     if (tmp instanceof HashMap) {
                         fieldType = library.getName((HashMap) tmp, FieldDictionary.FT_KEY);
                     }
@@ -1779,10 +1742,9 @@ public abstract class Annotation extends Dictionary {
 
     /**
      * Create or update a Form's content stream.
-     *
-     * @param shapes   shapes to associate with the appearance stream.
-     * @param bbox     bound box.
-     * @param matrix   form space.
+     * @param shapes shapes to associate with the appearance stream.
+     * @param bbox bound box.
+     * @param matrix form space.
      * @param rawBytes raw bytes of string data making up the content stream.
      * @return
      */
@@ -1832,32 +1794,8 @@ public abstract class Annotation extends Dictionary {
         return content;
     }
 
-    /**
-     * Gets the content key value.
-     *
-     * @param content content of annotation.
-     */
     public void setContents(String content) {
         this.content = setString(CONTENTS_KEY, content);
-    }
-
-    /**
-     * Gets the annotation name.  Should be unique.
-     *
-     * @return annotation name.
-     */
-    public String getName() {
-        name = getString(NM_KEY);
-        return name;
-    }
-
-    /**
-     * Sets the annotation name.  No checks are made to insure the name is unique.
-     *
-     * @param name sets the name value of the annotation.
-     */
-    public void setName(String name) {
-        this.name = setString(CONTENTS_KEY, name);
     }
 
     /**

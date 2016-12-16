@@ -100,7 +100,7 @@ public class TextWidgetAnnotation extends AbstractWidgetAnnotation<TextFieldDict
                     // need to find some resources, try adding the parent page.
                     Page page = getPage();
                     appearanceStream.getEntries().put(Form.RESOURCES_KEY,
-                            page != null ? page.getResources().getEntries() : null);
+                            page != null? page.getResources().getEntries():null);
                 }
                 // add the annotation as changed as T entry has also been updated to reflect teh changed content.
                 stateManager.addChange(new PObject(this, this.getPObjectReference()));
@@ -156,7 +156,7 @@ public class TextWidgetAnnotation extends AbstractWidgetAnnotation<TextFieldDict
         // apply the default appearance.
         Page parentPage = getPage();
         content.append(generateDefaultAppearance(markedContent,
-                parentPage != null ? parentPage.getResources() : null, fieldDictionary));
+                parentPage != null?parentPage.getResources():null, fieldDictionary));
         if (fieldDictionary.getDefaultAppearance() == null) {
             lineHeight = getFontSize(markedContent);
         }
@@ -165,10 +165,10 @@ public class TextWidgetAnnotation extends AbstractWidgetAnnotation<TextFieldDict
         if (!isfourthQuadrant) {
             double height = getBbox().getHeight();
             double size = fieldDictionary.getSize();
-            content.append((int) (size * 100) / 100.0f).append(" TL ");
+            content.append(lineHeight).append(" TL ");
             // todo rework taking into account multi line height.
-            double hOffset = size + ((height - size));
-            content.append(2).append(' ').append((int) (hOffset * 100) / 100.0f).append(" Td ");
+            double hOffset = Math.ceil(size + (height - size));
+            content.append(2).append(' ').append(hOffset).append(" Td ");
         } else {
             content.append(2).append(' ').append(2).append(" Td ");
         }

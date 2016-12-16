@@ -19,6 +19,7 @@ import org.icepdf.core.pobjects.Document;
 import org.icepdf.core.pobjects.Name;
 import org.icepdf.core.pobjects.Page;
 import org.icepdf.core.pobjects.acroform.AdditionalActionsDictionary;
+import org.icepdf.core.pobjects.acroform.FieldDictionary;
 import org.icepdf.core.pobjects.actions.Action;
 import org.icepdf.core.pobjects.annotations.AbstractWidgetAnnotation;
 import org.icepdf.core.pobjects.annotations.Annotation;
@@ -59,8 +60,6 @@ public abstract class AbstractAnnotationComponent extends JComponent implements 
     protected static boolean isInteractiveAnnotationsEnabled;
     protected static Color annotationHighlightColor;
     protected static float annotationHighlightAlpha;
-
-    protected static Border emptyBorder = BorderFactory.createEmptyBorder(0, 0, 0, 0);
 
     static {
         // enables interactive annotation support.
@@ -396,7 +395,7 @@ public abstract class AbstractAnnotationComponent extends JComponent implements 
         isMousePressed = true;
         int x = 0, y = 0;
         Point point = new Point();
-        if (e != null) {
+        if (e != null){
             x = e.getX();
             y = e.getY();
             point = e.getPoint();
@@ -453,9 +452,10 @@ public abstract class AbstractAnnotationComponent extends JComponent implements 
                 // get the A and AA entries.
                 if (annotation instanceof AbstractWidgetAnnotation) {
                     AbstractWidgetAnnotation widgetAnnotation = (AbstractWidgetAnnotation) annotation;
-                    if (widgetAnnotation != null) {
+                    FieldDictionary fieldDictionary = (FieldDictionary) widgetAnnotation.getFieldDictionary();
+                    if (fieldDictionary != null) {
                         AdditionalActionsDictionary additionalActionsDictionary =
-                                widgetAnnotation.getAdditionalActionsDictionary();
+                                fieldDictionary.getAdditionalActionsDictionary();
                         if (additionalActionsDictionary != null &&
                                 additionalActionsDictionary.isAnnotationValue(additionalActionKey)) {
                             documentViewController.getAnnotationCallback()
@@ -678,36 +678,6 @@ public abstract class AbstractAnnotationComponent extends JComponent implements 
             logger.log(Level.FINE, "Error getting page transform.", e);
         }
         return at;
-    }
-
-    /**
-     * Returns true if the selection tool is selected in the parent view model.
-     *
-     * @return true if selection tool is activated, otherwise false.
-     */
-    public boolean isSelectionToolAndEditable() {
-        return documentViewModel.getViewToolMode() ==
-                DocumentViewModel.DISPLAY_TOOL_SELECTION &&
-                isInteractiveAnnotationsEnabled &&
-                !annotation.getFlagReadOnly();
-    }
-
-    /**
-     * Returns true if on of the form creation tools are selected in the parent view model.  This includes the
-     * the selection tool as well.
-     *
-     * @return true if selection tool is activated, otherwise false.
-     */
-    public boolean isFormEditingToolAndEditable() {
-        return (documentViewModel.getViewToolMode() == DocumentViewModel.DISPLAY_TOOL_CHOICE_FIELD_ANNOTATION ||
-                documentViewModel.getViewToolMode() == DocumentViewModel.DISPLAY_TOOL_BUTTON_CHECKBOX_FIELD_ANNOTATION ||
-                documentViewModel.getViewToolMode() == DocumentViewModel.DISPLAY_TOOL_BUTTON_RADIO_FIELD_ANNOTATION ||
-                documentViewModel.getViewToolMode() == DocumentViewModel.DISPLAY_TOOL_BUTTON_FIELD_ANNOTATION ||
-                documentViewModel.getViewToolMode() == DocumentViewModel.DISPLAY_TOOL_TEXT_FIELD_ANNOTATION ||
-                documentViewModel.getViewToolMode() == DocumentViewModel.DISPLAY_TOOL_SIGNATURE_FIELD_ANNOTATION ||
-                documentViewModel.getViewToolMode() == DocumentViewModel.DISPLAY_TOOL_SELECTION) &&
-                isInteractiveAnnotationsEnabled &&
-                !annotation.getFlagReadOnly();
     }
 
     /**
