@@ -156,7 +156,7 @@ public class SquareAnnotationHandler extends SelectionBoxHandler implements Tool
     }
 
     public void mouseReleased(MouseEvent e) {
-        updateSelectionSize(e.getX(), e.getY(), pageViewComponent);
+        updateSelectionSize(e.getX(),e.getY(), pageViewComponent);
 
         // convert the rectangle to page space
         rectangle = convertToPageSpace(rectangle);
@@ -248,7 +248,7 @@ public class SquareAnnotationHandler extends SelectionBoxHandler implements Tool
     }
 
     public void mouseDragged(MouseEvent e) {
-        updateSelectionSize(e.getX(), e.getY(), pageViewComponent);
+        updateSelectionSize(e.getX(),e.getY(), pageViewComponent);
         rectangle.setRect(rectToDraw);
         pageViewComponent.repaint();
     }

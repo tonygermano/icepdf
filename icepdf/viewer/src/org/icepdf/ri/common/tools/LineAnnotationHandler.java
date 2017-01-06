@@ -151,7 +151,7 @@ public class LineAnnotationHandler extends SelectionBoxHandler implements ToolHa
 
     public void mouseReleased(MouseEvent e) {
         endOfLine = e.getPoint();
-        updateSelectionSize(e.getX(), e.getY(), pageViewComponent);
+        updateSelectionSize(e.getX(),e.getY(), pageViewComponent);
 
         // check to make sure the bbox isn't zero height or width
         rectToDraw.setRect(rectToDraw.getX() - 8, rectToDraw.getY() - 8,
@@ -214,7 +214,7 @@ public class LineAnnotationHandler extends SelectionBoxHandler implements ToolHa
     }
 
     public void mouseDragged(MouseEvent e) {
-        updateSelectionSize(e.getX(), e.getY(), pageViewComponent);
+        updateSelectionSize(e.getX(),e.getY(), pageViewComponent);
         endOfLine = e.getPoint();
         pageViewComponent.repaint();
     }

@@ -139,8 +139,8 @@ public class ImageUtility {
      */
     public static BufferedImage createTranslucentCompatibleImage(int width, int height) {
         if (configuration != null) {
-            if (logger.isLoggable(Level.FINER)) {
-                logger.finer("Creating translucent image buffer " + width + "x" + height);
+            if (logger.isLoggable(Level.FINER)){
+                logger.finer("Creating translucent image buffer " + width + "x" +height);
             }
             return configuration.createCompatibleImage(width, height, Transparency.TRANSLUCENT);
         } else {
@@ -204,7 +204,7 @@ public class ImageUtility {
     }
 
     public static void writeImage(final BufferedImage bufferedImage, final String fileName,
-                                  String baseOutputPath) {
+                                  String baseOutputPath){
         try {
             ImageIO.write(bufferedImage, "PNG",
                     new File(baseOutputPath + fileName + ".png"));
@@ -535,9 +535,9 @@ public class ImageUtility {
 
         boolean hasAlpha = ImageUtility.hasAlpha(baseImage);
         BufferedImage argbImage;
-        if (hasAlpha) {
+        if (hasAlpha){
             argbImage = baseImage;
-        } else {
+        }else {
             // aways create a new buffer as we need leave the pevioius image un change for some type of masks.
             argbImage = ImageUtility.createTranslucentCompatibleImage(baseWidth, baseHeight);
         }
@@ -581,9 +581,9 @@ public class ImageUtility {
 
         boolean hasAlpha = ImageUtility.hasAlpha(baseImage);
         BufferedImage argbImage;
-        if (hasAlpha) {
+        if (hasAlpha){
             argbImage = baseImage;
-        } else {
+        }else {
             // aways create a new buffer as we need leave the pevioius image un change for some type of masks.
             argbImage = ImageUtility.createTranslucentCompatibleImage(baseWidth, baseHeight);
         }
@@ -640,9 +640,9 @@ public class ImageUtility {
 
         boolean hasAlpha = ImageUtility.hasAlpha(baseImage);
         BufferedImage argbImage;
-        if (hasAlpha) {
+        if (hasAlpha){
             argbImage = baseImage;
-        } else {
+        }else {
             // aways create a new buffer as we need leave the pevioius image un change for some type of masks.
             argbImage = ImageUtility.createTranslucentCompatibleImage(baseWidth, baseHeight);
         }
@@ -683,9 +683,9 @@ public class ImageUtility {
 
         boolean hasAlpha = ImageUtility.hasAlpha(baseImage);
         BufferedImage argbImage;
-        if (hasAlpha) {
+        if (hasAlpha){
             argbImage = baseImage;
-        } else {
+        }else {
             // aways create a new buffer as we need leave the pevioius image un change for some type of masks.
             argbImage = ImageUtility.createTranslucentCompatibleImage(baseWidth, baseHeight);
         }
@@ -743,9 +743,9 @@ public class ImageUtility {
 
         boolean hasAlpha = ImageUtility.hasAlpha(baseImage);
         BufferedImage argbImage;
-        if (hasAlpha) {
+        if (hasAlpha){
             argbImage = baseImage;
-        } else {
+        }else {
             // aways create a new buffer as we need leave the pevioius image un change for some type of masks.
             argbImage = ImageUtility.createTranslucentCompatibleImage(baseWidth, baseHeight);
         }
@@ -839,8 +839,8 @@ public class ImageUtility {
             }
             // build a new buffer with indexed colour model.
             DataBuffer db = wr.getDataBuffer();
-            //        SampleModel sm = new PixelInterleavedSampleModel(db.getDataType(), width, height, 1, width, new int[]{0});
-            //        WritableRaster wr = Raster.createWritableRaster(sm, db, new Point(0, 0));
+    //        SampleModel sm = new PixelInterleavedSampleModel(db.getDataType(), width, height, 1, width, new int[]{0});
+    //        WritableRaster wr = Raster.createWritableRaster(sm, db, new Point(0, 0));
             ColorModel cm = new IndexColorModel(bitsPerComponent, cmap.length, cmap, 0, true, -1, db.getDataType());
             img = new BufferedImage(cm, wr, false, null);
         } catch (InterruptedException e) {

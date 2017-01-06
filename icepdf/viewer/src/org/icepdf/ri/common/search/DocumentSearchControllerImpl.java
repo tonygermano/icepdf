@@ -496,11 +496,10 @@ public class DocumentSearchControllerImpl implements DocumentSearchController {
 
     /**
      * Gest teh page text for the given page index.
-     *
-     * @param pageIndex page index of page to extract text.
+     * @param pageIndex  page index of page to extract text.
      * @return page's page text,  can be null.
      */
-    protected PageText getPageText(int pageIndex) {
+    protected PageText getPageText(int pageIndex){
         PageText pageText = null;
         try {
             if (viewerController != null) {

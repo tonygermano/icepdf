@@ -100,7 +100,7 @@ public class TextWidgetAnnotation extends AbstractWidgetAnnotation<TextFieldDict
                 } else {
                     // need to find some resources, try adding the parent page.
                     Page page = getPage();
-                    if (page != null && page.getResources() != null) {
+                    if (page != null &&  page.getResources() != null) {
                         appearanceStream.getEntries().put(Form.RESOURCES_KEY, page.getResources().getEntries());
                     }
                 }
@@ -159,7 +159,7 @@ public class TextWidgetAnnotation extends AbstractWidgetAnnotation<TextFieldDict
         // apply the default appearance.
         Page parentPage = getPage();
         content.append(generateDefaultAppearance(markedContent,
-                parentPage != null ? parentPage.getResources() : null, fieldDictionary));
+                parentPage != null?parentPage.getResources():null, fieldDictionary));
         if (fieldDictionary.getDefaultAppearance() == null) {
             lineHeight = getFontSize(markedContent);
         }
@@ -168,10 +168,10 @@ public class TextWidgetAnnotation extends AbstractWidgetAnnotation<TextFieldDict
         if (!isfourthQuadrant) {
             double height = getBbox().getHeight();
             double size = fieldDictionary.getSize();
-            content.append((int) (size * 100) / 100.0f).append(" TL ");
+            content.append(lineHeight).append(" TL ");
             // todo rework taking into account multi line height.
-            double hOffset = size + ((height - size));
-            content.append(2).append(' ').append((int) (hOffset * 100) / 100.0f).append(" Td ");
+            double hOffset = Math.ceil(size + (height - size));
+            content.append(2).append(' ').append(hOffset).append(" Td ");
         } else {
             content.append(2).append(' ').append(2).append(" Td ");
         }
