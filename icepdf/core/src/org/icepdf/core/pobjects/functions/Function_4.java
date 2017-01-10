@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -21,9 +21,10 @@ import org.icepdf.core.pobjects.functions.postscript.Lexer;
 import org.icepdf.core.util.Utils;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.Stack;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -50,7 +51,7 @@ public class Function_4 extends Function {
     private byte[] functionContent;
 
     // cache for calculated colour values
-    private ConcurrentHashMap<Integer, float[]> resultCache;
+    private HashMap<Integer, float[]> resultCache;
 
     public Function_4(Dictionary d) {
         super(d);
@@ -59,14 +60,14 @@ public class Function_4 extends Function {
             Stream functionStream = (Stream) d;
             functionContent = functionStream.getDecodedStreamBytes(0);
             if (logger.isLoggable(Level.FINER)) {
-                logger.finer("Function 4: " + Utils.convertByteArrayToByteString(functionContent));
+                logger.finest("Function 4: " + Utils.convertByteArrayToByteString(functionContent));
             }
 
         } else {
             logger.warning("Type 4 function operands could not be found.");
         }
         // cache for type 4 function results.
-        resultCache = new ConcurrentHashMap<Integer, float[]>();
+        resultCache = new HashMap<Integer, float[]>();
     }
 
     /**
@@ -92,7 +93,7 @@ public class Function_4 extends Function {
         // parse/evaluate the type 4 functions with the input value(s) x.
         try {
             lex.parse(x);
-        } catch (Throwable e) {
+        } catch (IOException e) {
             logger.log(Level.WARNING, "Error Processing Type 4 definition", e);
         }
 

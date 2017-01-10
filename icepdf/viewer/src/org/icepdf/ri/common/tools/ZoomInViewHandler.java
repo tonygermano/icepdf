@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -52,7 +52,7 @@ public class ZoomInViewHandler extends SelectionBoxHandler implements ToolHandle
         // handle text selection drags.
         if (documentViewController != null) {
             // update the currently selected box
-            updateSelectionSize(e.getX(), e.getY(), parentComponent);
+            updateSelectionSize(e, parentComponent);
 
             // add selection box to child pages
             if (documentViewModel != null) {
@@ -101,7 +101,7 @@ public class ZoomInViewHandler extends SelectionBoxHandler implements ToolHandle
     public void mouseReleased(MouseEvent e) {
         if (documentViewController != null) {
             // update selection rectangle
-            updateSelectionSize(e.getX(), e.getY(), parentComponent);
+            updateSelectionSize(e, parentComponent);
 
             if (documentViewController.getViewPort() != null &&
                     rectToDraw.getWidth() > 0 &&

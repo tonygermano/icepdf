@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -21,7 +21,6 @@ import org.icepdf.core.util.Library;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.util.HashMap;
-import java.util.logging.Logger;
 
 
 /**
@@ -62,14 +61,38 @@ import java.util.logging.Logger;
  */
 public class LinkAnnotation extends Annotation {
 
-    private static final Logger logger =
-            Logger.getLogger(LinkAnnotation.class.toString());
-
     /**
-     * (Optional; not permitted if an A entry is present) A destination that shall be displayed when the annotation
-     * is activated (see 12.3.2, “Destinations”).
+     * Key used to indcate highlight mode.
      */
     public static final Name DESTINATION_KEY = new Name("Dest");
+
+    /**
+     * Key used to indcate highlight mode.
+     */
+    public static final Name HIGHLIGHT_MODE_KEY = new Name("H");
+
+    /**
+     * Indicates that the annotation has no highlight effect.
+     */
+    public static final Name HIGHLIGHT_NONE = new Name("N");
+
+    /**
+     * Indicates that the annotation rectangle colours should be inverted for
+     * its highlight effect.
+     */
+    public static final Name HIGHLIGHT_INVERT = new Name("I");
+
+    /**
+     * Indicates that the annotation rectangle border should be inverted for its
+     * highlight effect.
+     */
+    public static final Name HIGHLIGHT_OUTLINE = new Name("O");
+
+    /**
+     * Indicates that the annotation rectangle border should be pushed below the
+     * surface of th page.
+     */
+    public static final Name HIGHLIGHT_PUSH = new Name("P");
 
     /**
      * Creates a new instance of a LinkAnnotation.
@@ -79,6 +102,10 @@ public class LinkAnnotation extends Annotation {
      */
     public LinkAnnotation(Library l, HashMap h) {
         super(l, h);
+    }
+
+    public void init() {
+        super.init();
     }
 
     /**
@@ -109,31 +136,20 @@ public class LinkAnnotation extends Annotation {
         entries.put(HIGHLIGHT_MODE_KEY, HIGHLIGHT_INVERT);
 
         // create the new instance
-        LinkAnnotation linkAnnotation = null;
-        try {
-            linkAnnotation = new LinkAnnotation(library, entries);
-            linkAnnotation.init();
-            linkAnnotation.setPObjectReference(stateManager.getNewReferencNumber());
-            linkAnnotation.setNew(true);
+        LinkAnnotation linkAnnotation = new LinkAnnotation(library, entries);
+        linkAnnotation.init();
+        linkAnnotation.setPObjectReference(stateManager.getNewReferencNumber());
+        linkAnnotation.setNew(true);
 
-            // set default flags.
-            linkAnnotation.setFlag(Annotation.FLAG_READ_ONLY, false);
-            linkAnnotation.setFlag(Annotation.FLAG_NO_ROTATE, false);
-            linkAnnotation.setFlag(Annotation.FLAG_NO_ZOOM, false);
-            linkAnnotation.setFlag(Annotation.FLAG_PRINT, true);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            logger.fine("Link annotation instance creation was interrupted");
-        }
+        // set default flags.
+        linkAnnotation.setFlag(Annotation.FLAG_READ_ONLY, false);
+        linkAnnotation.setFlag(Annotation.FLAG_NO_ROTATE, false);
+        linkAnnotation.setFlag(Annotation.FLAG_NO_ZOOM, false);
+        linkAnnotation.setFlag(Annotation.FLAG_PRINT, true);
 
         return linkAnnotation;
     }
 
-    public void init() throws InterruptedException {
-        super.init();
-        // try and generate an appearance stream.
-        resetNullAppearanceStream();
-    }
 
     /**
      * <p>Gets the link annotations highlight mode (visual effect)taht should
@@ -141,7 +157,7 @@ public class LinkAnnotation extends Annotation {
      * active area.</p>
      *
      * @return one of the predefined highlight effects, HIGHLIGHT_NONE,
-     * HIGHLIGHT_OUTLINE or HIGHLIGHT_PUSH.
+     *         HIGHLIGHT_OUTLINE or HIGHLIGHT_PUSH.
      */
     public Name getHighlightMode() {
         Object possibleName = getObject(HIGHLIGHT_MODE_KEY);
@@ -163,7 +179,7 @@ public class LinkAnnotation extends Annotation {
      * permitted if an A entry is not present.
      *
      * @return annotation target destination, null if not present in
-     * annotation.
+     *         annotation.
      */
     public Destination getDestination() {
         Object obj = getObject(DESTINATION_KEY);

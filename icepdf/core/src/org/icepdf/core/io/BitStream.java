@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -33,10 +33,12 @@ public class BitStream {
     InputStream in;
     // Output stream
     OutputStream out;
+
     // bits left in stream
     int bits;
     // number of bits left in a byte
     int bits_left;
+
     boolean readEOF;
 
     // making value
@@ -92,37 +94,23 @@ public class BitStream {
     }
 
     /**
-     * @param count
+     * @param i
      * @return
      * @throws java.io.IOException
      */
-    public int getBits(int count) throws IOException {
-        if (count < 8) {
-            while (bits_left < count) {
-                int r = in.read();
-                if (r < 0) {
-                    readEOF = true;
-                    break;
-                }
-                bits <<= 8;
-                bits |= (r & 0xFF);
-                bits_left += 8;
+    public int getBits(int i) throws IOException {
+        while (bits_left < i) {
+            int r = in.read();
+            if (r < 0) {
+                readEOF = true;
+                break;
             }
-            bits_left -= count;
-            return (bits >> bits_left) & masks[count];
-        } else {
-            bits_left = 0;
-            if (count == 8) {
-                return in.read();
-            } else if (count == 16) {
-                return (in.read() << 8) | in.read();
-            } else if (count == 24) {
-                return (in.read() << 16) | (in.read() << 8) | in.read();
-            } else if (count == 32) {
-                return (in.read() << 24) | (in.read() << 16) | (in.read() << 8) | in.read();
-            }
+            bits <<= 8;
+            bits |= (r & 0xFF);
+            bits_left += 8;
         }
-        return 0;
+        bits_left -= i;
+        return (bits >> bits_left) & masks[i];
     }
 
     public boolean atEndOfFile() {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -69,33 +69,34 @@ public class ShadingType1Pattern extends ShadingType2Pattern {
     }
 
     @SuppressWarnings("unchecked")
-    public synchronized void init(GraphicsState graphicsState) {
+    public synchronized void init() {
         if (inited) {
             return;
         }
+        inited = true;
 
         // shading dictionary
-        if (shadingDictionary == null) {
-            shadingDictionary = library.getDictionary(entries, SHADING_KEY);
+        if (shading == null) {
+            shading = library.getDictionary(entries, SHADING_KEY);
         }
 
         colorSpace = PColorSpace.getColorSpace(library,
-                library.getObject(shadingDictionary, COLORSPACE_KEY));
+                library.getObject(shading, COLORSPACE_KEY));
 
         // get type 2 specific data.
-        Object tmp = library.getObject(shadingDictionary, DOMAIN_KEY);
+        Object tmp = library.getObject(shading, DOMAIN_KEY);
         if (tmp instanceof java.util.List) {
             domain = (List<Number>) tmp;
         } else {
             domain = new ArrayList<Number>(2);
-            domain.add(0.0f);
-            domain.add(1.0f);
-            domain.add(0.0f);
-            domain.add(1.0f);
+            domain.add(new Float(0.0));
+            domain.add(new Float(1.0));
+            domain.add(new Float(0.0));
+            domain.add(new Float(1.0));
         }
 
         // functions
-        tmp = library.getObject(shadingDictionary, FUNCTION_KEY);
+        tmp = library.getObject(shading, FUNCTION_KEY);
         if (tmp != null) {
             if (!(tmp instanceof java.util.List)) {
                 function = new Function[]{Function.getFunction(library,
@@ -124,20 +125,17 @@ public class ShadingType1Pattern extends ShadingType2Pattern {
 
         // calculate colour based on points that make up the line, 10 is a good
         // number for speed and gradient quality.
-        try {
-            int numberOfPoints = 10;
-            Color[] colors = calculateColorPoints(numberOfPoints, startPoint, endPoint, t0, t1);
-            float[] dist = calculateDomainEntries(numberOfPoints, t0, t1);
+        int numberOfPoints = 10;
+        Color[] colors = calculateColorPoints(numberOfPoints, startPoint, endPoint, t0, t1);
+        float[] dist = calculateDomainEntries(numberOfPoints, t0, t1);
 
-            linearGradientPaint = new LinearGradientPaint(
-                    startPoint, endPoint, dist, colors,
-                    MultipleGradientPaint.NO_CYCLE,
-                    MultipleGradientPaint.LINEAR_RGB,
-                    matrix);
-            inited = true;
-        } catch (Exception e) {
-            logger.finer("Failed ot initialize gradient paint type 1.");
-        }
+        linearGradientPaint = new LinearGradientPaint(
+                startPoint, endPoint, dist, colors,
+                MultipleGradientPaint.NO_CYCLE,
+                MultipleGradientPaint.LINEAR_RGB,
+                matrix);
+
+
     }
 
     /**

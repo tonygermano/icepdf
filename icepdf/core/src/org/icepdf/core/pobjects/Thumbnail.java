@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -66,13 +66,14 @@ public class Thumbnail extends Dictionary {
         }
     }
 
-    public void init() throws InterruptedException {
+
+    public void init() {
         Resources resource = new Resources(library, thumbStream.entries);
         image = thumbStream.getImage(null, resource);
         initialized = true;
     }
 
-    public BufferedImage getImage() throws InterruptedException {
+    public BufferedImage getImage() {
         if (!initialized) {
             init();
         }

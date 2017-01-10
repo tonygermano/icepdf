@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -47,6 +47,7 @@ import java.util.logging.Logger;
  */
 @SuppressWarnings("serial")
 public class ImagePool {
+
     private static final Logger log =
             Logger.getLogger(ImagePool.class.toString());
 
@@ -55,6 +56,7 @@ public class ImagePool {
 
 
     private static boolean enabled;
+
     static {
         // enable/disable the image pool all together.
         enabled = Defs.booleanProperty("org.icepdf.core.views.imagePoolEnabled", true);
@@ -69,17 +71,17 @@ public class ImagePool {
         // create a new reference so we don't have a hard link to the page
         // which will likely keep a page from being GC'd.
         if (enabled) {
-//            synchronized (fCache) {
+            synchronized (fCache) {
                 fCache.put(new Reference(ref.getObjectNumber(), ref.getGenerationNumber()), image);
-//            }
+            }
         }
     }
 
     public BufferedImage get(Reference ref) {
         if (enabled) {
-//            synchronized (fCache) {
+            synchronized (fCache) {
                 return fCache.get(ref);
-//            }
+            }
         } else {
             return null;
         }
@@ -87,9 +89,9 @@ public class ImagePool {
 
     public boolean containsKey(Reference ref) {
         if (enabled) {
-//            synchronized (fCache) {
+            synchronized (fCache) {
                 return fCache.containsKey(ref);
-//            }
+            }
         } else {
             return false;
         }

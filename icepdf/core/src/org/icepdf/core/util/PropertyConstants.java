@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -20,12 +20,8 @@ public class PropertyConstants {
     // property change event names
 
     public final static String
-            DOCUMENT_CURRENT_PAGE = "documentCurrentPage",
 
-    DOCUMENT_VIEW_ZOOM_CHANGE = "documentViewZoomChange",
-            DOCUMENT_VIEW_ROTATION_CHANGE = "documentViewRotationChange",
-            DOCUMENT_VIEW_REFRESH_CHANGE = "documentViewRefreshChange",
-            DOCUMENT_VIEW_DEMO_MODE_CHANGE = "documentViewDemoChange",
+            DOCUMENT_CURRENT_PAGE = "documentCurrentPage",
 
     DOCUMENT_TOOL_PAN = "documentToolRotation",
             DOCUMENT_TOOL_ZOOM_IN = "documentToolZoomIn",

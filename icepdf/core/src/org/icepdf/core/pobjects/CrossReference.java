@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -24,7 +24,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -46,7 +45,8 @@ public class CrossReference {
      * Map of all the objects in reference by the CrossReference table.  Ojbects
      * are retrieved by object number.
      */
-    private ConcurrentHashMap<Number, Entry> hObjectNumber2Entry;
+    private HashMap<Number, Entry> hObjectNumber2Entry;
+
     /**
      * In a Linearized PDF, we don't want to load all Trailers and their XRefs
      * upfront, but would rather load the first upfront, and then lazily load
@@ -60,6 +60,7 @@ public class CrossReference {
     private PTrailer pTrailer;
     private CrossReference xrefPrevious;
     private CrossReference xrefPeer;
+
     //
     private boolean bIsCrossReferenceTable;
     private boolean bHaveTriedLoadingPrevious;
@@ -69,7 +70,7 @@ public class CrossReference {
     protected int offset;
 
     public CrossReference() {
-        hObjectNumber2Entry = new ConcurrentHashMap<Number, Entry>(4096);
+        hObjectNumber2Entry = new HashMap<Number, Entry>(4096);
     }
 
     public void setTrailer(PTrailer trailer) {

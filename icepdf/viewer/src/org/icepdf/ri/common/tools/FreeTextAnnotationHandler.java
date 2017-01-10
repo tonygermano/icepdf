@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -49,6 +49,7 @@ public class FreeTextAnnotationHandler extends SelectionBoxHandler
     private static final Logger logger =
             Logger.getLogger(LineAnnotationHandler.class.toString());
 
+
     /**
      * New Text selection handler.  Make sure to correctly and and remove
      * this mouse and text listeners.
@@ -82,7 +83,7 @@ public class FreeTextAnnotationHandler extends SelectionBoxHandler
     }
 
     public void mouseReleased(MouseEvent e) {
-        updateSelectionSize(e.getX(), e.getY(), pageViewComponent);
+        updateSelectionSize(e, pageViewComponent);
 
         // check the bounds on rectToDraw to try and avoid creating
         // an annotation that is very small.
@@ -142,7 +143,7 @@ public class FreeTextAnnotationHandler extends SelectionBoxHandler
     }
 
     public void mouseDragged(MouseEvent e) {
-        updateSelectionSize(e.getX(), e.getY(), pageViewComponent);
+        updateSelectionSize(e, pageViewComponent);
     }
 
     public void mouseMoved(MouseEvent e) {
@@ -156,5 +157,6 @@ public class FreeTextAnnotationHandler extends SelectionBoxHandler
     public void uninstallTool() {
 
     }
+
 
 }

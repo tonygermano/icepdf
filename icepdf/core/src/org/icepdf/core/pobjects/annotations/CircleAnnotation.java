@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -70,7 +70,7 @@ public class CircleAnnotation extends MarkupAnnotation {
         super(l, h);
     }
 
-    public void init() throws InterruptedException {
+    public void init() {
         super.init();
         // parse out interior colour, specific to link annotations.
         fillColor = Color.WHITE; // we default to black but probably should be null
@@ -86,8 +86,6 @@ public class CircleAnnotation extends MarkupAnnotation {
             fillColor = new Color(red, green, blue);
             isFillColor = true;
         }
-        // try and generate an appearance stream.
-        resetNullAppearanceStream();
     }
 
     /**
@@ -116,22 +114,16 @@ public class CircleAnnotation extends MarkupAnnotation {
         }
 
         // create the new instance
-        CircleAnnotation circleAnnotation = null;
-        try {
-            circleAnnotation = new CircleAnnotation(library, entries);
-            circleAnnotation.init();
-            circleAnnotation.setPObjectReference(stateManager.getNewReferencNumber());
-            circleAnnotation.setNew(true);
+        CircleAnnotation circleAnnotation = new CircleAnnotation(library, entries);
+        circleAnnotation.init();
+        circleAnnotation.setPObjectReference(stateManager.getNewReferencNumber());
+        circleAnnotation.setNew(true);
 
-            // set default flags.
-            circleAnnotation.setFlag(Annotation.FLAG_READ_ONLY, false);
-            circleAnnotation.setFlag(Annotation.FLAG_NO_ROTATE, false);
-            circleAnnotation.setFlag(Annotation.FLAG_NO_ZOOM, false);
-            circleAnnotation.setFlag(Annotation.FLAG_PRINT, true);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            logger.fine("CircletAnnotation initialization interrupted.");
-        }
+        // set default flags.
+        circleAnnotation.setFlag(Annotation.FLAG_READ_ONLY, false);
+        circleAnnotation.setFlag(Annotation.FLAG_NO_ROTATE, false);
+        circleAnnotation.setFlag(Annotation.FLAG_NO_ZOOM, false);
+        circleAnnotation.setFlag(Annotation.FLAG_PRINT, true);
 
         return circleAnnotation;
     }
@@ -141,15 +133,8 @@ public class CircleAnnotation extends MarkupAnnotation {
      */
     public void resetAppearanceStream(double dx, double dy, AffineTransform pageTransform) {
 
-        Appearance appearance = appearances.get(currentAppearance);
-        AppearanceState appearanceState = appearance.getSelectedAppearanceState();
-
-        appearanceState.setMatrix(new AffineTransform());
-        appearanceState.setShapes(new Shapes());
-
-        Rectangle2D bbox = appearanceState.getBbox();
-        AffineTransform matrix = appearanceState.getMatrix();
-        Shapes shapes = appearanceState.getShapes();
+        matrix = new AffineTransform();
+        shapes = new Shapes();
 
         // setup the AP stream.
         setModifiedDate(PDate.formatDateTime(new Date()));
@@ -171,7 +156,7 @@ public class CircleAnnotation extends MarkupAnnotation {
         // setup the space for the AP content stream.
         AffineTransform af = new AffineTransform();
         af.scale(1, -1);
-        af.translate(-bbox.getMinX(), -bbox.getMaxY());
+        af.translate(-this.bbox.getMinX(), -this.bbox.getMaxY());
 
         BasicStroke stroke;
         if (borderStyle.isStyleDashed()) {
@@ -189,10 +174,6 @@ public class CircleAnnotation extends MarkupAnnotation {
                 rectangleToDraw.getHeight());
 
         shapes.add(new TransformDrawCmd(af));
-        // add external graphics state for transparency support.
-        shapes.add(new GraphicsStateCmd(EXT_GSTATE_NAME));
-        shapes.add(new AlphaDrawCmd(
-                AlphaComposite.getInstance(AlphaComposite.SRC_OVER, opacity)));
         shapes.add(new StrokeDrawCmd(stroke));
         shapes.add(new ShapeDrawCmd(circle));
         if (isFillColor) {
@@ -203,14 +184,43 @@ public class CircleAnnotation extends MarkupAnnotation {
             shapes.add(new ColorDrawCmd(color));
             shapes.add(new DrawDrawCmd());
         }
-        shapes.add(new AlphaDrawCmd(
-                AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f)));
 
         // update the appearance stream
         // create/update the appearance stream of the xObject.
-        Form form = updateAppearanceStream(shapes, bbox, matrix,
-                PostScriptEncoder.generatePostScript(shapes.getShapes()));
-        generateExternalGraphicsState(form, opacity);
+        StateManager stateManager = library.getStateManager();
+        Form form;
+        if (hasAppearanceStream()) {
+            form = (Form) getAppearanceStream();
+            // else a stream, we won't support this for annotations.
+        } else {
+            // create a new xobject/form object
+            HashMap<Object, Object> formEntries = new HashMap<Object, Object>();
+            formEntries.put(Form.TYPE_KEY, Form.TYPE_VALUE);
+            formEntries.put(Form.SUBTYPE_KEY, Form.SUB_TYPE_VALUE);
+            form = new Form(library, formEntries, null);
+            form.setPObjectReference(stateManager.getNewReferencNumber());
+            library.addObject(form, form.getPObjectReference());
+        }
+
+        if (form != null) {
+            Rectangle2D formBbox = new Rectangle2D.Float(0, 0,
+                    (float) bbox.getWidth(), (float) bbox.getHeight());
+            form.setAppearance(shapes, matrix, formBbox);
+            stateManager.addChange(new PObject(form, form.getPObjectReference()));
+            // update the AP's stream bytes so contents can be written out
+            form.setRawBytes(
+                    PostScriptEncoder.generatePostScript(shapes.getShapes()));
+            HashMap<Object, Object> appearanceRefs = new HashMap<Object, Object>();
+            appearanceRefs.put(APPEARANCE_STREAM_NORMAL_KEY, form.getPObjectReference());
+            entries.put(APPEARANCE_STREAM_KEY, appearanceRefs);
+
+            // compress the form object stream.
+            if (compressAppearanceStream) {
+                form.getEntries().put(Stream.FILTER_KEY, new Name("FlateDecode"));
+            } else {
+                form.getEntries().remove(Stream.FILTER_KEY);
+            }
+        }
     }
 
     public Color getFillColor() {

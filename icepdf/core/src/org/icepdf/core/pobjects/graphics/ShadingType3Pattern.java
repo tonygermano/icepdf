@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -40,6 +40,14 @@ public class ShadingType3Pattern extends ShadingPattern {
     private static final Logger logger =
             Logger.getLogger(ShadingType3Pattern.class.toString());
 
+    // A 1-in, n-out function or an array of n 1-in, 1-out functions (where n
+    // is the number of colour components in the shading dictionary's colour
+    // space).  The function(s) are called with values of the parametric variables
+    // t in the domain defined by the domain entry.  Each function's domain must
+    // be a superset of that of the shading dictionary.  If the return value
+    // is out of range it is adjusted to the nearest value.
+    protected Function[] function;
+
     // An array of two numbers [t0, t1] specifying the limiting values of a
     // parametric variable t. The variable is considered to vary linearly between
     // these two values as the colour gradient varies between the starting and
@@ -66,41 +74,41 @@ public class ShadingType3Pattern extends ShadingPattern {
     }
 
     @SuppressWarnings("unchecked")
-    public synchronized void init(GraphicsState graphicsState) {
+    public synchronized void init() {
 
         if (inited) {
             return;
         }
 
-        // shadingDictionary dictionary
-        if (shadingDictionary == null) {
-            shadingDictionary = library.getDictionary(entries, SHADING_KEY);
+        // shading dictionary
+        if (shading == null) {
+            shading = library.getDictionary(entries, SHADING_KEY);
         }
 
-        shadingType = library.getInt(shadingDictionary, SHADING_TYPE_KEY);
-        bBox = library.getRectangle(shadingDictionary, BBOX_KEY);
+        shadingType = library.getInt(shading, SHADING_TYPE_KEY);
+        bBox = library.getRectangle(shading, BBOX_KEY);
         colorSpace = PColorSpace.getColorSpace(library,
-                library.getObject(shadingDictionary, COLORSPACE_KEY));
-        if (library.getObject(shadingDictionary, BACKGROUND_KEY) != null &&
-                library.getObject(shadingDictionary, BACKGROUND_KEY) instanceof List) {
-            background = (List) library.getObject(shadingDictionary, BACKGROUND_KEY);
+                library.getObject(shading, COLORSPACE_KEY));
+        if (library.getObject(shading, BACKGROUND_KEY) != null &&
+                library.getObject(shading, BACKGROUND_KEY) instanceof List) {
+            background = (List) library.getObject(shading, BACKGROUND_KEY);
         }
-        antiAlias = library.getBoolean(shadingDictionary, ANTIALIAS_KEY);
+        antiAlias = library.getBoolean(shading, ANTIALIAS_KEY);
 
         // get type 2 specific data.
-        Object tmp = library.getObject(shadingDictionary, DOMAIN_KEY);
+        Object tmp = library.getObject(shading, DOMAIN_KEY);
         if (tmp instanceof List) {
             domain = (List<Number>) tmp;
         } else {
             domain = new ArrayList<Number>(2);
-            domain.add(0.0f);
-            domain.add(1.0f);
+            domain.add(new Float(0.0));
+            domain.add(new Float(1.0));
         }
-        tmp = library.getObject(shadingDictionary, COORDS_KEY);
+        tmp = library.getObject(shading, COORDS_KEY);
         if (tmp instanceof List) {
             coords = (List) tmp;
         }
-        tmp = library.getObject(shadingDictionary, EXTEND_KEY);
+        tmp = library.getObject(shading, EXTEND_KEY);
         if (tmp instanceof List) {
             extend = (List) tmp;
         } else {
@@ -108,7 +116,7 @@ public class ShadingType3Pattern extends ShadingPattern {
             extend.add(false);
             extend.add(false);
         }
-        tmp = library.getObject(shadingDictionary, FUNCTION_KEY);
+        tmp = library.getObject(shading, FUNCTION_KEY);
         if (tmp != null) {
             if (!(tmp instanceof List)) {
                 function = new Function[]{Function.getFunction(library,
@@ -143,34 +151,30 @@ public class ShadingType3Pattern extends ShadingPattern {
             radius = radius2;
         }
 
-        try {
-            // get the number off components in the colour
-            Color color1 = calculateColour(colorSpace, s[0], t0, t1);
-            Color color2 = calculateColour(colorSpace, s[1], t0, t1);
-            Color color3 = calculateColour(colorSpace, s[2], t0, t1);
-            Color color4 = calculateColour(colorSpace, s[3], t0, t1);
-            Color color5 = calculateColour(colorSpace, s[4], t0, t1);
+        // get the number off components in the colour
+        Color color1 = calculateColour(colorSpace, s[0], t0, t1);
+        Color color2 = calculateColour(colorSpace, s[1], t0, t1);
+        Color color3 = calculateColour(colorSpace, s[2], t0, t1);
+        Color color4 = calculateColour(colorSpace, s[3], t0, t1);
+        Color color5 = calculateColour(colorSpace, s[4], t0, t1);
 
-            if (color1 == null || color2 == null) {
-                return;
-            }
-            // Construct a LinearGradientPaint object to be use by java2D
-            Color[] colors = {color1, color2, color3, color4, color5};
-
-            radialGradientPaint = new RadialGradientPaint(
-                    center, radius,
-                    focus,
-                    s,
-                    colors,
-                    MultipleGradientPaint.NO_CYCLE,
-                    MultipleGradientPaint.LINEAR_RGB,
-                    matrix);
-
-            // get type 3 specific data.
-            inited = true;
-        } catch (Exception e) {
-            logger.finer("Failed ot initialize gradient paint type 3.");
+        if (color1 == null || color2 == null) {
+            return;
         }
+        // Construct a LinearGradientPaint object to be use by java2D
+        Color[] colors = {color1, color2, color3, color4, color5};
+
+        radialGradientPaint = new RadialGradientPaint(
+                center, radius,
+                focus,
+                s,
+                colors,
+                MultipleGradientPaint.NO_CYCLE,
+                MultipleGradientPaint.LINEAR_RGB,
+                matrix);
+
+        // get type 3 specific data.
+        inited = true;
     }
 
     private Color calculateColour(PColorSpace colorSpace, float s,
@@ -181,8 +185,22 @@ public class ShadingType3Pattern extends ShadingPattern {
         // find colour at point 
         float[] input = new float[1];
         input[0] = t;
+
         if (function != null) {
-            float[] output = calculateValues(input);
+
+            float[] output;
+            int length = function.length;
+            // simple 1 in N out function
+            if (length == 1) {
+                output = function[0].calculate(input);
+            } else {
+                // vector of function for each colour component, 1 in 1 out.
+                output = new float[length];
+                for (int i = 0; i < length; i++) {
+                    output[i] = function[i].calculate(input)[0];
+                }
+            }
+
             if (output != null) {
                 if (!(colorSpace instanceof DeviceN)) {
                     output = PColorSpace.reverse(output);
@@ -191,10 +209,12 @@ public class ShadingType3Pattern extends ShadingPattern {
             } else {
                 return null;
             }
+
         } else {
             logger.fine("Error processing Shading Type 3 Pattern.");
             return null;
         }
+
     }
 
     /**
@@ -212,7 +232,7 @@ public class ShadingType3Pattern extends ShadingPattern {
         return t0 + ((t1 - t0) * linearMapping);
     }
 
-    public Paint getPaint() throws InterruptedException {
+    public Paint getPaint() {
         init();
         return radialGradientPaint;
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -51,7 +51,7 @@ public abstract class ImageReference implements Callable<BufferedImage> {
     protected FutureTask<BufferedImage> futureTask;
 
     protected ImageStream imageStream;
-    protected GraphicsState graphicsState;
+    protected Color fillColor;
     protected Resources resources;
     protected BufferedImage image;
     protected Reference reference;
@@ -59,10 +59,10 @@ public abstract class ImageReference implements Callable<BufferedImage> {
     protected int imageIndex;
     protected Page parentPage;
 
-    protected ImageReference(ImageStream imageStream, GraphicsState graphicsState,
+    protected ImageReference(ImageStream imageStream, Color fillColor,
                              Resources resources, int imageIndex, Page parentPage) {
         this.imageStream = imageStream;
-        this.graphicsState = graphicsState;
+        this.fillColor = fillColor;
         this.resources = resources;
         this.imageIndex = imageIndex;
         this.parentPage = parentPage;
@@ -108,18 +108,18 @@ public abstract class ImageReference implements Callable<BufferedImage> {
      *
      * @return decoded/encoded BufferedImage for the respective ImageStream.
      */
-    protected BufferedImage createImage() {
+    protected synchronized BufferedImage createImage() {
         try {
             // block until thread comes back.
             if (futureTask != null) {
                 image = futureTask.get();
+                notifyAll();
             }
             if (image == null) {
                 image = call();
             }
         } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            logger.fine("Image loading interrupted");
+            logger.warning("Image loading interrupted");
         } catch (Exception e) {
             logger.log(Level.FINE, "Image loading execution exception", e);
         }

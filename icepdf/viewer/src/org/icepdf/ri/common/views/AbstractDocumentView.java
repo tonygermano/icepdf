@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -40,7 +40,6 @@ import java.util.logging.Logger;
  *
  * @since 2.5
  */
-@SuppressWarnings("serial")
 public abstract class AbstractDocumentView
         extends JComponent
         implements DocumentView, PropertyChangeListener, MouseListener {
@@ -49,7 +48,7 @@ public abstract class AbstractDocumentView
             Logger.getLogger(AbstractDocumentView.class.toString());
 
     // background colour
-    public static Color BACKGROUND_COLOUR;
+    public static Color backgroundColor;
 
     static {
         // sets the shadow colour of the decorator.
@@ -57,7 +56,7 @@ public abstract class AbstractDocumentView
             String color = Defs.sysProperty(
                     "org.icepdf.core.views.background.color", "#808080");
             int colorValue = ColorUtil.convertColor(color);
-            BACKGROUND_COLOUR =
+            backgroundColor =
                     new Color(colorValue >= 0 ? colorValue :
                             Integer.parseInt("808080", 16));
         } catch (NumberFormatException e) {
@@ -75,8 +74,6 @@ public abstract class AbstractDocumentView
     protected DocumentViewController documentViewController;
 
     protected JScrollPane documentScrollpane;
-    protected JPanel pagesPanel;
-    protected boolean disposing;
 
     protected Document currentDocument;
 
@@ -167,11 +164,6 @@ public abstract class AbstractDocumentView
         return documentViewModel;
     }
 
-    public void invalidate() {
-        super.invalidate();
-        pagesPanel.invalidate();
-    }
-
     public void dispose() {
 
         currentDocument = null;
@@ -208,9 +200,6 @@ public abstract class AbstractDocumentView
             currentTool.uninstallTool();
             removeMouseListener(currentTool);
             removeMouseMotionListener(currentTool);
-            if (currentTool instanceof TextSelectionViewHandler) {
-                documentScrollpane.removeMouseWheelListener((TextSelectionViewHandler) currentTool);
-            }
         }
         return currentTool;
     }
@@ -247,7 +236,6 @@ public abstract class AbstractDocumentView
             case DocumentViewModel.DISPLAY_TOOL_TEXT_SELECTION:
                 currentTool = new TextSelectionViewHandler(documentViewController,
                         documentViewModel, this);
-                documentScrollpane.addMouseWheelListener((TextSelectionViewHandler) currentTool);
                 break;
             case DocumentViewModel.DISPLAY_TOOL_SELECTION:
                 currentTool = new AnnotationSelectionHandler(

@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -56,5 +56,5 @@ public interface DrawCmd {
                               AffineTransform base,
                               OptionalContentState optionalContentState,
                               boolean paintAlpha,
-                              PaintTimer paintTimer) throws InterruptedException;
+                              PaintTimer paintTimer);
 }

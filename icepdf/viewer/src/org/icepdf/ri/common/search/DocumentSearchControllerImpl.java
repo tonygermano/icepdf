@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -131,7 +131,13 @@ public class DocumentSearchControllerImpl implements DocumentSearchController {
         int hitCount = 0;
 
         // get our our page text reference
-        PageText pageText = getPageText(pageIndex);
+        PageText pageText = null;
+        if (viewerController != null) {
+            // get access to currently open document instance.
+            pageText = viewerController.getDocument().getPageViewText(pageIndex);
+        } else if (document != null) {
+            pageText = document.getPageViewText(pageIndex);
+        }
 
         // some pages just don't have any text. 
         if (pageText == null) {
@@ -259,7 +265,13 @@ public class DocumentSearchControllerImpl implements DocumentSearchController {
         ArrayList<LineText> searchHits = new ArrayList<LineText>();
 
         // get our our page text reference
-        PageText pageText = getPageText(pageIndex);
+        PageText pageText = null;
+        if (viewerController != null) {
+            // get access to currently open document.
+            pageText = viewerController.getDocument().getPageViewText(pageIndex);
+        } else if (document != null) {
+            pageText = document.getPageViewText(pageIndex);
+        }
 
         // some pages just don't have any text.
         if (pageText == null) {
@@ -495,28 +507,6 @@ public class DocumentSearchControllerImpl implements DocumentSearchController {
     }
 
     /**
-     * Gest teh page text for the given page index.
-     *
-     * @param pageIndex page index of page to extract text.
-     * @return page's page text,  can be null.
-     */
-    protected PageText getPageText(int pageIndex) {
-        PageText pageText = null;
-        try {
-            if (viewerController != null) {
-                // get access to currently open document instance.
-                pageText = viewerController.getDocument().getPageViewText(pageIndex);
-            } else if (document != null) {
-                pageText = document.getPageViewText(pageIndex);
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            logger.fine("PageText extraction thread was interrupted.");
-        }
-        return pageText;
-    }
-
-    /**
      * Utility for breaking the pattern up into searchable words.  Breaks are
      * done on white spaces and punctuation.
      *
@@ -529,10 +519,11 @@ public class DocumentSearchControllerImpl implements DocumentSearchController {
         // found words. 
         ArrayList<String> words = new ArrayList<String>();
         char c;
-        char cPrev = 0;
+        char prevC = 32;
         for (int start = 0, curs = 0, max = phrase.length(); curs < max; curs++) {
             c = phrase.charAt(curs);
-            if (WordText.isWhiteSpace(c) || (WordText.isPunctuation(c) && !WordText.isDigit(cPrev))) {
+            if (!WordText.isDigit(prevC) && (WordText.isWhiteSpace(c) ||
+                    WordText.isPunctuation(c))) {
                 // add word segment
                 if (start != curs) {
                     words.add(phrase.substring(start, curs));
@@ -544,7 +535,7 @@ public class DocumentSearchControllerImpl implements DocumentSearchController {
             } else if (curs + 1 == max) {
                 words.add(phrase.substring(start, curs + 1));
             }
-            cPrev = c;
+            prevC = c;
         }
         return words;
     }

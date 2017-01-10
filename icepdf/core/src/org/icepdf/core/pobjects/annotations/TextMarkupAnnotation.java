@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -16,6 +16,7 @@
 package org.icepdf.core.pobjects.annotations;
 
 import org.icepdf.core.pobjects.*;
+import org.icepdf.core.pobjects.graphics.GraphicsState;
 import org.icepdf.core.pobjects.graphics.Shapes;
 import org.icepdf.core.pobjects.graphics.commands.*;
 import org.icepdf.core.util.ColorUtil;
@@ -115,9 +116,14 @@ public class TextMarkupAnnotation extends MarkupAnnotation {
     public static final Name KEY_QUAD_POINTS = new Name("QuadPoints");
 
     /**
+     * Named graphics state name used to store highlight transparency values.
+     */
+    public static final Name EXTGSTATE_NAME = new Name("ip1");
+
+    /**
      * Highlight transparency default
      */
-    public static final int HIGHLIGHT_ALPHA = 80;
+    public static final float HIGHLIGHT_ALPHA = 0.3f;
 
 
     /**
@@ -141,7 +147,7 @@ public class TextMarkupAnnotation extends MarkupAnnotation {
     }
 
     @SuppressWarnings("unchecked")
-    public void init() throws InterruptedException {
+    public void init() {
         super.init();
         // collect the quad points.
         List<Number> quadPoints = library.getArray(entries, KEY_QUAD_POINTS);
@@ -172,9 +178,6 @@ public class TextMarkupAnnotation extends MarkupAnnotation {
         // for editing purposes grab anny shapes from the AP Stream and
         // store them as markupBounds and markupPath. This works ok but
         // perhaps a better way would be to reapply the bound box
-        Appearance appearance = appearances.get(currentAppearance);
-        AppearanceState appearanceState = appearance.getSelectedAppearanceState();
-        Shapes shapes = appearanceState.getShapes();
         if (shapes != null) {
             markupBounds = new ArrayList<Shape>();
             markupPath = new GeneralPath();
@@ -189,8 +192,7 @@ public class TextMarkupAnnotation extends MarkupAnnotation {
             }
 
         }
-        // try and generate an appearance stream.
-        resetNullAppearanceStream();
+
     }
 
     /**
@@ -221,19 +223,13 @@ public class TextMarkupAnnotation extends MarkupAnnotation {
         }
 
         TextMarkupAnnotation textMarkupAnnotation =
-                null;
-        try {
-            textMarkupAnnotation = new TextMarkupAnnotation(library, entries);
-            textMarkupAnnotation.init();
-            entries.put(NM_KEY,
-                    new LiteralStringObject(String.valueOf(textMarkupAnnotation.hashCode())));
-            textMarkupAnnotation.setPObjectReference(stateManager.getNewReferencNumber());
-            textMarkupAnnotation.setNew(true);
-            textMarkupAnnotation.setModifiedDate(PDate.formatDateTime(new Date()));
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            logger.fine("Text markup annotation instance creation was interrupted");
-        }
+                new TextMarkupAnnotation(library, entries);
+        textMarkupAnnotation.init();
+        entries.put(NM_KEY,
+                new LiteralStringObject(String.valueOf(textMarkupAnnotation.hashCode())));
+        textMarkupAnnotation.setPObjectReference(stateManager.getNewReferencNumber());
+        textMarkupAnnotation.setNew(true);
+        textMarkupAnnotation.setModifiedDate(PDate.formatDateTime(new Date()));
         return textMarkupAnnotation;
     }
 
@@ -250,20 +246,8 @@ public class TextMarkupAnnotation extends MarkupAnnotation {
      */
     public void resetAppearanceStream(double dx, double dy, AffineTransform pageTransform) {
 
-        // check if we have anything to reset.
-        if (markupBounds == null) {
-            return;
-        }
-
-        Appearance appearance = appearances.get(currentAppearance);
-        AppearanceState appearanceState = appearance.getSelectedAppearanceState();
-
-        appearanceState.setMatrix(new AffineTransform());
-        appearanceState.setShapes(new Shapes());
-
-        Rectangle2D bbox = appearanceState.getBbox();
-        AffineTransform matrix = appearanceState.getMatrix();
-        Shapes shapes = appearanceState.getShapes();
+        matrix = new AffineTransform();
+        shapes = new Shapes();
 
         // setup the space for the AP content stream.
         AffineTransform af = new AffineTransform();
@@ -276,10 +260,10 @@ public class TextMarkupAnnotation extends MarkupAnnotation {
         BasicStroke stroke = new BasicStroke(1f);
         shapes.add(new TransformDrawCmd(af));
         shapes.add(new StrokeDrawCmd(stroke));
-        shapes.add(new GraphicsStateCmd(EXT_GSTATE_NAME));
-        shapes.add(new AlphaDrawCmd(
-                AlphaComposite.getInstance(AlphaComposite.SRC_OVER, opacity)));
         if (SUBTYPE_HIGHLIGHT.equals(subtype)) {
+            shapes.add(new GraphicsStateCmd(EXTGSTATE_NAME));
+            shapes.add(new AlphaDrawCmd(
+                    AlphaComposite.getInstance(AlphaComposite.SRC_OVER, HIGHLIGHT_ALPHA)));
             shapes.add(new ShapeDrawCmd(markupPath));
             shapes.add(new ColorDrawCmd(textMarkupColor));
             shapes.add(new FillDrawCmd());
@@ -314,8 +298,6 @@ public class TextMarkupAnnotation extends MarkupAnnotation {
             // not implemented,  need to create a custom stroke or
             // build out a custom line move.
         }
-        shapes.add(new AlphaDrawCmd(
-                AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f)));
 
         // create the quad points
         List<Float> quadPoints = new ArrayList<Float>();
@@ -341,19 +323,56 @@ public class TextMarkupAnnotation extends MarkupAnnotation {
         entries.put(KEY_QUAD_POINTS, quadPoints);
         setModifiedDate(PDate.formatDateTime(new Date()));
 
-        // update the appearance stream
         // create/update the appearance stream of the xObject.
-        Form form = updateAppearanceStream(shapes, bbox, matrix,
-                PostScriptEncoder.generatePostScript(shapes.getShapes()));
-        generateExternalGraphicsState(form, opacity);
+        StateManager stateManager = library.getStateManager();
+        Form form;
+        if (hasAppearanceStream()) {
+            form = (Form) getAppearanceStream();
+            // else a stream, we won't support this for annotations.
+        } else {
+            // create a new xobject/form object
+            HashMap<Object, Object> formEntries = new HashMap<Object, Object>();
+            formEntries.put(Form.TYPE_KEY, Form.TYPE_VALUE);
+            formEntries.put(Form.SUBTYPE_KEY, Form.SUB_TYPE_VALUE);
+            form = new Form(library, formEntries, null);
+            form.setPObjectReference(stateManager.getNewReferencNumber());
+            library.addObject(form, form.getPObjectReference());
+        }
+
+        if (form != null) {
+            Rectangle2D formBbox = new Rectangle2D.Float(0, 0,
+                    (float) bbox.getWidth(), (float) bbox.getHeight());
+            form.setAppearance(shapes, matrix, formBbox);
+            stateManager.addChange(new PObject(form, form.getPObjectReference()));
+            if (SUBTYPE_HIGHLIGHT.equals(subtype)) {
+                // add the transparency graphic context settings.
+                Resources resources = form.getResources();
+                HashMap<Object, Object> graphicsProperties = new HashMap<Object, Object>(2);
+                HashMap<Object, Object> graphicsState = new HashMap<Object, Object>(1);
+                graphicsProperties.put(GraphicsState.CA_STROKING_KEY, HIGHLIGHT_ALPHA);
+                graphicsProperties.put(GraphicsState.CA_NON_STROKING_KEY, HIGHLIGHT_ALPHA);
+                graphicsState.put(EXTGSTATE_NAME, graphicsProperties);
+                resources.getEntries().put(Resources.EXTGSTATE_KEY, graphicsState);
+                form.setResources(resources);
+            }
+            // update the AP's stream bytes so contents can be written out
+            form.setRawBytes(
+                    PostScriptEncoder.generatePostScript(shapes.getShapes()));
+            HashMap<Object, Object> appearanceRefs = new HashMap<Object, Object>();
+            appearanceRefs.put(APPEARANCE_STREAM_NORMAL_KEY, form.getPObjectReference());
+            entries.put(APPEARANCE_STREAM_KEY, appearanceRefs);
+
+            // compress the form object stream.
+            if (compressAppearanceStream) {
+                form.getEntries().put(Stream.FILTER_KEY, new Name("FlateDecode"));
+            } else {
+                form.getEntries().remove(Stream.FILTER_KEY);
+            }
+        }
     }
 
     @Override
     protected void renderAppearanceStream(Graphics2D g) {
-        Appearance appearance = appearances.get(currentAppearance);
-        AppearanceState appearanceState = appearance.getSelectedAppearanceState();
-        Shapes shapes = appearanceState.getShapes();
-
         // Appearance stream takes precedence over the quad points.
         if (shapes != null) {
             super.renderAppearanceStream(g);

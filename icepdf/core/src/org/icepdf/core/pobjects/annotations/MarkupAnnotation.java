@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -15,8 +15,10 @@
  */
 package org.icepdf.core.pobjects.annotations;
 
-import org.icepdf.core.pobjects.*;
-import org.icepdf.core.pobjects.graphics.GraphicsState;
+import org.icepdf.core.pobjects.LiteralStringObject;
+import org.icepdf.core.pobjects.Name;
+import org.icepdf.core.pobjects.PDate;
+import org.icepdf.core.pobjects.StringObject;
 import org.icepdf.core.util.Library;
 
 import java.util.HashMap;
@@ -151,11 +153,6 @@ public abstract class MarkupAnnotation extends Annotation {
      */
     public static final Name EX_DATA_KEY = new Name("ExData");
 
-    /**
-     * Named graphics state name used to store transparency values.
-     */
-    public static final Name EXT_GSTATE_NAME = new Name("ip1");
-
     protected String titleText;
     protected PopupAnnotation popupAnnotation;
     protected float opacity = 1.0f;
@@ -171,21 +168,15 @@ public abstract class MarkupAnnotation extends Annotation {
         super(l, h);
     }
 
-    public void init() throws InterruptedException {
+    public void init() {
         super.init();
         // title text
-        titleText = getString(T_KEY);
-
-        // rich text
-        richText = getString(RC_KEY);
-
-        // subject text
-        subject = getString(SUBJ_KEY);
-
-        // creation date
-        Object value = library.getObject(entries, CREATION_DATE_KEY);
+        Object value = library.getObject(entries, T_KEY);
         if (value != null && value instanceof StringObject) {
-            creationDate = new PDate(securityManager, getString(CREATION_DATE_KEY));
+            StringObject text = (StringObject) value;
+            titleText = text.getDecryptedLiteralString(securityManager);
+        } else if (value instanceof String) {
+            titleText = (String) value;
         }
 
         // popup child
@@ -200,10 +191,36 @@ public abstract class MarkupAnnotation extends Annotation {
             opacity = ca;
         }
 
+        // title text
+        value = library.getObject(entries, RC_KEY);
+        if (value != null && value instanceof StringObject) {
+            StringObject text = (StringObject) value;
+            richText = text.getDecryptedLiteralString(securityManager);
+        } else if (value instanceof String) {
+            richText = (String) value;
+        }
+
+        // creation date
+        value = library.getObject(entries, CREATION_DATE_KEY);
+        if (value != null && value instanceof StringObject) {
+            StringObject text = (StringObject) value;
+            creationDate = new PDate(securityManager,
+                    text.getDecryptedLiteralString(securityManager));
+        }
+
         // in reply to annotation
         value = library.getObject(entries, IRT_KEY);
         if (value != null && value instanceof MarkupAnnotation) {
             inReplyToAnnotation = (MarkupAnnotation) value;
+        }
+
+        // subject text
+        value = library.getObject(entries, SUBJ_KEY);
+        if (value != null && value instanceof StringObject) {
+            StringObject text = (StringObject) value;
+            subject = text.getDecryptedLiteralString(securityManager);
+        } else if (value instanceof String) {
+            subject = (String) value;
         }
 
         // in reply to annotation
@@ -228,52 +245,8 @@ public abstract class MarkupAnnotation extends Annotation {
         return popupAnnotation;
     }
 
-    protected static void generateExternalGraphicsState(Form form, float opacity) {
-        // add the transparency graphic context settings.
-        if (form != null) {
-            Resources resources = form.getResources();
-            HashMap<Object, Object> graphicsProperties = new HashMap<Object, Object>(2);
-            HashMap<Object, Object> graphicsState = new HashMap<Object, Object>(1);
-            graphicsProperties.put(GraphicsState.CA_STROKING_KEY, opacity);
-            graphicsProperties.put(GraphicsState.CA_NON_STROKING_KEY, opacity);
-            graphicsState.put(EXT_GSTATE_NAME, graphicsProperties);
-            resources.getEntries().put(Resources.EXTGSTATE_KEY, graphicsState);
-            form.setResources(resources);
-        }
-    }
-
-    /**
-     * Gets the opacity value for a markup annotation.  This value can be optionally used to apply a global
-     * opacity value when painting or regenerating the contentStream.
-     *
-     * @return current opacity value in the range of 0.0 ... 1.0
-     */
     public float getOpacity() {
         return opacity;
-    }
-
-    /**
-     * Set the opacity value of the /CA key in the markup annotation dictionary.
-     *
-     * @param opacity opacity in the range of 0.0 ... 1.0.
-     */
-    public void setOpacity(float opacity) {
-        if (this.opacity >= 0 && this.opacity <= 1.0) {
-            this.opacity = opacity;
-            entries.put(CA_KEY, this.opacity);
-        }
-    }
-
-    /**
-     * Set the opacity value of the /CA key in the markup annotation dictionary.
-     *
-     * @param opacity opacity in the range of 0 ... 255.
-     */
-    public void setOpacity(int opacity) {
-        if (this.opacity >= 0 && this.opacity <= 255) {
-            this.opacity = Math.round(opacity / 2.55f) / 100.0f;
-            entries.put(CA_KEY, this.opacity);
-        }
     }
 
     public String getRichText() {
@@ -301,7 +274,8 @@ public abstract class MarkupAnnotation extends Annotation {
     }
 
     public void setTitleText(String titleText) {
-        this.titleText = setString(T_KEY, titleText);
+        this.titleText = titleText;
+        entries.put(T_KEY, new LiteralStringObject(titleText));
     }
 
     public void setPopupAnnotation(PopupAnnotation popupAnnotation) {
@@ -310,12 +284,13 @@ public abstract class MarkupAnnotation extends Annotation {
     }
 
     public void setRichText(String richText) {
-        this.richText = setString(RC_KEY, richText);
+        this.richText = richText;
+        entries.put(RC_KEY, new LiteralStringObject(richText));
     }
 
     public void setCreationDate(String creationDate) {
         this.creationDate = new PDate(securityManager, creationDate);
-        setString(CREATION_DATE_KEY, creationDate);
+        entries.put(CREATION_DATE_KEY, new LiteralStringObject(creationDate));
     }
 
     public void setInReplyToAnnotation(MarkupAnnotation inReplyToAnnotation) {
@@ -324,7 +299,8 @@ public abstract class MarkupAnnotation extends Annotation {
     }
 
     public void setSubject(String subject) {
-        this.subject = setString(SUBTYPE_KEY, subject);
+        this.subject = subject;
+        entries.put(SUBTYPE_KEY, new LiteralStringObject(subject));
     }
 
     public String toString() {

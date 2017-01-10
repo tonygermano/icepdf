@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -15,10 +15,7 @@
  */
 package org.icepdf.core.util;
 
-import org.icepdf.core.io.SeekableInput;
 import org.icepdf.core.pobjects.*;
-import org.icepdf.core.pobjects.acroform.InteractiveForm;
-import org.icepdf.core.pobjects.acroform.SignatureHandler;
 import org.icepdf.core.pobjects.fonts.Font;
 import org.icepdf.core.pobjects.fonts.FontDescriptor;
 import org.icepdf.core.pobjects.graphics.ICCBased;
@@ -48,60 +45,64 @@ public class Library {
             Logger.getLogger(Library.class.toString());
 
     protected static ThreadPoolExecutor commonThreadPool;
+    protected static ThreadPoolExecutor painterThreadPool;
     protected static ThreadPoolExecutor imageThreadPool;
 
     protected static int commonPoolThreads;
+    protected static int painterPoolThreads;
     protected static int imagePoolThreads;
-    private static final long KEEP_ALIVE_TIME = 90;
+    private static final long KEEP_ALIVE_TIME = 10;
 
     static {
         try {
             commonPoolThreads =
-                    Defs.intProperty("org.icepdf.core.library.threadPoolSize", 2);
+                    Defs.intProperty("org.icepdf.core.library.threadPoolSize", 5);
             if (commonPoolThreads < 1) {
-                commonPoolThreads = 2;
+                commonPoolThreads = 5;
             }
         } catch (NumberFormatException e) {
             log.warning("Error reading buffered scale factor");
         }
 
         try {
-            // todo make ImageReference call interruptible and then we can get rid of this pool.
+            painterPoolThreads =
+                    Defs.intProperty("org.icepdf.core.library.painterThreadPoolSize", 2);
+            if (painterPoolThreads < 1) {
+                painterPoolThreads = 2;
+            }
+        } catch (NumberFormatException e) {
+            log.warning("Error reading buffered scale factor");
+        }
+
+        try {
             imagePoolThreads =
-                    Defs.intProperty("org.icepdf.core.library.imageThreadPoolSize", 2);
+                    Defs.intProperty("org.icepdf.core.library.imageThreadPoolSize", 10);
             if (imagePoolThreads < 1) {
-                imagePoolThreads = 2;
+                imagePoolThreads = 10;
             }
         } catch (NumberFormatException e) {
             log.warning("Error reading buffered scale factor");
         }
 
         log.fine("Starting ICEpdf Thread Pools: " +
-                (commonPoolThreads + imagePoolThreads) +
+                (commonPoolThreads + painterPoolThreads + imagePoolThreads) +
                 " threads.");
         initializeThreadPool();
     }
 
     // new incremental file loader class.
     private LazyObjectLoader lazyObjectLoader;
+
     private ConcurrentHashMap<Reference, WeakReference<Object>> refs =
             new ConcurrentHashMap<Reference, WeakReference<Object>>(1024);
     private ConcurrentHashMap<Reference, WeakReference<ICCBased>> lookupReference2ICCBased =
             new ConcurrentHashMap<Reference, WeakReference<ICCBased>>(256);
+
     // Instead of keeping Names names, Dictionary dests, we keep
     //   a reference to the Catalog, which actually owns them
     private Catalog catalog;
 
-    private SecurityManager securityManager;
-
-    // handles signature validation and signing.
-    private SignatureHandler signatureHandler;
-
-    // signature permissions
-    private Permissions permissions;
-
-    private SeekableInput documentInput;
-
+    public SecurityManager securityManager;
 
     // state manager reference needed by most classes to properly managed state
     // changes and new object creation
@@ -143,18 +144,14 @@ public class Library {
         Object ob;
         while (true) {
             WeakReference<Object> obRef = refs.get(reference);
+            ob = obRef != null ? obRef.get() : null;
             // check stateManager first to allow for annotations to be injected
             // from a separate file.
-            if (stateManager != null) {
+            if (ob == null && stateManager != null) {
                 if (stateManager.contains(reference)) {
-                    ob = stateManager.getChange(reference);
-                    if (ob instanceof PObject) {
-                        return ((PObject) ob).getObject();
-                    }
-                    return ob;
+                    return stateManager.getChange(reference);
                 }
             }
-            ob = obRef != null ? obRef.get() : null;
             if (ob == null && lazyObjectLoader != null) {
                 ob = lazyObjectLoader.loadObject(reference);
             }
@@ -257,7 +254,7 @@ public class Library {
      * Sets the document state manager so that all object can access the
      * state manager via the central library instance.
      *
-     * @param stateManager reference to the state change class
+     * @param stateManager
      */
     public void setStateManager(StateManager stateManager) {
         this.stateManager = stateManager;
@@ -574,26 +571,8 @@ public class Library {
     public Library() {
         // set Catalog memory Manager and cache manager.
         imagePool = new ImagePool();
-        signatureHandler = new SignatureHandler();
     }
 
-    /**
-     * Sets a pointer to the orginal document input stream
-     *
-     * @param documentInput seekable inputstream.
-     */
-    public void setDocumentInput(SeekableInput documentInput) {
-        this.documentInput = documentInput;
-    }
-
-    /**
-     * Gets the SeekableInput of the document underlying bytes.
-     *
-     * @return document bytes.
-     */
-    public SeekableInput getDocumentInput() {
-        return documentInput;
-    }
 
     /**
      * Gets the PDF object specified by the <code>key</code> in the dictionary
@@ -638,29 +617,6 @@ public class Library {
      */
     public SecurityManager getSecurityManager() {
         return securityManager;
-    }
-
-    public void setSecurityManager(SecurityManager securityManager) {
-        this.securityManager = securityManager;
-    }
-
-    public SignatureHandler getSignatureHandler() {
-        return signatureHandler;
-    }
-
-    /**
-     * Set a documents permissions for a given certificate of signature, optional.
-     * The permission should also be used with the encryption permissions if present
-     * to configure the viewer permissions.
-     *
-     * @return permission object if present, otherwise null.
-     */
-    public Permissions getPermissions() {
-        return permissions;
-    }
-
-    public void setPermissions(Permissions permissions) {
-        this.permissions = permissions;
     }
 
     /**
@@ -709,22 +665,6 @@ public class Library {
      */
     public void setCatalog(Catalog c) {
         catalog = c;
-    }
-
-    /**
-     * Checks the Catalog for an interactive Forms dictionary and if found the resources object
-     * is used for a font lookup.
-     *
-     * @param fontName font name to look for.
-     * @return font font,  null otherwise.
-     */
-    public Font getInteractiveFormFont(String fontName) {
-        InteractiveForm form = getCatalog().getInteractiveForm();
-        if (form != null && form.getResources() != null) {
-            Resources resources = form.getResources();
-            return resources.getFont(new Name(fontName));
-        }
-        return null;
     }
 
     /**
@@ -777,12 +717,28 @@ public class Library {
                 return newThread;
             }
         });
+
+        painterThreadPool = new ThreadPoolExecutor(
+                painterPoolThreads, painterPoolThreads, KEEP_ALIVE_TIME, TimeUnit.SECONDS,
+                new LinkedBlockingQueue<Runnable>());
+        // set a lower thread priority
+        painterThreadPool.setThreadFactory(new ThreadFactory() {
+            public Thread newThread(java.lang.Runnable command) {
+                Thread newThread = new Thread(command);
+                newThread.setName("ICEpdf-thread-painter-pool");
+                newThread.setPriority(Thread.NORM_PRIORITY);
+                newThread.setDaemon(true);
+                return newThread;
+            }
+        });
     }
 
     public static void shutdownThreadPool() {
         // do a little clean up.
         commonThreadPool.purge();
         commonThreadPool.shutdownNow();
+        painterThreadPool.purge();
+        painterThreadPool.shutdownNow();
         imageThreadPool.purge();
         imageThreadPool.shutdownNow();
     }
@@ -798,6 +754,14 @@ public class Library {
     public static void executeImage(FutureTask callable) {
         try {
             imageThreadPool.execute(callable);
+        } catch (RejectedExecutionException e) {
+            log.severe("ICEpdf Common Thread Pool was shutdown!");
+        }
+    }
+
+    public static void executePainter(Runnable runnable) {
+        try {
+            painterThreadPool.execute(runnable);
         } catch (RejectedExecutionException e) {
             log.severe("ICEpdf Common Thread Pool was shutdown!");
         }

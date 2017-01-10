@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -16,7 +16,6 @@
 package org.icepdf.core.util.content;
 
 import org.icepdf.core.io.ByteDoubleArrayInputStream;
-import org.icepdf.core.io.SequenceInputStream;
 import org.icepdf.core.pobjects.*;
 import org.icepdf.core.pobjects.graphics.*;
 import org.icepdf.core.pobjects.graphics.commands.GlyphOutlineDrawCmd;
@@ -29,8 +28,9 @@ import org.icepdf.core.util.PdfOps;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.NoninvertibleTransformException;
-import java.io.*;
-import java.util.ArrayList;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Stack;
@@ -107,11 +107,7 @@ public class OContentParser extends AbstractContentParser {
         Parser parser;
 
         // test case for progress bar
-        java.util.List<InputStream> in = new ArrayList<InputStream>();
-        for (int i = 0; i < streamBytes.length; i++) {
-            in.add(new ByteArrayInputStream(streamBytes[i]));
-        }
-        parser = new Parser(new SequenceInputStream(in, ' '));
+        parser = new Parser(new ByteDoubleArrayInputStream(streamBytes));
 
         // text block y offset.
         float yBTstart = 0;
@@ -123,7 +119,7 @@ public class OContentParser extends AbstractContentParser {
             Object tok;
             while (true) {
 
-                if (Thread.currentThread().isInterrupted()) {
+                if (Thread.interrupted()) {
                     throw new InterruptedException("ContentParser thread interrupted");
                 }
 
@@ -296,7 +292,7 @@ public class OContentParser extends AbstractContentParser {
                     // The graphics state parameters in the ExtGState must be concatenated
                     // with the the current graphics state.
                     else if (tok.equals(PdfOps.gs_TOKEN)) {
-                        consume_gs(graphicState, stack, resources, shapes);
+                        consume_gs(graphicState, stack, resources);
                     }
 
                     // End the path object without filling or stroking it. This
@@ -630,12 +626,10 @@ public class OContentParser extends AbstractContentParser {
             logger.finer("End of Content Stream");
         } catch (NoninvertibleTransformException e) {
             logger.log(Level.WARNING, "Error creating inverse transform:", e);
-        } catch (InterruptedException e) {
-            throw new InterruptedException(e.getMessage());
         } finally {
             // End of stream set alpha state back to 1.0f, so that other
             // streams aren't applied an incorrect alpha value.
-            setAlpha(shapes, graphicState, AlphaComposite.SRC_OVER, 1.0f);
+            setAlpha(shapes, AlphaComposite.SRC_OVER, 1.0f);
         }
 //        long endTime = System.currentTimeMillis();
 //        System.out.println("Paring Duration " + (endTime - startTime));
@@ -661,7 +655,7 @@ public class OContentParser extends AbstractContentParser {
      * @param source content stream source.
      * @return vector where each entry is the text extracted from a text block.
      */
-    public Shapes parseTextBlocks(byte[][] source) throws UnsupportedEncodingException, InterruptedException {
+    public Shapes parseTextBlocks(byte[][] source) throws UnsupportedEncodingException {
 
         // great a parser to get tokens for stream
         Parser parser = new Parser(new ByteDoubleArrayInputStream(source));
@@ -729,7 +723,7 @@ public class OContentParser extends AbstractContentParser {
      * @throws java.io.IOException end of content stream is found
      */
     float parseText(Parser parser, Shapes shapes, double previousBTStart)
-            throws IOException, InterruptedException {
+            throws IOException {
         Object nextToken;
         inTextBlock = true;
         // keeps track of previous text placement so that Compatibility and
@@ -856,7 +850,7 @@ public class OContentParser extends AbstractContentParser {
                 // The graphics state parameters in the ExtGState must be concatenated
                 // with the the current graphics state.
                 else if (nextToken.equals(PdfOps.gs_TOKEN)) {
-                    consume_gs(graphicState, stack, resources, shapes);
+                    consume_gs(graphicState, stack, resources);
                 }
 
                 // Set the line width in the graphics state
@@ -1114,7 +1108,8 @@ public class OContentParser extends AbstractContentParser {
             // create the image stream
             ImageStream st = new ImageStream(library, iih, data);
             ImageReference imageStreamReference =
-                    new InlineImageStreamReference(st, graphicState, resources, 0, null);
+                    new InlineImageStreamReference(st, graphicState.getFillColor(),
+                            resources, 0, null);
 //            ImageUtility.displayImage(imageStreamReference.getImage(), "BI");
             AffineTransform af = new AffineTransform(graphicState.getCTM());
             graphicState.scale(1, -1);

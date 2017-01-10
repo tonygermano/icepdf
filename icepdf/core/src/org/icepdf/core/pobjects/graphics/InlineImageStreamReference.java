@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -20,6 +20,7 @@ import org.icepdf.core.pobjects.Page;
 import org.icepdf.core.pobjects.Resources;
 import org.icepdf.core.util.Library;
 
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.concurrent.FutureTask;
 import java.util.logging.Level;
@@ -36,10 +37,10 @@ public class InlineImageStreamReference extends ImageReference {
     private static final Logger logger =
             Logger.getLogger(InlineImageStreamReference.class.toString());
 
-    public InlineImageStreamReference(ImageStream imageStream, GraphicsState graphicsState,
+    public InlineImageStreamReference(ImageStream imageStream, Color fillColor,
                                       Resources resources, int iamgeIndex,
                                       Page page) {
-        super(imageStream, graphicsState, resources, iamgeIndex, page);
+        super(imageStream, fillColor, resources, iamgeIndex, page);
 
         // kick off a new thread to load the image, if not already in pool.
         ImagePool imagePool = imageStream.getLibrary().getImagePool();
@@ -75,7 +76,7 @@ public class InlineImageStreamReference extends ImageReference {
         BufferedImage image = null;
         long start = System.nanoTime();
         try {
-            image = imageStream.getImage(graphicsState, resources);
+            image = imageStream.getImage(fillColor, resources);
         } catch (Throwable e) {
             logger.log(Level.WARNING, "Error loading image: " + imageStream.getPObjectReference() +
                     " " + imageStream.toString(), e);

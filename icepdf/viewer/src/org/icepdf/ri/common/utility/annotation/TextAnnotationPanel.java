@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -23,8 +23,6 @@ import org.icepdf.ri.common.views.AnnotationComponent;
 import javax.swing.*;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -39,7 +37,7 @@ import java.awt.event.ItemListener;
  */
 @SuppressWarnings("serial")
 public class TextAnnotationPanel extends AnnotationPanelAdapter implements ItemListener,
-        ActionListener, ChangeListener {
+        ActionListener {
 
     // default list values.
     private static final int DEFAULT_ICON_NAME = 0;
@@ -51,13 +49,12 @@ public class TextAnnotationPanel extends AnnotationPanelAdapter implements ItemL
     // link action appearance properties.
     private JComboBox iconNameBox;
     private JButton colorButton;
-    private JSlider transparencySlider;
 
     private TextAnnotation annotation;
 
     public TextAnnotationPanel(SwingController controller) {
         super(controller);
-        setLayout(new GridBagLayout());
+        setLayout(new GridLayout(2, 2, 5, 2));
 
         // Setup the basics of the panel
         setFocusable(true);
@@ -70,6 +67,7 @@ public class TextAnnotationPanel extends AnnotationPanelAdapter implements ItemL
 
         revalidate();
     }
+
 
     /**
      * Method that should be called when a new AnnotationComponent is selected by the user
@@ -94,13 +92,11 @@ public class TextAnnotationPanel extends AnnotationPanelAdapter implements ItemL
                 currentAnnotationComponent.getAnnotation();
 
         applySelectedValue(iconNameBox, annotation.getIconName());
-        setButtonBackgroundColor(colorButton, annotation.getColor());
-        transparencySlider.setValue(Math.round(annotation.getOpacity() * 255));
+        colorButton.setBackground(annotation.getColor());
 
         // disable appearance input if we have a invisible rectangle
         safeEnable(iconNameBox, true);
         safeEnable(colorButton, true);
-        safeEnable(transparencySlider, true);
     }
 
     public void itemStateChanged(ItemEvent e) {
@@ -120,7 +116,8 @@ public class TextAnnotationPanel extends AnnotationPanelAdapter implements ItemL
         if (e.getSource() == colorButton) {
             Color chosenColor =
                     JColorChooser.showDialog(colorButton,
-                            messageBundle.getString("viewer.utilityPane.annotation.textMarkup.colorChooserTitle"),
+                            messageBundle.getString(
+                                    "viewer.utilityPane.annotation.textMarkup.colorChooserTitle"),
                             colorButton.getBackground());
             if (chosenColor != null) {
                 // change the colour of the button background
@@ -135,14 +132,11 @@ public class TextAnnotationPanel extends AnnotationPanelAdapter implements ItemL
         }
     }
 
-    public void stateChanged(ChangeEvent e) {
-        alphaSliderChange(e, annotation);
-    }
-
     /**
      * Method to create link annotation GUI.
      */
     private void createGUI() {
+
         if (TEXT_ICON_LIST == null) {
             TEXT_ICON_LIST = new ValueLabelItem[]{
                     new ValueLabelItem(TextAnnotation.COMMENT_ICON,
@@ -179,13 +173,6 @@ public class TextAnnotationPanel extends AnnotationPanelAdapter implements ItemL
                             messageBundle.getString("viewer.utilityPane.annotation.text.iconName.upArrow"))};
         }
 
-        constraints = new GridBagConstraints();
-        constraints.fill = GridBagConstraints.HORIZONTAL;
-        constraints.weightx = 1.0;
-        constraints.anchor = GridBagConstraints.NORTH;
-        constraints.anchor = GridBagConstraints.WEST;
-        constraints.insets = new Insets(1, 2, 1, 2);
-
         // Create and setup an Appearance panel
         setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED),
                 messageBundle.getString("viewer.utilityPane.annotation.text.appearance.title"),
@@ -195,25 +182,16 @@ public class TextAnnotationPanel extends AnnotationPanelAdapter implements ItemL
         iconNameBox = new JComboBox(TEXT_ICON_LIST);
         iconNameBox.setSelectedIndex(DEFAULT_ICON_NAME);
         iconNameBox.addItemListener(this);
-        JLabel label = new JLabel(messageBundle.getString("viewer.utilityPane.annotation.text.iconName"));
-        addGB(this, label, 0, 0, 1, 1);
-        addGB(this, iconNameBox, 1, 0, 1, 1);
+        add(new JLabel(messageBundle.getString("viewer.utilityPane.annotation.text.iconName")));
+        add(iconNameBox);
         // fill colour
-        colorButton = new JButton(" ");
+        colorButton = new JButton();
         colorButton.addActionListener(this);
         colorButton.setOpaque(true);
         colorButton.setBackground(DEFAULT_COLOR);
-        label = new JLabel(messageBundle.getString("viewer.utilityPane.annotation.textMarkup.colorLabel"));
-        addGB(this, label, 0, 1, 1, 1);
-        addGB(this, colorButton, 1, 1, 1, 1);
-        // transparency slider
-        transparencySlider = buildAlphaSlider();
-        transparencySlider.setMajorTickSpacing(255);
-        transparencySlider.setPaintLabels(true);
-        transparencySlider.addChangeListener(this);
-        label = new JLabel(messageBundle.getString("viewer.utilityPane.annotation.textMarkup.transparencyLabel"));
-        addGB(this, label, 0, 5, 1, 1);
-        addGB(this, transparencySlider, 1, 5, 1, 1);
+        add(new JLabel(
+                messageBundle.getString("viewer.utilityPane.annotation.textMarkup.colorLabel")));
+        add(colorButton);
     }
 
     @Override
@@ -221,7 +199,6 @@ public class TextAnnotationPanel extends AnnotationPanelAdapter implements ItemL
         super.setEnabled(enabled);
         safeEnable(iconNameBox, enabled);
         safeEnable(colorButton, enabled);
-        safeEnable(transparencySlider, enabled);
     }
 
     /**

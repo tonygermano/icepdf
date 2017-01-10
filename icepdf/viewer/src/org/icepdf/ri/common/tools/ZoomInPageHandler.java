@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -50,7 +50,7 @@ public class ZoomInPageHandler extends SelectionBoxHandler implements ToolHandle
         // handle text selection drags.
         if (documentViewController != null) {
             // update the currently selected box
-            updateSelectionSize(e.getX(), e.getY(), pageViewComponent);
+            updateSelectionSize(e, pageViewComponent);
         }
     }
 
@@ -82,13 +82,14 @@ public class ZoomInPageHandler extends SelectionBoxHandler implements ToolHandle
     public void mouseReleased(MouseEvent e) {
         if (documentViewController != null) {
             // update selection rectangle
-            updateSelectionSize(e.getX(), e.getY(), pageViewComponent);
+            updateSelectionSize(e, pageViewComponent);
 
             // adjust the starting position of rectToDraw to match the actual
             // view position of the rectangle as the mouseEven position is
             // is relative to the page and now the view.
-            int pageIndex = pageViewComponent.getPageIndex();
-            Rectangle pageOffset = documentViewModel.getPageBounds(pageIndex);
+            Point pageOffset = documentViewModel.getPageBounds(
+                    pageViewComponent.getPageIndex()).getLocation();
+
             Rectangle absoluteRectToDraw = new Rectangle(
                     pageOffset.x + rectToDraw.x,
                     pageOffset.y + rectToDraw.y,
@@ -102,9 +103,11 @@ public class ZoomInPageHandler extends SelectionBoxHandler implements ToolHandle
                         absoluteRectToDraw, documentViewModel);
 
                 // calculate the delta relative to current page position
+                int pageIndex = pageViewComponent.getPageIndex();
+                Rectangle location = documentViewModel.getPageBounds(pageIndex);
                 Point delta = new Point(
-                        absoluteRectToDraw.x - pageOffset.x,
-                        absoluteRectToDraw.y - pageOffset.y);
+                        absoluteRectToDraw.x - location.x,
+                        absoluteRectToDraw.y - location.y);
                 documentViewController.setZoomToViewPort(zoom, delta, pageIndex, true);
             }
             // clear the rectangle

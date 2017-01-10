@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -23,8 +23,6 @@ import org.icepdf.ri.common.views.AnnotationComponent;
 import javax.swing.*;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -39,7 +37,7 @@ import java.awt.event.ItemListener;
  */
 @SuppressWarnings("serial")
 public class InkAnnotationPanel extends AnnotationPanelAdapter implements ItemListener,
-        ActionListener, ChangeListener {
+        ActionListener {
 
     // default list values.
     private static final int DEFAULT_LINE_THICKNESS = 0;
@@ -50,13 +48,12 @@ public class InkAnnotationPanel extends AnnotationPanelAdapter implements ItemLi
     private JComboBox lineThicknessBox;
     private JComboBox lineStyleBox;
     private JButton colorBorderButton;
-    private JSlider transparencySlider;
 
     private InkAnnotation annotation;
 
     public InkAnnotationPanel(SwingController controller) {
         super(controller);
-        setLayout(new GridBagLayout());
+        setLayout(new GridLayout(3, 2, 5, 2));
 
         // Setup the basics of the panel
         setFocusable(true);
@@ -95,14 +92,12 @@ public class InkAnnotationPanel extends AnnotationPanelAdapter implements ItemLi
 
         applySelectedValue(lineThicknessBox, annotation.getLineThickness());
         applySelectedValue(lineStyleBox, annotation.getLineStyle());
-        setButtonBackgroundColor(colorBorderButton, annotation.getColor());
-        transparencySlider.setValue(Math.round(annotation.getOpacity() * 255));
+        colorBorderButton.setBackground(annotation.getColor());
 
         // disable appearance input if we have a invisible rectangle
         safeEnable(lineThicknessBox, true);
         safeEnable(lineStyleBox, true);
         safeEnable(colorBorderButton, true);
-        safeEnable(transparencySlider, true);
     }
 
     public void itemStateChanged(ItemEvent e) {
@@ -140,10 +135,6 @@ public class InkAnnotationPanel extends AnnotationPanelAdapter implements ItemLi
         }
     }
 
-    public void stateChanged(ChangeEvent e) {
-        alphaSliderChange(e, annotation);
-    }
-
     /**
      * Method to create link annotation GUI.
      */
@@ -154,45 +145,26 @@ public class InkAnnotationPanel extends AnnotationPanelAdapter implements ItemLi
                 messageBundle.getString("viewer.utilityPane.annotation.ink.appearance.title"),
                 TitledBorder.LEFT,
                 TitledBorder.DEFAULT_POSITION));
-
-        constraints = new GridBagConstraints();
-        constraints.fill = GridBagConstraints.HORIZONTAL;
-        constraints.weightx = 1.0;
-        constraints.anchor = GridBagConstraints.NORTH;
-        constraints.anchor = GridBagConstraints.WEST;
-        constraints.insets = new Insets(1, 2, 1, 2);
-
         // Line thickness
         lineThicknessBox = new JComboBox(LINE_THICKNESS_LIST);
         lineThicknessBox.setSelectedIndex(DEFAULT_LINE_THICKNESS);
         lineThicknessBox.addItemListener(this);
-        JLabel label = new JLabel(messageBundle.getString("viewer.utilityPane.annotation.ink.lineThickness"));
-        addGB(this, label, 0, 0, 1, 1);
-        addGB(this, lineThicknessBox, 1, 0, 1, 1);
+        add(new JLabel(messageBundle.getString("viewer.utilityPane.annotation.ink.lineThickness")));
+        add(lineThicknessBox);
         // Line style
         lineStyleBox = new JComboBox(LINE_STYLE_LIST);
         lineStyleBox.setSelectedIndex(DEFAULT_LINE_STYLE);
         lineStyleBox.addItemListener(this);
-        label = new JLabel(messageBundle.getString("viewer.utilityPane.annotation.ink.lineStyle"));
-        addGB(this, label, 0, 1, 1, 1);
-        addGB(this, lineStyleBox, 1, 1, 1, 1);
+        add(new JLabel(messageBundle.getString("viewer.utilityPane.annotation.ink.lineStyle")));
+        add(lineStyleBox);
         // border colour
-        colorBorderButton = new JButton(" ");
+        colorBorderButton = new JButton();
         colorBorderButton.addActionListener(this);
         colorBorderButton.setOpaque(true);
         colorBorderButton.setBackground(DEFAULT_BORDER_COLOR);
-        label = new JLabel(messageBundle.getString("viewer.utilityPane.annotation.ink.colorBorderLabel"));
-        addGB(this, label, 0, 2, 1, 1);
-        addGB(this, colorBorderButton, 1, 2, 1, 1);
-
-        // transparency slider
-        transparencySlider = buildAlphaSlider();
-        transparencySlider.setMajorTickSpacing(255);
-        transparencySlider.setPaintLabels(true);
-        transparencySlider.addChangeListener(this);
-        label = new JLabel(messageBundle.getString("viewer.utilityPane.annotation.ink.transparencyLabel"));
-        addGB(this, label, 0, 3, 1, 1);
-        addGB(this, transparencySlider, 1, 3, 1, 1);
+        add(new JLabel(
+                messageBundle.getString("viewer.utilityPane.annotation.ink.colorBorderLabel")));
+        add(colorBorderButton);
     }
 
     @Override
@@ -202,7 +174,6 @@ public class InkAnnotationPanel extends AnnotationPanelAdapter implements ItemLi
         safeEnable(lineThicknessBox, enabled);
         safeEnable(lineStyleBox, enabled);
         safeEnable(colorBorderButton, enabled);
-        safeEnable(transparencySlider, enabled);
     }
 
     /**

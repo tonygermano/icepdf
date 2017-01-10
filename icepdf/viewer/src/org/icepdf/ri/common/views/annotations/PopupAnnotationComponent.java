@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -22,7 +22,6 @@ import org.icepdf.core.pobjects.annotations.PopupAnnotation;
 import org.icepdf.core.pobjects.annotations.TextAnnotation;
 import org.icepdf.ri.common.tools.TextAnnotationHandler;
 import org.icepdf.ri.common.views.*;
-import org.icepdf.ri.util.PropertiesManager;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -77,6 +76,7 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
     protected JTree commentTree;
     protected JScrollPane commentTreeScrollPane;
     protected MarkupAnnotation selectedMarkupAnnotation;
+
     // add and remove commands
     protected JMenuItem replyMenuItem;
     protected JMenuItem deleteMenuItem;
@@ -89,6 +89,7 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
     // generic commands, open/minimize all
     protected JMenuItem openAllMenuItem;
     protected JMenuItem minimizeAllMenuItem;
+
     protected JPopupMenu contextMenu;
 
     public PopupAnnotationComponent(Annotation annotation, DocumentViewController documentViewController,
@@ -103,12 +104,7 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
 
         if (annotation instanceof PopupAnnotation) {
             popupAnnotation = (PopupAnnotation) annotation;
-            try {
-                popupAnnotation.init();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                logger.fine("Popup annotation component instance creation was interrupted");
-            }
+            popupAnnotation.init();
         }
 
         boolean isVisible = popupAnnotation.isOpen();
@@ -279,19 +275,8 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
 
         ResourceBundle messages =
                 documentViewController.getParentController().getMessageBundle();
-        PropertiesManager propertiesManager = documentViewController.getParentController().getPropertiesManager();
-
-        //Create the popup menu.
-        contextMenu = new JPopupMenu();
-
-        if (PropertiesManager.checkAndStoreBooleanProperty(propertiesManager,
-                PropertiesManager.PROPERTY_SHOW_ANNOTATION_MARKUP_REPLY_TO)) {
-            replyMenuItem = new JMenuItem(
-                    messages.getString("viewer.annotation.popup.reply.label"));
-            // build out reply and delete
-            replyMenuItem.addActionListener(this);
-            contextMenu.add(replyMenuItem);
-        }
+        replyMenuItem = new JMenuItem(
+                messages.getString("viewer.annotation.popup.reply.label"));
         deleteMenuItem = new JMenuItem(
                 messages.getString("viewer.annotation.popup.delete.label"));
         // status change commands.
@@ -311,35 +296,37 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
         minimizeAllMenuItem = new JMenuItem(
                 messages.getString("viewer.annotation.popup.minimizeAll.label"));
 
-        // build out delete
+        //Create the popup menu.
+        contextMenu = new JPopupMenu();
+
+        // build out reply and delete
+        replyMenuItem.addActionListener(this);
+        contextMenu.add(replyMenuItem);
         deleteMenuItem.addActionListener(this);
         contextMenu.add(deleteMenuItem);
         contextMenu.addSeparator();
 
-        if (PropertiesManager.checkAndStoreBooleanProperty(propertiesManager,
-                PropertiesManager.PROPERTY_SHOW_ANNOTATION_MARKUP_SET_STATUS)) {
-            // addition of set status menu
-            JMenu submenu = new JMenu(
-                    messages.getString("viewer.annotation.popup.status.label"));
+        // addition of set status menu
+        JMenu submenu = new JMenu(
+                messages.getString("viewer.annotation.popup.status.label"));
 //        ButtonGroup group = new ButtonGroup();
-            statusNoneMenuItem.addActionListener(this);
+        statusNoneMenuItem.addActionListener(this);
 //        group.add(statusNoneMenuItem);
-            submenu.add(statusNoneMenuItem);
-            statusAcceptedItem.addActionListener(this);
+        submenu.add(statusNoneMenuItem);
+        statusAcceptedItem.addActionListener(this);
 //        group.add(statusAcceptedItem);
-            submenu.add(statusAcceptedItem);
-            statusCancelledMenuItem.addActionListener(this);
+        submenu.add(statusAcceptedItem);
+        statusCancelledMenuItem.addActionListener(this);
 //        group.add(statusCancelledMenuItem);
-            submenu.add(statusCancelledMenuItem);
-            statusCompletedMenuItem.addActionListener(this);
+        submenu.add(statusCancelledMenuItem);
+        statusCompletedMenuItem.addActionListener(this);
 //        group.add(statusCompletedMenuItem);
-            submenu.add(statusCompletedMenuItem);
-            statusRejectedMenuItem.addActionListener(this);
+        submenu.add(statusCompletedMenuItem);
+        statusRejectedMenuItem.addActionListener(this);
 //        group.add(statusRejectedMenuItem);
-            submenu.add(statusRejectedMenuItem);
-            contextMenu.add(submenu);
-            contextMenu.addSeparator();
-        }
+        submenu.add(statusRejectedMenuItem);
+        contextMenu.add(submenu);
+        contextMenu.addSeparator();
 
         // generic commands, open/minimize all
         openAllMenuItem.addActionListener(this);
@@ -485,7 +472,7 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
     }
 
     private void showHidePopupAnnotations(boolean visible) {
-        ArrayList<AbstractAnnotationComponent> annotationComponents =
+        ArrayList<AnnotationComponent> annotationComponents =
                 pageViewComponent.getAnnotationComponents();
         for (AnnotationComponent annotationComponent : annotationComponents) {
             if (annotationComponent instanceof PopupAnnotationComponent) {
@@ -568,13 +555,6 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
             if (document.getLength() > 0) {
                 selectedMarkupAnnotation.setContents(
                         document.getText(0, document.getLength()));
-                // add them to the container, using absolute positioning.
-                if (documentViewController.getAnnotationCallback() != null) {
-                    AnnotationCallback annotationCallback =
-                            documentViewController.getAnnotationCallback();
-                    AnnotationComponent annotationComponent = findAnnotationComponent(popupAnnotation.getParent());
-                    annotationCallback.updateAnnotation(annotationComponent);
-                }
             }
         } catch (BadLocationException ex) {
             logger.log(Level.FINE, "Error updating markup annotation content", ex);
@@ -601,10 +581,6 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
                 creationLabel.setText(selectedMarkupAnnotation.getCreationDate().toString());
             }
         }
-    }
-
-    public boolean isActive() {
-        return false;
     }
 
 
@@ -650,7 +626,7 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
         MarkupAnnotation currentMarkup = (MarkupAnnotation) root.getUserObject();
         Reference reference = currentMarkup.getPObjectReference();
         for (Annotation annotation : annotations) {
-            if (annotation != null && annotation instanceof MarkupAnnotation) {
+            if (annotation instanceof MarkupAnnotation) {
                 MarkupAnnotation markupAnnotation = (MarkupAnnotation) annotation;
                 MarkupAnnotation inReplyToAnnotation =
                         markupAnnotation.getInReplyToAnnotation();
@@ -671,7 +647,7 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
 
     private void removeMarkupInReplyTo(Reference reference) {
         if (reference != null) {
-            ArrayList<AbstractAnnotationComponent> annotationComponents =
+            ArrayList<AnnotationComponent> annotationComponents =
                     pageViewComponent.getAnnotationComponents();
             MarkupAnnotationComponent markupAnnotationComponent;
             MarkupAnnotation markupAnnotation;
@@ -736,7 +712,7 @@ public class PopupAnnotationComponent extends AbstractAnnotationComponent
     }
 
     private AnnotationComponent findAnnotationComponent(Annotation annotation) {
-        ArrayList<AbstractAnnotationComponent> annotationComponents =
+        ArrayList<AnnotationComponent> annotationComponents =
                 pageViewComponent.getAnnotationComponents();
         Reference compReference;
         Reference annotationReference = annotation.getPObjectReference();

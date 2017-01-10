@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -18,23 +18,23 @@ package org.icepdf.ri.common.views;
 import org.icepdf.core.Memento;
 import org.icepdf.core.pobjects.Document;
 import org.icepdf.core.pobjects.Page;
-import org.icepdf.core.pobjects.PageTree;
+import org.icepdf.core.util.Defs;
 import org.icepdf.ri.common.UndoCaretaker;
 
 import javax.swing.*;
 import java.awt.*;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
  * <p>The AbstractDocumentViewModel is responsible for keeping the state of the
- * document view.  The AbstractDocumentViewModel also stores an list of
- * PageViewComponents who's state is update as the model changes.  The
+ * documetn view.  The AbstractDocumentViewModel also stores an list of
+ * PageViewComponetnts who's state is update as the model changes.  The
  * AbstractDocumentViewModel can be swapped into different page views quickly
- * and efficiently.</p>
+ * and efficently.</p>
  *
  * @see org.icepdf.ri.common.views.DocumentViewModelImpl
  * @since 2.5
@@ -47,20 +47,40 @@ public abstract class AbstractDocumentViewModel implements DocumentViewModel {
     // document that model is associated.
     protected Document currentDocument;
 
+    // page dirty repaint timer
+    private Timer isDirtyTimer;
+    // dirty refresh timer call interval
+    private static int dirtyTimerInterval = 5;
+
+    static {
+        try {
+            dirtyTimerInterval =
+                    Defs.intProperty("org.icepdf.core.views.dirtytimer.interval",
+                            dirtyTimerInterval);
+        } catch (NumberFormatException e) {
+            log.log(Level.FINE, "Error reading dirty timer interval");
+        }
+    }
+
     // Pages that have selected text.
-    private HashMap<Integer, AbstractPageViewComponent> selectedPageText;
+    private ArrayList<WeakReference<AbstractPageViewComponent>> selectedPageText;
     // select all state flag, optimization for painting select all state lazily
     private boolean selectAll;
+
     protected List<AbstractPageViewComponent> pageComponents;
+
     // annotation memento caretaker
     protected UndoCaretaker undoCaretaker;
+
     // currently selected annotation
     protected AnnotationComponent currentAnnotation;
+
     // page view settings
     protected float userZoom = 1.0f, oldUserZoom = 1.0f;
     protected float userRotation, oldUserRotation;
     protected int currentPageIndex, oldPageIndex;
     protected int pageBoundary = Page.BOUNDARY_CROPBOX;
+
     // page tool settings
     protected int userToolModeFlag, oldUserToolModeFlag;
 
@@ -72,12 +92,12 @@ public abstract class AbstractDocumentViewModel implements DocumentViewModel {
         this.currentDocument = currentDocument;
         // create new instance of the undoCaretaker
         undoCaretaker = new UndoCaretaker();
-    }
 
-    protected abstract AbstractPageViewComponent buildPageViewComponent(DocumentViewModel documentViewModel,
-                                                                        PageTree pageTree, final int pageIndex,
-                                                                        JScrollPane parentScrollPane,
-                                                                        int width, int height);
+        // timer will dictate when buffer repaints can take place
+        isDirtyTimer = new Timer(dirtyTimerInterval, null);
+        isDirtyTimer.setInitialDelay(0);
+        isDirtyTimer.start();
+    }
 
     public Document getDocument() {
         return currentDocument;
@@ -100,26 +120,17 @@ public abstract class AbstractDocumentViewModel implements DocumentViewModel {
 
     /**
      * Gets the list of components that have a selected state.  The
-     * WeakReference must be check to make sure the page was not disposed of
-     * for for some reason by the the memory manager.
+     * WeakReference must be checkt o make sure the page was not disposed of
+     * for for some reason by the the memeory manager.
      *
      * @return list of pages that are in a selected state.
      */
-    public ArrayList<AbstractPageViewComponent> getSelectedPageText() {
-        if (selectedPageText != null) {
-            Set<Integer> keySet = selectedPageText.keySet();
-            ArrayList<AbstractPageViewComponent> selectedPages = new ArrayList<AbstractPageViewComponent>(keySet.size());
-            for (Integer pageIndex : keySet) {
-                selectedPages.add(selectedPageText.get(pageIndex));
-            }
-            return selectedPages;
-        } else {
-            return null;
-        }
+    public ArrayList<WeakReference<AbstractPageViewComponent>> getSelectedPageText() {
+        return selectedPageText;
     }
 
     /**
-     * Gets the selected all state of the document pages view.
+     * Gets the selected all state of the doucment pages view.
      *
      * @return true if all pages are ina  selected state, false otherwise.
      */
@@ -132,7 +143,7 @@ public abstract class AbstractDocumentViewModel implements DocumentViewModel {
      * document text is all selected; otherwise, false. This is only a flag
      * and must be interpreted by the pages and page view components.
      *
-     * @param selectAll to to specify all text is selected, false to specify
+     * @param selectAll to to specify all text is selected, false to sepcify
      *                  no text is selected
      */
     public void setSelectAll(boolean selectAll) {
@@ -144,27 +155,15 @@ public abstract class AbstractDocumentViewModel implements DocumentViewModel {
      * to make sure of selected text.  The caches is used as an optimization
      * to make sure selected text can be cleared quickly.
      *
-     * @param pageComponent pageView component to add to list.
+     * @param pageViewComponent pageview component to add to list.
      */
-    public void addSelectedPageText(AbstractPageViewComponent pageComponent) {
+    public void addSelectedPageText(AbstractPageViewComponent pageViewComponent) {
         if (selectedPageText == null) {
-            selectedPageText = new HashMap<Integer, AbstractPageViewComponent>();
+            selectedPageText =
+                    new ArrayList<WeakReference<AbstractPageViewComponent>>();
         }
-        selectedPageText.put(pageComponent.getPageIndex(), pageComponent);
-    }
-
-    /**
-     * Removes the specified page to selected page cache.  No checking is done
-     * to make sure of selected text.  The caches is used as an optimization
-     * to make sure selected text can be cleared quickly.
-     *
-     * @param pageComponent pageView component to add to list.
-     */
-    public void removeSelectedPageText(AbstractPageViewComponent pageComponent) {
-        if (selectedPageText == null) {
-            selectedPageText = new HashMap<Integer, AbstractPageViewComponent>();
-        }
-        selectedPageText.remove(pageComponent.getPageIndex());
+        selectedPageText.add(
+                new WeakReference<AbstractPageViewComponent>(pageViewComponent));
     }
 
     /**
@@ -191,8 +190,23 @@ public abstract class AbstractDocumentViewModel implements DocumentViewModel {
             // apply the change
             oldUserZoom = userZoom;
             userZoom = viewZoom;
+            // propagate the changes to the sub components.
+            for (AbstractPageViewComponent pageViewComponent : pageComponents) {
+                if (pageViewComponent != null) {
+                    pageViewComponent.invalidate();
+                }
+            }
         }
         return changed;
+    }
+
+    /**
+     * Invalidate the underlying Document Page models.
+     */
+    public void invalidate() {
+        for (AbstractPageViewComponent pageViewComponent : pageComponents) {
+            pageViewComponent.invalidatePage();
+        }
     }
 
     public float getViewZoom() {
@@ -205,6 +219,12 @@ public abstract class AbstractDocumentViewModel implements DocumentViewModel {
             // apply the change
             oldUserRotation = userRotation;
             userRotation = viewRotation;
+            // propagate the changes to the sub components.
+            for (AbstractPageViewComponent pageViewComponent : pageComponents) {
+                if (pageViewComponent != null) {
+                    pageViewComponent.invalidate();
+                }
+            }
         }
         return changed;
     }
@@ -239,7 +259,7 @@ public abstract class AbstractDocumentViewModel implements DocumentViewModel {
     }
 
     /**
-     * Sets the page boundary used to paint a page.
+     * Sets the page boundtry used to paint a page.
      *
      * @param pageBoundary page bounds
      */
@@ -273,12 +293,17 @@ public abstract class AbstractDocumentViewModel implements DocumentViewModel {
     public void dispose() {
 
         if (pageComponents != null) {
-            for (AbstractPageViewComponent pageComponent : pageComponents) {
-                if (pageComponent != null) {
-                    pageComponent.dispose();
+            for (AbstractPageViewComponent pageViewComponent : pageComponents) {
+                if (pageViewComponent != null) {
+                    pageViewComponent.dispose();
                 }
             }
             pageComponents.clear();
+
+            // stop the timer
+            if (isDirtyTimer != null && isDirtyTimer.isRunning()) {
+                isDirtyTimer.stop();
+            }
         }
     }
 
@@ -292,7 +317,7 @@ public abstract class AbstractDocumentViewModel implements DocumentViewModel {
     }
 
     /**
-     * Sets the current annotation.  This is mainly called by the UI tools
+     * Sets the current annotation.  This is manily called by the UI tools
      * when editing and selecting page annotations.
      *
      * @param currentAnnotation annotation to make current.
@@ -312,9 +337,9 @@ public abstract class AbstractDocumentViewModel implements DocumentViewModel {
 
     /**
      * Gets annotation caretaker responsible for saving states as defined
-     * by the memento pattern.
+     * by the momento pattern.
      *
-     * @return document level annotation care taker.
+     * @return document leve annotation care taker.
      */
     public UndoCaretaker getAnnotationCareTaker() {
         return undoCaretaker;
@@ -322,5 +347,9 @@ public abstract class AbstractDocumentViewModel implements DocumentViewModel {
 
     public void addMemento(Memento oldMementoState, Memento newMementoState) {
         undoCaretaker.addState(oldMementoState, newMementoState);
+    }
+
+    public Timer getDirtyTimer() {
+        return isDirtyTimer;
     }
 }

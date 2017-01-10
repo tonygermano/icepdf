@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -23,7 +23,6 @@ import java.awt.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * DeviceN colour spaces shall be defined in a similar way to Separation colour
@@ -47,7 +46,7 @@ public class DeviceN extends PColorSpace {
     List<Name> names;
     PColorSpace alternate;
     Function tintTransform;
-    ConcurrentHashMap<Object, Object> colorants = new ConcurrentHashMap<Object, Object>();
+    HashMap<Object, Object> colorants = new HashMap<Object, Object>();
     PColorSpace colorspaces[];
 
     boolean foundCMYK;

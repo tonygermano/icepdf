@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -73,7 +73,7 @@ public class Page extends Dictionary {
     /**
      * Transparency value used to simulate text highlighting.
      */
-    public static final float SELECTION_ALPHA = 0.3f;
+    public static final float selectionAlpha = 0.3f;
 
     // text selection colour
     public static Color selectionColor;
@@ -82,11 +82,11 @@ public class Page extends Dictionary {
         // sets the shadow colour of the decorator.
         try {
             String color = Defs.sysProperty(
-                    "org.icepdf.core.views.page.text.selectionColor", "#0077FF"); //#99c1da
+                    "org.icepdf.core.views.page.text.selectionColor", "#0077FF");
             int colorValue = ColorUtil.convertColor(color);
             selectionColor =
                     new Color(colorValue >= 0 ? colorValue :
-                            Integer.parseInt("99c1da", 16));
+                            Integer.parseInt("0077FF", 16));
         } catch (NumberFormatException e) {
             if (logger.isLoggable(Level.WARNING)) {
                 logger.warning("Error reading text selection colour");
@@ -101,11 +101,11 @@ public class Page extends Dictionary {
         // sets the shadow colour of the decorator.
         try {
             String color = Defs.sysProperty(
-                    "org.icepdf.core.views.page.text.highlightColor", "#CC00FF");//ff99ff
+                    "org.icepdf.core.views.page.text.highlightColor", "#CC00FF");
             int colorValue = ColorUtil.convertColor(color);
             highlightColor =
                     new Color(colorValue >= 0 ? colorValue :
-                            Integer.parseInt("ff99ff", 16));
+                            Integer.parseInt("FFF600", 16));
         } catch (NumberFormatException e) {
             if (logger.isLoggable(Level.WARNING)) {
                 logger.warning("Error reading text highlight colour");
@@ -114,6 +114,7 @@ public class Page extends Dictionary {
     }
 
     public static final Name TYPE = new Name("Page");
+
     public static final Name ANNOTS_KEY = new Name("Annots");
     public static final Name CONTENTS_KEY = new Name("Contents");
     public static final Name RESOURCES_KEY = new Name("Resources");
@@ -125,11 +126,13 @@ public class Page extends Dictionary {
     public static final Name ARTBOX_KEY = new Name("ArtBox");
     public static final Name BLEEDBOX_KEY = new Name("BleedBox");
     public static final Name TRIMBOX_KEY = new Name("TrimBox");
+
     /**
      * Defines the boundaries of the physical medium on which the page is
      * intended to be displayed or printed.
      */
     public static final int BOUNDARY_MEDIABOX = 1;
+
     /**
      * Defines the visible region of the default user space. When the page
      * is displayed or printed, its contents are to be clipped to this
@@ -137,15 +140,18 @@ public class Page extends Dictionary {
      * defined manner.
      */
     public static final int BOUNDARY_CROPBOX = 2;
+
     /**
      * Defines the region to which the contents of the page should be clipped
      * when output in a production environment (Mainly commercial printing).
      */
     public static final int BOUNDARY_BLEEDBOX = 3;
+
     /**
      * Defines the intended dimensions of the finished page after trimming.
      */
     public static final int BOUNDARY_TRIMBOX = 4;
+
     /**
      * Defines the extent of the page's meaningful content as intended by the
      * page's creator.
@@ -154,8 +160,10 @@ public class Page extends Dictionary {
 
     // resources for page's parent pages, default fonts, etc.
     private Resources resources;
+
     // Vector of annotations
     private List<Annotation> annotations;
+
     // Contents
     private List<Stream> contents;
     // Container for all shapes stored on page
@@ -224,14 +232,14 @@ public class Page extends Dictionary {
             contents = new ArrayList<Stream>(Math.max(sz, 1));
             // pull all of the page content references from the library
             for (int i = 0; i < sz; i++) {
-                if (Thread.currentThread().isInterrupted()) {
+                if (Thread.interrupted()) {
                     throw new InterruptedException("Page Content initialization thread interrupted");
                 }
-                Object tmp = library.getObject(conts.get(i));
+                Object tmp = library.getObject((Reference) conts.get(i));
                 if (tmp instanceof Stream) {
                     Stream tmpStream = (Stream) tmp;
                     // prune any zero length streams,
-                    if (tmpStream != null && tmpStream.getRawBytes().length > 0) {
+                    if (tmpStream.getRawBytes().length > 0) {
                         tmpStream.setPObjectReference((Reference) conts.get(i));
                         contents.add(tmpStream);
                     }
@@ -240,13 +248,13 @@ public class Page extends Dictionary {
         }
     }
 
-    public void initPageResources() throws InterruptedException {
+    private void initPageResources() throws InterruptedException {
         Resources res = library.getResources(entries, RESOURCES_KEY);
         PageTree pageTree;
         if (res == null) {
             pageTree = getParent();
             while (pageTree != null) {
-                if (Thread.currentThread().isInterrupted()) {
+                if (Thread.interrupted()) {
                     throw new InterruptedException("Page Resource initialization thread interrupted");
                 }
                 Resources parentResources = pageTree.getResources();
@@ -260,19 +268,6 @@ public class Page extends Dictionary {
         resources = res;
     }
 
-    /**
-     * Gets a raw list of annotation references.  The annotations are not initialized.
-     *
-     * @return list of a pages annotation reference list.
-     */
-    public ArrayList<Reference> getAnnotationReferences() {
-        Object annots = library.getObject(entries, ANNOTS_KEY);
-        if (annots != null && annots instanceof ArrayList) {
-            return (ArrayList<Reference>) annots;
-        }
-        return null;
-    }
-
     private void initPageAnnotations() throws InterruptedException {
         // find annotations in main library for our pages dictionary
         Object annots = library.getObject(entries, ANNOTS_KEY);
@@ -284,7 +279,7 @@ public class Page extends Dictionary {
             org.icepdf.core.pobjects.annotations.Annotation a = null;
             for (int i = 0; i < v.size(); i++) {
 
-                if (Thread.currentThread().isInterrupted()) {
+                if (Thread.interrupted()) {
                     throw new InterruptedException(
                             "Page Annotation initialization thread interrupted");
                 }
@@ -306,20 +301,14 @@ public class Page extends Dictionary {
                     a = Annotation.buildAnnotation(library, (HashMap) annotObj);
                 }
                 // set the object reference, so we can save the state correct
-                // and update any references accordingly.
-                try {
-                    // set the object reference, so we can save the state correct
-                    // and update any references accordingly.
-                    if (ref != null && a != null) {
-                        a.setPObjectReference(ref);
-                        a.init();
-                    }
-                    // add any found annotations to the vector.
-                    annotations.add(a);
-                } catch (IllegalStateException e) {
-                    logger.warning("Malformed annotation could not be initialized. " +
-                            a != null ? " " + a.getPObjectReference() + a.getEntries() : "");
+                // and update any references accordingly. 
+                if (ref != null && a != null) {
+                    a.setPObjectReference(ref);
+                    a.init();
                 }
+
+                // add any found annotations to the vector.
+                annotations.add(a);
             }
         }
     }
@@ -341,13 +330,17 @@ public class Page extends Dictionary {
      * Initialize the Page object.  This method triggers the parsing of a page's
      * child elements.  Once a page has been initialized, it can be painted.
      */
-    public synchronized void init() throws InterruptedException {
+    public synchronized void init() {
         try {
             // make sure we are not revisiting this method
             if (inited) {
                 return;
             }
             pageInitialized = false;
+            // set the initiated flag, first as there are couple corner
+            // cases where the content parsing can call page.init() again
+            // from the same thread.
+            inited = true;
 
             // get pages resources
             initPageResources();
@@ -359,14 +352,12 @@ public class Page extends Dictionary {
             initPageContents();
 
             // send out loading event.
-            if (resources != null) {
-                imageCount = resources.getImageCount();
-                int contentCount = 0;
-                if (contents != null) {
-                    contentCount = contents.size();
-                }
-                notifyPageLoadingStarted(contentCount, resources.getImageCount());
+            imageCount = resources.getImageCount();
+            int contentCount = 0;
+            if (contents != null) {
+                contentCount = contents.size();
             }
+            notifyPageLoadingStarted(contentCount, resources.getImageCount());
 
             /**
              * Finally iterate through the contents vector and concat all of the
@@ -398,28 +389,22 @@ public class Page extends Dictionary {
                     if (streams.length > 0) {
                         shapes = cp.parse(streams, this).getShapes();
                     }
-                    // set the initiated flag, first as there are couple corner
-                    // cases where the content parsing can call page.init() again
-                    // from the same thread.
-                    inited = true;
 
-                } catch (InterruptedException e) {
-                    throw new InterruptedException(e.getMessage());
                 } catch (Exception e) {
                     shapes = new Shapes();
-                    logger.log(Level.WARNING, "Error initializing Page.", e);
+                    logger.log(Level.FINE, "Error initializing Page.", e);
                 }
+
             }
             // empty page, nothing to do.
             else {
                 shapes = new Shapes();
-                logger.log(Level.WARNING, "Error initializing Page, no page content.");
             }
         } catch (InterruptedException e) {
             // keeps shapes vector so we can paint what we have but make init state as false
             // so we can try to re parse it later.
             inited = false;
-            throw new InterruptedException(e.getMessage());
+            logger.log(Level.SEVERE, "Page initializing thread interrupted.", e);
         }
         notifyPageInitializationEnded(inited);
     }
@@ -471,7 +456,7 @@ public class Page extends Dictionary {
      * @param userZoom       Zoom factor to be applied to the rendered page
      */
     public void paint(Graphics g, int renderHintType, final int boundary,
-                      float userRotation, float userZoom) throws InterruptedException {
+                      float userRotation, float userZoom) {
         paint(g, renderHintType, boundary, userRotation, userZoom, true, true);
     }
 
@@ -496,7 +481,7 @@ public class Page extends Dictionary {
      */
     public void paint(Graphics g, int renderHintType, final int boundary,
                       float userRotation, float userZoom,
-                      boolean paintAnnotations, boolean paintSearchHighlight) throws InterruptedException {
+                      boolean paintAnnotations, boolean paintSearchHighlight) {
         if (!inited) {
             // make sure we don't do a page init on the awt thread in the viewer
             // ri, let the
@@ -578,8 +563,7 @@ public class Page extends Dictionary {
      *                             be used to easily search and add highlighted state
      *                             for search terms.
      */
-    public void paintPageContent(Graphics g, int renderHintType, float userRotation, float userZoom,
-                                 boolean paintAnnotations, boolean paintSearchHighlight) throws InterruptedException {
+    public void paintPageContent(Graphics g, int renderHintType, float userRotation, float userZoom, boolean paintAnnotations, boolean paintSearchHighlight) {
         if (!inited) {
             init();
         }
@@ -587,8 +571,8 @@ public class Page extends Dictionary {
         paintPageContent(((Graphics2D) g), renderHintType, userRotation, userZoom, paintAnnotations, paintSearchHighlight);
     }
 
-    private void paintPageContent(Graphics2D g2, int renderHintType, float userRotation, float userZoom,
-                                  boolean paintAnnotations, boolean paintSearchHighlight) throws InterruptedException {
+    private void paintPageContent(Graphics2D g2, int renderHintType, float userRotation, float userZoom, boolean paintAnnotations, boolean paintSearchHighlight) {
+
         // draw page content
         if (shapes != null) {
             pagePainted = false;
@@ -619,10 +603,9 @@ public class Page extends Dictionary {
         if (paintSearchHighlight) {
             PageText pageText = getViewText();
             if (pageText != null) {
-                //g2.setComposite(BlendComposite.getInstance(BlendComposite.BlendingMode.MULTIPLY, 1.0f));
                 g2.setComposite(AlphaComposite.getInstance(
                         AlphaComposite.SRC_OVER,
-                        SELECTION_ALPHA));
+                        selectionAlpha));
                 // paint the sprites
                 GeneralPath textPath;
                 // iterate over the data structure.
@@ -648,7 +631,6 @@ public class Page extends Dictionary {
                         }
                     }
                 }
-                //g2.setComposite(BlendComposite.getInstance(BlendComposite.BlendingMode.NORMAL, 1.0f));
             }
         }
         pagePainted = true;
@@ -674,7 +656,7 @@ public class Page extends Dictionary {
      * As well, PDFs can be displayed both rotated and zoomed.
      * This method gives an AffineTransform which can be passed to
      * java.awt.Graphics2D.transform(AffineTransform) so that one can then
-     * use that Graphics2D in the user-perspective PDF coordinate space.
+     * use that Graphics2D in the user-perspectived PDF coordinate space.
      *
      * @param boundary     Constant specifying the page boundary to use when
      *                     painting the page content.
@@ -699,50 +681,45 @@ public class Page extends Dictionary {
         float totalRotation = getTotalRotation(userRotation);
         PRectangle pageBoundary = getPageBoundary(boundary);
 
-        at = Page.getPageRotation(at, totalRotation, pageBoundary.width, pageBoundary.height);
-
-        // translate crop lower left corner back to where media box corner was
-        float x = 0 - pageBoundary.x;
-        float y = 0 - (pageBoundary.y - pageBoundary.height);
-        at.translate(x, y);
-
-        return at;
-    }
-
-    public static AffineTransform getPageRotation(AffineTransform at, double totalRotation, float width, float height) {
         if (totalRotation == 0) {
             // do nothing
         } else if (totalRotation == 90) {
-            at.translate(height, 0);
+            at.translate(pageBoundary.height, 0);
         } else if (totalRotation == 180) {
-            at.translate(width, height);
+            at.translate(pageBoundary.width, pageBoundary.height);
         } else if (totalRotation == 270) {
-            at.translate(0, width);
+            at.translate(0, pageBoundary.width);
         } else {
             if (totalRotation > 0 && totalRotation < 90) {
-                double xShift = width * Math.cos(Math.toRadians(90 - totalRotation));
+                double xShift = pageBoundary.height * Math.cos(Math.toRadians(90 - totalRotation));
                 at.translate(xShift, 0);
             } else if (totalRotation > 90 && totalRotation < 180) {
                 double rad = Math.toRadians(180 - totalRotation);
                 double cosRad = Math.cos(rad);
                 double sinRad = Math.sin(rad);
-                double xShift = height * sinRad + width * cosRad;
-                double yShift = height * cosRad;
+                double xShift = pageBoundary.height * sinRad + pageBoundary.width * cosRad;
+                double yShift = pageBoundary.height * cosRad;
                 at.translate(xShift, yShift);
             } else if (totalRotation > 180 && totalRotation < 270) {
                 double rad = Math.toRadians(totalRotation - 180);
                 double cosRad = Math.cos(rad);
                 double sinRad = Math.sin(rad);
-                double xShift = width * cosRad;
-                double yShift = width * sinRad + height * cosRad;
+                double xShift = pageBoundary.width * cosRad;
+                double yShift = pageBoundary.width * sinRad + pageBoundary.height * cosRad;
                 at.translate(xShift, yShift);
             } else if (totalRotation > 270 && totalRotation < 360) {
-                double yShift = width * Math.cos(Math.toRadians(totalRotation - 270));
+                double yShift = pageBoundary.width * Math.cos(Math.toRadians(totalRotation - 270));
                 at.translate(0, yShift);
             }
         }
+
         // apply rotation on canvas, convert to Radians
         at.rotate(totalRotation * Math.PI / 180.0);
+
+        // translate crop lower left corner back to where media box corner was
+        float x = 0 - pageBoundary.x;
+        float y = 0 - (pageBoundary.y - pageBoundary.height);
+        at.translate(x, y);
 
         return at;
     }
@@ -775,7 +752,7 @@ public class Page extends Dictionary {
      * the method @link{#createAnnotation} for creating new annotations.
      *
      * @param newAnnotation annotation object to add
-     * @return reference to annotation that was added.
+     * @return reference to annotaiton that was added.
      */
     @SuppressWarnings("unchecked")
     public Annotation addAnnotation(Annotation newAnnotation) {
@@ -854,12 +831,10 @@ public class Page extends Dictionary {
 
     /**
      * Deletes the specified annotation instance from his page.  If the
-     * annotation was original then either the page or the annot ref object
-     * is also added to the state manager.  If the annotation was new then
+     * annotation was origional then either the page or the annot ref object
+     * is also added to the state maanger.  If the annotation was new then
      * we just have to update the page and or annot reference as the objects
-     * will already be in the state manager.
-     *
-     * @param annot annotation to delete.
+     * will allready be in the state manager.
      */
     public void deleteAnnotation(Annotation annot) {
 
@@ -890,9 +865,7 @@ public class Page extends Dictionary {
                 // only remove our font instance, if we remove another font we would have
                 // to check the document to see if it was used anywhere else.
                 Dictionary font = resources.getFont(FreeTextAnnotation.EMBEDDED_FONT_NAME);
-                if (font != null) {
-                    font.setDeleted(true);
-                }
+                font.setDeleted(true);
             }
         }
 
@@ -959,12 +932,12 @@ public class Page extends Dictionary {
 
         StateManager stateManager = library.getStateManager();
         // if we are doing an update we have at least on annot
-        List<Object> annotations = (List)
+        List<Reference> annotations = (List)
                 library.getObject(entries, ANNOTS_KEY);
 
         // make sure annotations is in part of page.
         boolean found = false;
-        for (Object ref : annotations) {
+        for (Reference ref : annotations) {
             if (ref.equals(annotation.getPObjectReference())) {
                 found = true;
                 break;
@@ -1021,9 +994,7 @@ public class Page extends Dictionary {
         // retrieve a pointer to the pageTreeParent
         Object tmp = library.getObject(entries, PARENT_KEY);
         if (tmp instanceof PageTree) {
-            return (PageTree) tmp;
-        } else if (tmp instanceof HashMap) {
-            return new PageTree(library, (HashMap) tmp);
+            return (PageTree) tmp;//library.getObject(entries, "Parent");
         } else {
             return null;
         }
@@ -1050,7 +1021,7 @@ public class Page extends Dictionary {
      *
      * @param userRotation rotation factor specified by the user under which the
      *                     page will be rotated.
-     * @param userZoom     zoom factor specified by the user under which the page will
+     * @param userZoom     zoom factor specifed by the user under which the page will
      *                     be rotated.
      * @return Dimension of width and height of the page represented in point units.
      */
@@ -1183,8 +1154,7 @@ public class Page extends Dictionary {
     }
 
     /**
-     * Utility method for applying the page boundary rules. If no matching specifiedBox type is found then
-     * the BOUNDARY_CROPBOX bound will be returned.
+     * Utility method for appling the page boundary rules.
      *
      * @param specifiedBox page boundary constant
      * @return bounds of page after the chain of rules have been applied.
@@ -1213,7 +1183,7 @@ public class Page extends Dictionary {
         }
         // encase of bad usage, default to crop box
         else {
-            userSpecifiedBox = (PRectangle) getCropBox();
+            userSpecifiedBox = (PRectangle) getMediaBox();
         }
 
         // just in case, make sure we return a non null boundary, and the
@@ -1241,7 +1211,7 @@ public class Page extends Dictionary {
      * of 0 to 360 degrees.
      *
      * @param userRotation rotation factor to be applied to page
-     * @return Total Rotation, representing pageRotation + user rotation
+     * @return Total Rotation, representing pageRoation + user rotation
      * factor applied to the whole document.
      */
     public float getTotalRotation(float userRotation) {
@@ -1378,10 +1348,6 @@ public class Page extends Dictionary {
                 }
             }
         }
-        // last resort
-        if (mediaBox == null) {
-            mediaBox = new PRectangle(new Point.Float(0, 0), new Point.Float(612, 792));
-        }
         return mediaBox;
     }
 
@@ -1504,7 +1470,7 @@ public class Page extends Dictionary {
      *
      * @return list of text sprites for the given page.
      */
-    public PageText getViewText() throws InterruptedException {
+    public PageText getViewText() {
         if (!inited) {
             init();
         }
@@ -1516,19 +1482,7 @@ public class Page extends Dictionary {
     }
 
     /**
-     * Gets the Shapes object associated with this Page.  The return value can be
-     * null depending on the PDF encoding.  The init() method should be called to
-     * insure the the page parsing and resource loading has completed.  This method
-     * will not call init() if the page has not yet be initialized.
-     *
-     * @return shapes object associated with this Page,  can be null.
-     */
-    public Shapes getShapes() {
-        return shapes;
-    }
-
-    /**
-     * Gets the PageText data structure for this page using an accelerated
+     * Gest the PageText data structure for this page using an accelerated
      * parsing technique that ignores some text elements. This method should
      * be used for straight text extraction.
      *
@@ -1601,7 +1555,7 @@ public class Page extends Dictionary {
     }
 
     /**
-     * Gets the xObject image found for this page which does not include
+     * Gets the xObject image cound for this page which does not include
      * any inline images.
      *
      * @return xObject image count.
@@ -1642,7 +1596,7 @@ public class Page extends Dictionary {
      *
      * @return vector of Images inside the current page
      */
-    public synchronized List<Image> getImages() throws InterruptedException {
+    public synchronized List<Image> getImages() {
         if (!inited) {
             init();
         }

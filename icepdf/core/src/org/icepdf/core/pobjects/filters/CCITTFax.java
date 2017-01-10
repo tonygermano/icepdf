@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -25,6 +25,7 @@ import org.icepdf.core.util.Utils;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.image.*;
 import java.awt.image.renderable.ParameterBlock;
@@ -46,7 +47,7 @@ import java.util.logging.Logger;
  * These protocols are known officially as the CCITT T.4 and T.6 standards but
  * are more commonly referred to as CCITT Group 3 and Group 4 compression,
  * respectively.
- * <p>
+ * <p/>
  * The CCITT actually defines three algorithms for the encoding of bi-level image data:
  * Group 3 One-Dimensional (G31D)
  * Group 3 Two-Dimensional (G32D) - not implemented
@@ -196,8 +197,8 @@ public class CCITTFax {
 
         // Make histogram of sizes
         int[] codeLengths = new int[64];
-        for (String aStrArray : strArray) {
-            int entryLength = aStrArray.length();
+        for (int i = 0; i < len; i++) {
+            int entryLength = strArray[i].length();
             codeLengths[entryLength]++;
         }
 
@@ -235,7 +236,9 @@ public class CCITTFax {
         Code[] lookInWithSameLength = lookIn[lookForIndex];
         if (lookInWithSameLength == null)
             return -1;
-        for (Code potentialMatch : lookInWithSameLength) {
+        int len = lookInWithSameLength.length;
+        for (int i = 0; i < len; i++) {
+            Code potentialMatch = lookInWithSameLength[i];
             if (lookFor.equals(potentialMatch))
                 return potentialMatch.getTablePosition();
         }
@@ -262,7 +265,6 @@ public class CCITTFax {
     private static final short TIFF_COMPRESSION_GROUP4 = 4;
 
     private static final String[] TIFF_COMPRESSION_NAMES = new String[]{
-            "",
             "TIFF_COMPRESSION_NONE_default",
             "TIFF_COMPRESSION_GROUP3_1D",
             "TIFF_COMPRESSION_GROUP3_2D",
@@ -280,23 +282,13 @@ public class CCITTFax {
     static {
         try {
             Class<?> jaiClass = Class.forName("javax.media.jai.JAI");
-            jaiCreate = jaiClass.getMethod("create", String.class, ParameterBlock.class);
+            jaiCreate = jaiClass.getMethod("create", new Class[]{String.class, ParameterBlock.class});
             Class<?> ssClass = Class.forName("com.sun.media.jai.codec.SeekableStream");
-            ssWrapInputStream = ssClass.getMethod("wrapInputStream", InputStream.class, Boolean.TYPE);
+            ssWrapInputStream = ssClass.getMethod("wrapInputStream", new Class[]{InputStream.class, Boolean.TYPE});
             Class<?> roClass = Class.forName("javax.media.jai.RenderedOp");
-            roGetAsBufferedImage = roClass.getMethod("getAsBufferedImage");
+            roGetAsBufferedImage = roClass.getMethod("getAsBufferedImage", new Class[]{});
             USE_JAI_IMAGE_LIBRARY = true;
         } catch (Exception e) {
-            logger.info("javax.media.jai.JAI could not bef found on the class path");
-        }
-
-        if (logger.isLoggable(Level.FINER)) {
-            Iterator<ImageReader> iter = ImageIO.getImageReadersByFormatName("TIFF");
-            ImageReader reader;
-            while (iter.hasNext()) {
-                reader = iter.next();
-                logger.finer("CCITTFaxDecode Image reader: " + reader);
-            }
         }
     }
 
@@ -304,33 +296,55 @@ public class CCITTFax {
      * Map bitstream values to tw and mw codes.
      *
      * @param inb bit stream containing the CCITT data
+     * @return
      * @throws java.io.IOException
      */
     static int findWhite(BitStream inb, Code code) throws IOException {
-        return findTone(inb, code, twcodes, mwcodes);
-    }
-
-    /**
-     * Finds the next black occruence in the stream
-     *
-     * @throws java.io.IOException
-     */
-    static int findBlack(BitStream inb, Code code) throws IOException {
-        return findTone(inb, code, tbcodes, mbcodes);
-    }
-
-    static int findTone(BitStream inb, Code code, Code[][] tCodes, Code[][] mCodes) throws IOException {
         code.reset();
         while (!inb.atEndOfFile()) {
             int i = inb.getBits(1);
             code.append(i != 0);
             int j;
-            j = findPositionInTable(code, tCodes);
+            j = findPositionInTable(code, twcodes);
+            if (j >= 0) {
+                //System.err.println("BINGO! tw "+_twcodes[j]+" "+j);
+                return j;
+            }
+            j = findPositionInTable(code, mwcodes);
+            if (j >= 0) {
+                //System.err.println("BINGO! mw "+_mwcodes[j]+" "+(j+1)*64);
+                return (j + 1) * 64;
+            }
+            j = findPositionInTable(code, extmcodes);
+            if (j >= 0) {
+                //System.err.println("BINGO! extm "+_extmcodes[j]+" "+(1792+j*64));
+                return (1792 + j * 64);
+            }
+        }
+        inb.close();
+        //System.err.println("CODE ERROR! " + code);
+        return 0;
+    }
+
+    /**
+     * Finds the next black occruence in the stream
+     *
+     * @param inb
+     * @return
+     * @throws java.io.IOException
+     */
+    static int findBlack(BitStream inb, Code code) throws IOException {
+        code.reset();
+        while (!inb.atEndOfFile()) {
+            int i = inb.getBits(1);
+            code.append(i != 0);
+            int j;
+            j = findPositionInTable(code, tbcodes);
             if (j >= 0) {
                 //System.err.println("BINGO! tb "+_tbcodes[j]+" "+j);
                 return j;
             }
-            j = findPositionInTable(code, mCodes);
+            j = findPositionInTable(code, mbcodes);
             if (j >= 0) {
                 //System.err.println("BINGO! mb "+_mbcodes[j]+" "+(j+1)*64);
                 return (j + 1) * 64;
@@ -347,6 +361,9 @@ public class CCITTFax {
     }
 
     /**
+     * @param x
+     * @param s
+     * @param out
      * @throws java.io.IOException
      */
     static void addRun(int x, G4State s, BitStream out) throws IOException {
@@ -362,6 +379,8 @@ public class CCITTFax {
     }
 
     /**
+     * @param inb
+     * @return
      * @throws java.io.IOException
      */
     static int readmode(BitStream inb, Code code) throws IOException {
@@ -379,6 +398,7 @@ public class CCITTFax {
     }
 
     /**
+     * @param s
      */
     static void detectB1(G4State s) {
         if (s.curIndex != 0) {
@@ -389,16 +409,16 @@ public class CCITTFax {
                 s.b1 += r;
                 if (s.refIndex + 2 < s.ref.length) {
                     s.refIndex += 2;
+                } else {
+                    //System.out.println("ERROR in detectB1, refIndex=" + s.refIndex
+                    //        + ", ref.length=" + s.ref.length);
                 }
-//                else {
-                //System.out.println("ERROR in detectB1, refIndex=" + s.refIndex
-                //        + ", ref.length=" + s.ref.length);
-//                }
             }
         }
     }
 
     /**
+     * @param s
      */
     static void decodePass(G4State s) {
         detectB1(s);
@@ -409,10 +429,13 @@ public class CCITTFax {
     }
 
     /**
+     * @param in
+     * @param out
+     * @param s
      * @throws java.io.IOException
      */
     static void decodeHorizontal(BitStream in, BitStream out, G4State s, Code code) throws IOException {
-        int rl;
+        int rl = 0;
         do {
             rl = s.white ? findWhite(in, code) : findBlack(in, code);
             if (rl >= 0) {
@@ -431,6 +454,8 @@ public class CCITTFax {
     }
 
     /**
+     * @param outb
+     * @param state
      * @throws java.io.IOException
      */
     static void resetRuns(BitStream outb, G4State state) throws IOException {
@@ -470,6 +495,9 @@ public class CCITTFax {
     }
 
     /**
+     * @param in
+     * @param out
+     * @param width
      */
     public static void Group4Decode(InputStream in, OutputStream out, int width, boolean blackIs1) {
         BitStream inb = new BitStream(in);
@@ -576,18 +604,27 @@ public class CCITTFax {
         HashMap decodeParmsDictionary = library.getDictionary(streamDictionary, ImageStream.DECODEPARMS_KEY);
         boolean blackIs1 = stream.getBlackIs1(library, decodeParmsDictionary);
         // double check for blackIs1 in the main dictionary.
-        if (!blackIs1 && ImageStream.CHECK_PARENT_BLACK_IS_1) {
+        if (!blackIs1) {
             blackIs1 = stream.getBlackIs1(library, streamDictionary);
         }
         float k = library.getFloat(decodeParmsDictionary, ImageStream.K_KEY);
-
-        short compression = TIFF_COMPRESSION_NONE_default;
-        if (k < 0) compression = TIFF_COMPRESSION_GROUP4;
-        else if (k > 0) compression = TIFF_COMPRESSION_GROUP3_2D;
-        else if (k == 0) compression = TIFF_COMPRESSION_GROUP3_1D;
         boolean hasHeader;
 
         InputStream input = stream.getDecodedByteArrayInputStream();
+        if (logger.isLoggable(Level.FINER)) {
+            try {
+                ImageInputStream imageInputStream = ImageIO.createImageInputStream(stream.getDecodedByteArrayInputStream());
+                Iterator<ImageReader> iter = ImageIO.getImageReadersByFormatName("TIFF");
+                ImageReader reader = null;
+                while (iter.hasNext()) {
+                    reader = iter.next();
+                    logger.finer("CCITTFaxDecode Image reader: " + reader + " canReastRaster: " + reader.canReadRaster());
+                }
+                imageInputStream.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
         if (input == null)
             return null;
         input = new ZeroPaddedInputStream(input);
@@ -672,7 +709,10 @@ public class CCITTFax {
             if (bitsPerComponent != null && bitsPerComponent instanceof Number) {
                 Utils.setShortIntoByteArrayBE(((Number) bitsPerComponent).shortValue(), fakeHeaderBytes, 0x36);
             }
-
+            short compression = TIFF_COMPRESSION_NONE_default;
+            if (k < 0) compression = TIFF_COMPRESSION_GROUP4;
+            else if (k > 0) compression = TIFF_COMPRESSION_GROUP3_2D;
+            else if (k == 0) compression = TIFF_COMPRESSION_GROUP3_1D;
             Utils.setShortIntoByteArrayBE(compression, fakeHeaderBytes, 0x42);
             short photometricInterpretation = TIFF_PHOTOMETRIC_INTERPRETATION_WHITE_IS_ZERO_default;
             // PDF has default BlackIs1=false               ==> White=1, Black=0
@@ -700,9 +740,9 @@ public class CCITTFax {
             ByteArrayInputStream fakeHeaderBytesIn = new ByteArrayInputStream(fakeHeaderBytes);
             org.icepdf.core.io.SequenceInputStream sin = new org.icepdf.core.io.SequenceInputStream(fakeHeaderBytesIn, input);
 
-            img = deriveBufferedImageFromTIFFBytes(sin, library, lengthOfCompressedData, width, height, compression);
+            img = deriveBufferedImageFromTIFFBytes(sin, library, lengthOfCompressedData, width, height);
             if (img == null) {
-                for (int i = 1; i <= 4; i++) { // Try the three other types of compression (1, 2, 3, 4)
+                for (int i = 1; i <= 2; i++) { // Try the three other types of compression (1, 2, 3, 4)
                     compression++;
                     // We don't try the default uncompressed format, because it sometimes
                     //  returns a blank image, which we don't want.  If JAI fails, we
@@ -717,7 +757,7 @@ public class CCITTFax {
                     input = new ZeroPaddedInputStream(input);
                     fakeHeaderBytesIn = new ByteArrayInputStream(fakeHeaderBytes);
                     sin = new org.icepdf.core.io.SequenceInputStream(fakeHeaderBytesIn, input);
-                    img = deriveBufferedImageFromTIFFBytes(sin, library, lengthOfCompressedData, width, height, compression);
+                    img = deriveBufferedImageFromTIFFBytes(sin, library, lengthOfCompressedData, width, height);
                     if (img != null) {
                         break;
                     }
@@ -727,7 +767,7 @@ public class CCITTFax {
             int width = library.getInt(streamDictionary, ImageStream.WIDTH_KEY);
             int height = library.getInt(streamDictionary, ImageStream.HEIGHT_KEY);
             int approxLen = width * height;
-            img = deriveBufferedImageFromTIFFBytes(input, library, approxLen, width, height, compression);
+            img = deriveBufferedImageFromTIFFBytes(input, library, approxLen, width, height);
         }
 
         if (img != null) {
@@ -745,7 +785,7 @@ public class CCITTFax {
      * @return RenderedImage if could derive one, else null
      */
     private static BufferedImage deriveBufferedImageFromTIFFBytes(
-            InputStream in, Library library, int compressedBytes, int width, int height, int compression) throws InvocationTargetException, IllegalAccessException {
+            InputStream in, Library library, int compressedBytes, int width, int height) throws InvocationTargetException, IllegalAccessException {
         BufferedImage img = null;
         try {
             /*
@@ -776,9 +816,6 @@ public class CCITTFax {
              */
 
             if (javax_media_jai_RenderedOp_op != null) {
-                if (logger.isLoggable(Level.FINER)) {
-                    logger.fine("Decoding TIFF: " + TIFF_COMPRESSION_NAMES[compression]);
-                }
                 // This forces the image to decode, so we can see if that fails,
                 //   and then potentially try a different compression setting
                 /* op.getTile( 0, 0 ); */
@@ -798,9 +835,6 @@ public class CCITTFax {
                     img = (BufferedImage) roGetAsBufferedImage.invoke(javax_media_jai_RenderedOp_op);
                 }
             }
-        } catch (Throwable e) {
-            // catch and return a null image so we can try again using a different compression method.
-            logger.finer("Decoding TIFF: " + TIFF_COMPRESSION_NAMES[compression] + " failed trying alternative");
         } finally {
             try {
                 in.close();

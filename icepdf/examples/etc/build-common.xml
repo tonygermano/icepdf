@@ -1,5 +1,5 @@
 <!--
-  ~ Copyright 2006-2016 ICEsoft Technologies Inc.
+  ~ Copyright 2006-2014 ICEsoft Technologies Inc.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the
@@ -23,6 +23,8 @@
     <property name="build.classes.dir" location="${build.dir}/classes"/>
     <property name="build.lib.dir" location="../lib"/>
 
+    <property name="compile.source" value="1.5"/>
+    <property name="compile.target" value="1.5"/>
     <property name="compile.debug" value="true"/>
 
     <property name="productinfo.file" value="ProductInfo.java"/>
@@ -35,13 +37,16 @@
     <property name="revision" value="x"/>
     <property name="build.number" value="x"/>
 
-    <patternset id="icepdf.lib.bouncy.jars"
+    <patternset id="icepdf.lib.batik.jars"
                 includes="
-                bcprov-jdk15on.jar
-                bcprov-ext-jdk15on.jar
-                bcpkix-jdk15on.jar
+                batik-awt-util.jar
+                batik-dom.jar
+                batik-svg-dom.jar
+                batik-svggen.jar
+                batik-util.jar
+                batik-xml.jar
                 "
-    />
+            />
 
     <target name="update.product.info">
         <copy file="${productinfo.src}/${productinfo.file}"
@@ -64,7 +69,7 @@
     <path id="compile.run.classpath">
         <pathelement location="${build.classes.dir}"/>
         <fileset dir="${build.lib.dir}">
-            <patternset refid="icepdf.lib.bouncy.jars"/>
+            <patternset refid="icepdf.lib.batik.jars"/>
         </fileset>
     </path>
 
@@ -87,6 +92,7 @@
             <mkdir dir="${build.classes.dir}"/>
 
             <javac destdir="${build.classes.dir}" sourcepath="" encoding="UTF-8"
+                   source="${compile.source}" target="${compile.target}"
                    includeantruntime="false"
                    debug="${compile.debug}" failonerror="@{failonerror}">
                 <compilerarg value="-Xlint"/>
@@ -102,7 +108,6 @@
 
     <macrodef name="build.jar">
         <attribute name="jar.file.name" default="${ant.project.name}.jar"/>
-        <attribute name="jar.section.name"/>
 
         <element name="add.jar.src.includes" optional="true"/>
         <element name="add.manifest.elements" optional="true"/>
@@ -118,11 +123,11 @@
                 <manifest>
                     <add.manifest.elements/>
                     <!-- ICEpdf version information -->
-                    <section name="@{jar.section.name}">
+                    <section name="org.icepdf.pdf">
                         <attribute name="Implementation-Title"
                                    value="${product}"/>
                         <attribute name="Implementation-Version"
-                                   value="${version.primary}.${version.secondary}.${version.tertiary}_${build.number} ${release.type}"/>
+                                   value="${release.type} ${version.primary}.${version.secondary}.${version.tertiary}_${build.number}"/>
                         <attribute name="Implementation-Vendor"
                                    value="${company}"/>
                     </section>

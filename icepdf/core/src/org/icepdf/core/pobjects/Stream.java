@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -19,7 +19,6 @@ import org.icepdf.core.io.BitStream;
 import org.icepdf.core.io.ConservativeSizingByteArrayOutputStream;
 import org.icepdf.core.io.SeekableInputConstrainedWrapper;
 import org.icepdf.core.pobjects.filters.*;
-import org.icepdf.core.pobjects.security.SecurityManager;
 import org.icepdf.core.util.Library;
 
 import java.io.ByteArrayInputStream;
@@ -63,14 +62,12 @@ public class Stream extends Dictionary {
     // original byte stream that has not been decoded
     protected byte[] rawBytes;
 
-    protected HashMap decodeParams;
-
     // default compression state for a file loaded stream,  for re-saving
     // of form data we want to avoid re-compressing the data.
     protected boolean compressed = true;
 
     // reference of stream, needed for encryption support
-    protected Reference pObjectReference;
+    protected Reference pObjectReference = null;
 
     /**
      * Create a new instance of a Stream.
@@ -85,15 +82,11 @@ public class Stream extends Dictionary {
         if (streamInputWrapper != null) {
             this.rawBytes = getRawStreamBytes(streamInputWrapper);
         }
-        decodeParams = library.getDictionary(entries, DECODEPARAM_KEY);
     }
 
     public Stream(Library l, HashMap h, byte[] rawBytes) {
         super(l, h);
         this.rawBytes = rawBytes;
-        if (library != null) {
-            decodeParams = library.getDictionary(entries, DECODEPARAM_KEY);
-        }
     }
 
     /**
@@ -189,9 +182,9 @@ public class Stream extends Dictionary {
                         break;
                     out.write(buffer, 0, read);
                 }
-                input.close();
                 out.flush();
                 out.close();
+                input.close();
                 out.trim();
                 return out.relinquishByteArray();
             } catch (IOException e) {
@@ -231,13 +224,13 @@ public class Stream extends Dictionary {
 
         // Search for crypt dictionary entry and decode params so that
         // named filters can be assigned correctly.
-        SecurityManager securityManager = library.getSecurityManager();
-//        System.out.println("Thread " + Thread.currentThread() + " " + pObjectReference);
-        if (securityManager != null) {
+        if (library.securityManager != null) {
             // check see of there is a decodeParams for a crypt filter.
-            input = securityManager.decryptInputStream(
-                    pObjectReference, securityManager.getDecryptionKey(),
-                    decodeParams, input, true);
+            HashMap decodeParams = library.getDictionary(entries, DECODEPARAM_KEY);
+            input = library.getSecurityManager().getEncryptionInputStream(
+                    getPObjectReference(), library.getSecurityManager().getDecryptionKey(),
+                    decodeParams,
+                    input, true);
         }
 
         // Get the filter name for the encoding type, which can be either

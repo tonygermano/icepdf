@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -77,55 +77,6 @@ public class HexStringObject implements StringObject {
     }
 
     /**
-     * <p>Creates a new literal string object so that it represents the same
-     * sequence of character data specified by the arguments.  The string
-     * value is assumed to be unencrypted and will be encrypted.  The
-     * method #LiteralStringObject(String string) should be used if the string
-     * is all ready encrypted. This method is used for creating new
-     * LiteralStringObject's that are created post document parse. </p>
-     *
-     * @param string          the initial contents of the literal string object,
-     *                        unencrypted.
-     * @param reference       of parent PObject
-     * @param securityManager security manager used ot encrypt the string.
-     */
-    public HexStringObject(String string, Reference reference,
-                           SecurityManager securityManager) {
-        // append string data
-        this.reference = reference;
-        // convert string data to hex encoded
-        stringData = encodeHexString(string);
-        // save and encrypt the hex value.  TODO: encryption still not working correctly, likely a -> byte[] error.
-        stringData = new StringBuilder(encryption(stringData.toString(), false, securityManager));
-    }
-
-    /**
-     * Encodes the given contents string into a 4 byte hex string.  This allows us to easily account for
-     * mixed encoding of 2-byte and 4 byte string content.
-     *
-     * @param contents string to be encoded into hex format.
-     * @return original content stream with contents encoded in the hex string format.
-     */
-    private StringBuilder encodeHexString(String contents) {
-        StringBuilder hex = new StringBuilder();
-        if (contents != null && contents.length() > 0) {
-            char[] chars = contents.toCharArray();
-            hex.append("FEFF");
-            String hexCode;
-            for (char aChar : chars) {
-                hexCode = Integer.toHexString((int) aChar);
-                if (hexCode.length() == 2) {
-                    hexCode = "00" + hexCode;
-                } else if (hexCode.length() == 1) {
-                    hexCode = "000" + hexCode;
-                }
-                hex.append(hexCode);
-            }
-        }
-        return hex;
-    }
-
-    /**
      * Gets the integer value of the hexidecimal data specified by the start and
      * offset parameters.
      *
@@ -140,18 +91,6 @@ public class HexStringObject implements StringObject {
         try {
             unsignedInt = Integer.parseInt(
                     stringData.substring(start, start + offset), 16);
-        } catch (NumberFormatException e) {
-            if (logger.isLoggable(Level.FINER)) {
-                logger.finer("Number Format Exception " + unsignedInt);
-            }
-        }
-        return unsignedInt;
-    }
-
-    public int getUnsignedInt(String data) {
-        int unsignedInt = 0;
-        try {
-            unsignedInt = Integer.parseInt(data, 16);
         } catch (NumberFormatException e) {
             if (logger.isLoggable(Level.FINER)) {
                 logger.finer("Number Format Exception " + unsignedInt);
@@ -222,10 +161,10 @@ public class HexStringObject implements StringObject {
      *                   Composite and Simple font types respectively
      * @param font       font used to render the literal string data.
      * @return StringBuffer which contains all renderaable characters for the
-     * given font.
+     *         given font.
      */
     public StringBuilder getLiteralStringBuffer(final int fontFormat, FontFile font) {
-        if (fontFormat == Font.SIMPLE_FORMAT) {
+        if (fontFormat == Font.SIMPLE_FORMAT || font.isOneByteEncoding()) {
             stringData = new StringBuilder(normalizeHex(stringData, 2).toString());
             int charOffset = 2;
             int length = getLength();
@@ -249,32 +188,14 @@ public class HexStringObject implements StringObject {
             return tmp;
         } else if (fontFormat == Font.CID_FORMAT) {
             stringData = new StringBuilder(normalizeHex(stringData, 4).toString());
-            int charOffset = 2;
+            int charOffset = 4;
             int length = getLength();
             int charValue;
             StringBuilder tmp = new StringBuilder(length);
-            // attempt to detect mulibyte encoded strings.
             for (int i = 0; i < length; i += charOffset) {
-                String first = stringData.substring(i, i + 2);
-                if (first.charAt(0) != '0') {
-                    // check range for possible 2 byte char ie mixed mode.
-                    charValue = getUnsignedInt(first);
-                    if (font.getByteEncoding() == FontFile.ByteEncoding.MIXED_BYTE &&
-                            font.canDisplayEchar((char) charValue) && font.getSource() != null) {
-                        tmp.append((char) charValue);
-                    } else {
-                        charValue = getUnsignedInt(i, 4);
-                        if (font.canDisplayEchar((char) charValue)) {
-                            tmp.append((char) charValue);
-                            i += 2;
-                        }
-                    }
-                } else {
-                    charValue = getUnsignedInt(i, 4);
-                    if (font.canDisplayEchar((char) charValue)) {
-                        tmp.append((char) charValue);
-                        i += 2;
-                    }
+                charValue = getUnsignedInt(i, charOffset);
+                if (font.canDisplayEchar((char) charValue)) {
+                    tmp.append((char) charValue);
                 }
             }
             return tmp;
@@ -357,41 +278,27 @@ public class HexStringObject implements StringObject {
                 && (hh.charAt(1) == 'E' | hh.charAt(1) == 'e')
                 && (hh.charAt(2) == 'F' | hh.charAt(2) == 'f')
                 && (hh.charAt(3) == 'F') | hh.charAt(3) == 'f')) {
-            return getRawHexToString();
+            int length = hh.length();
+            sb = new StringBuilder(length / 2);
+            String subStr;
+
+            for (int i = 0; i < length; i = i + 2) {
+                subStr = hh.substring(i, i + 2);
+                sb.append((char) Integer.parseInt(subStr, 16));
+            }
+            return sb;
         }
         // otherwise, assume 4 byte character codes
         else {
             int length = hh.length();
             sb = new StringBuilder(length / 4);
             String subStr;
-            // make sure to skip the marker
-            for (int i = 4; i < length; i = i + 4) {
+            for (int i = 0; i < length; i = i + 4) {
                 subStr = hh.substring(i, i + 4);
                 sb.append((char) Integer.parseInt(subStr, 16));
             }
             return sb;
         }
-    }
-
-    /**
-     * Gets the raw string values not taking into account any special cases for FEFF byte
-     * marking.
-     *
-     * @return two byte hex string converted to plain string.
-     */
-    public StringBuilder getRawHexToString() {
-
-        StringBuilder sb;
-
-        int length = stringData.length();
-        sb = new StringBuilder(length / 2);
-        String subStr;
-
-        for (int i = 0; i < length; i = i + 2) {
-            subStr = stringData.substring(i, i + 2);
-            sb.append((char) Integer.parseInt(subStr, 16));
-        }
-        return sb;
     }
 
     /**
@@ -437,42 +344,6 @@ public class HexStringObject implements StringObject {
             return Utils.convertByteArrayToByteString(textBytes);
         }
         return getLiteralString();
-    }
-
-    /**
-     * Decrypts or encrypts a string.
-     *
-     * @param string          string to encrypt or decrypt
-     * @param decrypt         true to decrypt string, false otherwise;
-     * @param securityManager security manager for document.
-     * @return encrypted or decrypted string, depends on value of decrypt param.
-     */
-    public String encryption(String string, boolean decrypt,
-                             SecurityManager securityManager) {
-        // get the security manager instance
-        if (securityManager != null && reference != null) {
-            // get the key
-            byte[] key = securityManager.getDecryptionKey();
-
-            // convert string to bytes.
-            byte[] textBytes =
-                    Utils.convertByteCharSequenceToByteArray(string);
-
-            // Decrypt String
-            if (decrypt) {
-                textBytes = securityManager.decrypt(reference,
-                        key,
-                        textBytes);
-            } else {
-                textBytes = securityManager.encrypt(reference,
-                        key,
-                        textBytes);
-            }
-
-            // convert back to a string
-            return Utils.convertByteArrayToByteString(textBytes);
-        }
-        return string;
     }
 
 }

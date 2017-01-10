@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -36,6 +36,12 @@ import java.util.List;
 @SuppressWarnings("serial")
 public class OneColumnPageView extends AbstractDocumentView {
 
+    protected JScrollPane documentScrollpane;
+
+    protected boolean disposing;
+
+    protected JPanel pagesPanel;
+
     // specialized listeners for different gui operations
     protected CurrentPageChanger currentPageChanger;
 
@@ -43,7 +49,7 @@ public class OneColumnPageView extends AbstractDocumentView {
 
     public OneColumnPageView(DocumentViewController documentDocumentViewController,
                              JScrollPane documentScrollpane,
-                             DocumentViewModel documentViewModel) {
+                             DocumentViewModelImpl documentViewModel) {
 
         super(documentDocumentViewController, documentScrollpane, documentViewModel);
 
@@ -66,10 +72,11 @@ public class OneColumnPageView extends AbstractDocumentView {
         }
     }
 
+
     private void buildGUI() {
         // add all page components to grid layout panel
         pagesPanel = new JPanel();
-        pagesPanel.setBackground(BACKGROUND_COLOUR);
+        pagesPanel.setBackground(backgroundColor);
         // one column equals single page view continuous
         GridLayout gridLayout = new GridLayout(0, 1, horizontalSpace, verticalSpace);
         pagesPanel.setLayout(gridLayout);
@@ -169,7 +176,7 @@ public class OneColumnPageView extends AbstractDocumentView {
     public void paintComponent(Graphics g) {
         Rectangle clipBounds = g.getClipBounds();
         // paint background gray
-        g.setColor(BACKGROUND_COLOUR);
+        g.setColor(backgroundColor);
         g.fillRect(clipBounds.x, clipBounds.y, clipBounds.width, clipBounds.height);
         // paint selection box
         super.paintComponent(g);

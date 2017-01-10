@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -49,6 +49,16 @@ public class PopupAnnotation extends Annotation {
             Logger.getLogger(PopupAnnotation.class.toString());
 
     /**
+     * (Optional; shall be an indirect reference) The parent annotation with
+     * which this pop-up annotation shall be associated.
+     * <p/>
+     * If this entry is present, the parent annotation’s Contents, M, C, and T
+     * entries (see Table 168) shall override those of the pop-up annotation
+     * itself.
+     */
+    public static final Name PARENT_KEY = new Name("Parent");
+
+    /**
      * (Optional) A flag specifying whether the pop-up annotation shall
      * initially be displayed open. Default value: false (closed).
      */
@@ -62,7 +72,7 @@ public class PopupAnnotation extends Annotation {
         super(l, h);
     }
 
-    public void init() throws InterruptedException {
+    public void init() {
         super.init();
         open = library.getBoolean(entries, OPEN_KEY);
     }
@@ -93,22 +103,16 @@ public class PopupAnnotation extends Annotation {
         }
 
         // create the new instance
-        PopupAnnotation popupAnnotation = null;
-        try {
-            popupAnnotation = new PopupAnnotation(library, entries);
-            popupAnnotation.init();
-            popupAnnotation.setPObjectReference(stateManager.getNewReferencNumber());
-            popupAnnotation.setNew(true);
+        PopupAnnotation popupAnnotation = new PopupAnnotation(library, entries);
+        popupAnnotation.init();
+        popupAnnotation.setPObjectReference(stateManager.getNewReferencNumber());
+        popupAnnotation.setNew(true);
 
-            // set default flags.
-            popupAnnotation.setFlag(Annotation.FLAG_READ_ONLY, false);
-            popupAnnotation.setFlag(Annotation.FLAG_NO_ROTATE, false);
-            popupAnnotation.setFlag(Annotation.FLAG_NO_ZOOM, false);
-            popupAnnotation.setFlag(Annotation.FLAG_PRINT, false);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            logger.finer("Popup Annotation initialization was interrupted");
-        }
+        // set default flags.
+        popupAnnotation.setFlag(Annotation.FLAG_READ_ONLY, false);
+        popupAnnotation.setFlag(Annotation.FLAG_NO_ROTATE, false);
+        popupAnnotation.setFlag(Annotation.FLAG_NO_ZOOM, false);
+        popupAnnotation.setFlag(Annotation.FLAG_PRINT, false);
 
         return popupAnnotation;
     }
@@ -127,14 +131,6 @@ public class PopupAnnotation extends Annotation {
         entries.put(OPEN_KEY, open);
     }
 
-    /**
-     * (Optional; shall be an indirect reference) The parent annotation with
-     * which this pop-up annotation shall be associated.
-     * <p/>
-     * If this entry is present, the parent annotation’s Contents, M, C, and T
-     * entries (see Table 168) shall override those of the pop-up annotation
-     * itself.
-     */
     public MarkupAnnotation getParent() {
         Object tmp = library.getObject(entries, PARENT_KEY);
         // should normally be a text annotation type.

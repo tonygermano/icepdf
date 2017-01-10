@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -17,7 +17,6 @@ package org.icepdf.ri.common.views;
 
 import org.icepdf.core.pobjects.Document;
 import org.icepdf.core.search.DocumentSearchController;
-import org.icepdf.ri.util.PropertiesManager;
 
 import java.util.ResourceBundle;
 
@@ -94,11 +93,4 @@ public interface Controller {
      * @return message bundle used by this class.
      */
     public ResourceBundle getMessageBundle();
-
-    /**
-     * Gets the properties manager used to build a dynamically created UI.
-     *
-     * @return currently properties manager instance.
-     */
-    public PropertiesManager getPropertiesManager();
 }

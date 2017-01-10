@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -60,6 +60,7 @@ public class Destination {
             Logger.getLogger(Destination.class.toString());
 
     public static final Name D_KEY = new Name("D");
+
     // Vector destination type formats.
     public static final Name TYPE_XYZ = new Name("XYZ");
     public static final Name TYPE_FIT = new Name("Fit");
@@ -130,7 +131,7 @@ public class Destination {
             // Make sure to decrypt this attribute
             if (object instanceof StringObject) {
                 StringObject stringObject = (StringObject) object;
-                s = stringObject.getDecryptedLiteralString(library.getSecurityManager());
+                s = stringObject.getDecryptedLiteralString(library.securityManager);
             } else {
                 s = object.toString();
             }
@@ -196,88 +197,77 @@ public class Destination {
      */
     private void parse(List v) {
 
-        if (v == null) return;
-
         // Assign a Reference
-        Object ob = getDestValue(0, v);
+        Object ob = v.get(0);
         if (ob instanceof Reference) {
             ref = (Reference) ob;
         }
         // store type.
-        ob = getDestValue(1, v);
+        ob = v.get(1);
         if (ob instanceof Name) {
             type = (Name) ob;
-        } else if (ob != null) {
+        } else {
             type = new Name(ob.toString());
         }
         // [page /XYZ left top zoom ]
-        if (TYPE_XYZ.equals(type)) {
-            ob = getDestValue(2, v);
+        if (type.equals(TYPE_XYZ)) {
+            ob = v.get(2);
             if (ob != null && !ob.equals("null")) {
                 left = ((Number) ob).floatValue();
             }
-            ob = getDestValue(3, v);
+            ob = v.get(3);
             if (ob != null && !ob.equals("null")) {
                 top = ((Number) ob).floatValue();
             }
-            // zoom can be a value but zero and null are treated as no zoom change.
-            ob = getDestValue(4, v);
+            ob = v.get(4);
             if (ob != null && !ob.equals("null") && !ob.equals("0")) {
                 zoom = ((Number) ob).floatValue();
             }
         }
         // [page /FitH top]
-        else if (TYPE_FITH.equals(type)) {
-            ob = getDestValue(2, v);
+        else if (type.equals(TYPE_FITH)) {
+            ob = v.get(2);
             if (ob != null && !ob.equals("null")) {
                 top = ((Number) ob).floatValue();
             }
         }
         // [page /FitR left bottom right top]
-        else if (TYPE_FITR.equals(type)) {
-            ob = getDestValue(2, v);
+        else if (type.equals(TYPE_FITR)) {
+            ob = v.get(2);
             if (ob != null && !ob.equals("null")) {
                 left = ((Number) ob).floatValue();
             }
-            ob = getDestValue(3, v);
+            ob = v.get(3);
             if (ob != null && !ob.equals("null")) {
                 bottom = ((Number) ob).floatValue();
             }
-            ob = getDestValue(4, v);
+            ob = v.get(4);
             if (ob != null && !ob.equals("null")) {
                 right = ((Number) ob).floatValue();
             }
-            ob = getDestValue(5, v);
+            ob = v.get(5);
             if (ob != null && !ob.equals("null")) {
                 top = ((Number) ob).floatValue();
             }
         }
         // [page /FitB]
-        else if (TYPE_FITB.equals(type)) {
+        else if (type.equals(TYPE_FITB)) {
             // nothing to parse
         }
         // [page /FitBH top]
-        else if (TYPE_FITBH.equals(type)) {
-            ob = getDestValue(2, v);
+        else if (type.equals(TYPE_FITBH)) {
+            ob = v.get(2);
             if (ob != null && !ob.equals("null")) {
                 top = ((Number) ob).floatValue();
             }
         }
         // [page /FitBV left]
-        else if (TYPE_FITBV.equals(type)) {
-            ob = getDestValue(2, v);
+        else if (type.equals(TYPE_FITBV)) {
+            ob = v.get(2);
             if (ob != null && !ob.equals("null")) {
                 left = ((Number) ob).floatValue();
             }
         }
-    }
-
-    // utility to avoid indexing issues with malformed dest type formats.
-    private static Object getDestValue(int index, List params) {
-        if (params.size() > index) {
-            return params.get(index);
-        }
-        return null;
     }
 
     /**

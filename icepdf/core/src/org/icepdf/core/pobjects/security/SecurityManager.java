@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -63,10 +63,6 @@ public class SecurityManager {
 
     // flag for detecting JCE
     private static boolean foundJCE = false;
-
-    // key caches, fairly expensive calculation
-    private byte[] encryptionKey;
-    private byte[] decryptionKey;
 
     // Add security provider of choice before Sun RSA provider (if any)
     static {
@@ -177,10 +173,7 @@ public class SecurityManager {
      * @return encryption key used to encrypt the data
      */
     public byte[] getEncryptionKey() {
-        if (encryptionKey == null) {
-            encryptionKey = securityHandler.getEncryptionKey();
-        }
-        return encryptionKey;
+        return securityHandler.getEncryptionKey();
     }
 
     /**
@@ -189,10 +182,7 @@ public class SecurityManager {
      * @return decryption key used to encrypt the data
      */
     public byte[] getDecryptionKey() {
-        if (decryptionKey == null) {
-            decryptionKey = securityHandler.getDecryptionKey();
-        }
-        return decryptionKey;
+        return securityHandler.getDecryptionKey();
     }
 
     /**
@@ -239,38 +229,13 @@ public class SecurityManager {
      * @param returnInputIfNullResult If results end up being null, then return input instead of null
      * @return InputStream giving access to decrypted data
      */
-    public InputStream decryptInputStream(
+    public InputStream getEncryptionInputStream(
             Reference objectReference,
             byte[] encryptionKey,
             HashMap decodeParams,
             InputStream input,
             boolean returnInputIfNullResult) {
-        InputStream result = securityHandler.decryptInputStream(
-                objectReference, encryptionKey, decodeParams, input);
-        if (returnInputIfNullResult && result == null)
-            result = input;
-        return result;
-    }
-
-    /**
-     * Return a new InputStream, from which read operations will return
-     * data, read and decrypt from the InputStream parameter
-     * <code>objectReference</code> of the PDF stream or String object.
-     *
-     * @param objectReference         PDF objects number and revision number
-     * @param encryptionKey           encryption key used to decrypt the data
-     * @param input                   InputStream giving access to encrypted data
-     * @param decodeParams            crypt filter optional parameters, can be null.
-     * @param returnInputIfNullResult If results end up being null, then return input instead of null
-     * @return InputStream giving access to decrypted data
-     */
-    public InputStream encryptInputStream(
-            Reference objectReference,
-            byte[] encryptionKey,
-            HashMap decodeParams,
-            InputStream input,
-            boolean returnInputIfNullResult) {
-        InputStream result = securityHandler.encryptInputStream(
+        InputStream result = securityHandler.getEncryptionInputStream(
                 objectReference, encryptionKey, decodeParams, input);
         if (returnInputIfNullResult && result == null)
             result = input;

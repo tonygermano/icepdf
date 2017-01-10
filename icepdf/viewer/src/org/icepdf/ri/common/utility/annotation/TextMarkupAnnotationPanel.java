@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -23,8 +23,6 @@ import org.icepdf.ri.common.views.AnnotationComponent;
 import javax.swing.*;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -39,7 +37,7 @@ import java.awt.event.ItemListener;
  */
 @SuppressWarnings("serial")
 public class TextMarkupAnnotationPanel extends AnnotationPanelAdapter implements ItemListener,
-        ActionListener, ChangeListener {
+        ActionListener {
 
     // default list values.
     private static final int DEFAULT_TEXT_MARKUP_TYPE = 0;
@@ -51,13 +49,12 @@ public class TextMarkupAnnotationPanel extends AnnotationPanelAdapter implements
     // text markup appearance properties.
     private JComboBox textMarkupTypes;
     private JButton colorButton;
-    private JSlider transparencySlider;
 
     private TextMarkupAnnotation annotation;
 
     public TextMarkupAnnotationPanel(SwingController controller) {
         super(controller);
-        setLayout(new GridBagLayout());
+        setLayout(new GridLayout(2, 2, 5, 2));
 
         // Setup the basics of the panel
         setFocusable(true);
@@ -94,13 +91,11 @@ public class TextMarkupAnnotationPanel extends AnnotationPanelAdapter implements
                 currentAnnotationComponent.getAnnotation();
 
         applySelectedValue(textMarkupTypes, annotation.getSubType());
-        setButtonBackgroundColor(colorButton, annotation.getTextMarkupColor());
-        transparencySlider.setValue(Math.round(annotation.getOpacity() * 255));
+        colorButton.setBackground(annotation.getTextMarkupColor());
 
         // disable appearance input if we have a invisible rectangle
         safeEnable(textMarkupTypes, true);
         safeEnable(colorButton, true);
-        safeEnable(transparencySlider, true);
     }
 
     public void itemStateChanged(ItemEvent e) {
@@ -136,10 +131,6 @@ public class TextMarkupAnnotationPanel extends AnnotationPanelAdapter implements
         }
     }
 
-    public void stateChanged(ChangeEvent e) {
-        alphaSliderChange(e, annotation);
-    }
-
     /**
      * Method to create link annotation GUI.
      */
@@ -156,13 +147,6 @@ public class TextMarkupAnnotationPanel extends AnnotationPanelAdapter implements
                             "Underline")};
         }
 
-        constraints = new GridBagConstraints();
-        constraints.fill = GridBagConstraints.HORIZONTAL;
-        constraints.weightx = 1.0;
-        constraints.anchor = GridBagConstraints.NORTH;
-        constraints.anchor = GridBagConstraints.WEST;
-        constraints.insets = new Insets(1, 2, 1, 2);
-
         // Create and setup an Appearance panel
         setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED),
                 messageBundle.getString("viewer.utilityPane.annotation.textMarkup.appearance.title"),
@@ -172,27 +156,17 @@ public class TextMarkupAnnotationPanel extends AnnotationPanelAdapter implements
         textMarkupTypes = new JComboBox(TEXT_MARKUP_TYPE_LIST);
         textMarkupTypes.setSelectedIndex(DEFAULT_TEXT_MARKUP_TYPE);
         textMarkupTypes.addItemListener(this);
-        JLabel label = new JLabel(messageBundle.getString("viewer.utilityPane.annotation.textMarkup.highlightType"));
-        addGB(this, label, 0, 0, 1, 1);
-        addGB(this, textMarkupTypes, 1, 0, 1, 1);
-
+        add(new JLabel(
+                messageBundle.getString("viewer.utilityPane.annotation.textMarkup.highlightType")));
+        add(textMarkupTypes);
         // border colour
-        colorButton = new JButton(" ");
+        colorButton = new JButton();
         colorButton.addActionListener(this);
         colorButton.setOpaque(true);
         colorButton.setBackground(DEFAULT_BORDER_COLOR);
-        label = new JLabel(messageBundle.getString("viewer.utilityPane.annotation.textMarkup.colorLabel"));
-        addGB(this, label, 0, 2, 1, 1);
-        addGB(this, colorButton, 1, 2, 1, 1);
-
-        // transparency slider
-        transparencySlider = buildAlphaSlider();
-        transparencySlider.setMajorTickSpacing(255);
-        transparencySlider.setPaintLabels(true);
-        transparencySlider.addChangeListener(this);
-        label = new JLabel(messageBundle.getString("viewer.utilityPane.annotation.textMarkup.transparencyLabel"));
-        addGB(this, label, 0, 3, 1, 1);
-        addGB(this, transparencySlider, 1, 3, 1, 1);
+        add(new JLabel(
+                messageBundle.getString("viewer.utilityPane.annotation.textMarkup.colorLabel")));
+        add(colorButton);
     }
 
     @Override
@@ -201,7 +175,6 @@ public class TextMarkupAnnotationPanel extends AnnotationPanelAdapter implements
 
         safeEnable(textMarkupTypes, enabled);
         safeEnable(colorButton, enabled);
-        safeEnable(transparencySlider, enabled);
     }
 
     /**

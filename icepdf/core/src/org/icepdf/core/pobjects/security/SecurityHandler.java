@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -51,16 +51,10 @@ public abstract class SecurityHandler implements SecurityHandlerInterface {
                                    byte[] encryptionKey,
                                    byte[] data);
 
-    public abstract InputStream encryptInputStream(
+    public abstract InputStream getEncryptionInputStream(
             Reference objectReference,
             byte[] encryptionKey,
-            HashMap decodeParams,
-            InputStream input);
-
-    public abstract InputStream decryptInputStream(
-            Reference objectReference,
-            byte[] encryptionKey,
-            HashMap decodeParams,
+            HashMap decodeparams,
             InputStream input);
 
     public abstract byte[] getEncryptionKey();

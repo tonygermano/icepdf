@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -23,8 +23,6 @@ import org.icepdf.ri.common.views.AnnotationComponent;
 import javax.swing.*;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -38,7 +36,7 @@ import java.awt.event.ItemListener;
  * @since 5.0
  */
 @SuppressWarnings("serial")
-public class CircleAnnotationPanel extends AnnotationPanelAdapter implements ItemListener, ChangeListener,
+public class CircleAnnotationPanel extends AnnotationPanelAdapter implements ItemListener,
         ActionListener {
 
     // default list values.
@@ -55,14 +53,12 @@ public class CircleAnnotationPanel extends AnnotationPanelAdapter implements Ite
     private JComboBox fillTypeBox;
     private JButton colorFillButton;
     private JButton colorBorderButton;
-    private JSlider transparencySlider;
 
     private CircleAnnotation annotation;
 
     public CircleAnnotationPanel(SwingController controller) {
         super(controller);
-
-        setLayout(new GridBagLayout());
+        setLayout(new GridLayout(5, 2, 5, 2));
 
         // Setup the basics of the panel
         setFocusable(true);
@@ -102,9 +98,8 @@ public class CircleAnnotationPanel extends AnnotationPanelAdapter implements Ite
         applySelectedValue(lineThicknessBox, annotation.getLineThickness());
         applySelectedValue(lineStyleBox, annotation.getLineStyle());
         applySelectedValue(fillTypeBox, annotation.isFillColor());
-        setButtonBackgroundColor(colorBorderButton, annotation.getColor());
-        setButtonBackgroundColor(colorFillButton, annotation.getFillColor());
-        transparencySlider.setValue(Math.round(annotation.getOpacity() * 255));
+        colorBorderButton.setBackground(annotation.getColor());
+        colorFillButton.setBackground(annotation.getFillColor());
 
         // disable appearance input if we have a invisible rectangle
         safeEnable(lineThicknessBox, true);
@@ -112,7 +107,6 @@ public class CircleAnnotationPanel extends AnnotationPanelAdapter implements Ite
         safeEnable(colorFillButton, true);
         safeEnable(fillTypeBox, true);
         safeEnable(colorBorderButton, true);
-        safeEnable(transparencySlider, true);
 
         setStrokeFillColorButtons();
     }
@@ -121,7 +115,7 @@ public class CircleAnnotationPanel extends AnnotationPanelAdapter implements Ite
         CircleAnnotation circleAnnotation = (CircleAnnotation)
                 currentAnnotationComponent.getAnnotation();
         if (annotation.isFillColor()) {
-            setButtonBackgroundColor(colorFillButton, circleAnnotation.getFillColor());
+            colorFillButton.setBackground(circleAnnotation.getFillColor());
             safeEnable(colorFillButton, true);
         } else {
             safeEnable(colorFillButton, false);
@@ -155,7 +149,7 @@ public class CircleAnnotationPanel extends AnnotationPanelAdapter implements Ite
                             colorBorderButton.getBackground());
             if (chosenColor != null) {
                 // change the colour of the button background
-                setButtonBackgroundColor(colorBorderButton, chosenColor);
+                colorBorderButton.setBackground(chosenColor);
                 annotation.setColor(chosenColor);
             }
         } else if (e.getSource() == colorFillButton) {
@@ -166,7 +160,7 @@ public class CircleAnnotationPanel extends AnnotationPanelAdapter implements Ite
                             colorFillButton.getBackground());
             if (chosenColor != null) {
                 // change the colour of the button background
-                setButtonBackgroundColor(colorFillButton, chosenColor);
+                colorFillButton.setBackground(chosenColor);
                 annotation.setFillColor(chosenColor);
             }
         }
@@ -174,10 +168,6 @@ public class CircleAnnotationPanel extends AnnotationPanelAdapter implements Ite
         updateCurrentAnnotation();
         currentAnnotationComponent.resetAppearanceShapes();
         currentAnnotationComponent.repaint();
-    }
-
-    public void stateChanged(ChangeEvent e) {
-        alphaSliderChange(e, annotation);
     }
 
     /**
@@ -190,64 +180,40 @@ public class CircleAnnotationPanel extends AnnotationPanelAdapter implements Ite
                 messageBundle.getString("viewer.utilityPane.annotation.circle.appearance.title"),
                 TitledBorder.LEFT,
                 TitledBorder.DEFAULT_POSITION));
-
-        constraints = new GridBagConstraints();
-        constraints.fill = GridBagConstraints.HORIZONTAL;
-        constraints.weightx = 1.0;
-        constraints.anchor = GridBagConstraints.NORTH;
-        constraints.anchor = GridBagConstraints.WEST;
-        constraints.insets = new Insets(1, 2, 1, 2);
-
         // Line thickness
         lineThicknessBox = new JComboBox(LINE_THICKNESS_LIST);
         lineThicknessBox.setSelectedIndex(DEFAULT_LINE_THICKNESS);
         lineThicknessBox.addItemListener(this);
-        JLabel label = new JLabel(messageBundle.getString("viewer.utilityPane.annotation.circle.lineThickness"));
-        addGB(this, label, 0, 0, 1, 1);
-        addGB(this, lineThicknessBox, 1, 0, 1, 1);
-
+        add(new JLabel(messageBundle.getString("viewer.utilityPane.annotation.circle.lineThickness")));
+        add(lineThicknessBox);
         // Line style
         lineStyleBox = new JComboBox(LINE_STYLE_LIST);
         lineStyleBox.setSelectedIndex(DEFAULT_LINE_STYLE);
         lineStyleBox.addItemListener(this);
-        label = new JLabel(messageBundle.getString("viewer.utilityPane.annotation.circle.lineStyle"));
-        addGB(this, label, 0, 1, 1, 1);
-        addGB(this, lineStyleBox, 1, 1, 1, 1);
-
+        add(new JLabel(messageBundle.getString("viewer.utilityPane.annotation.circle.lineStyle")));
+        add(lineStyleBox);
         // border colour
-        colorBorderButton = new JButton(" ");
+        colorBorderButton = new JButton();
         colorBorderButton.addActionListener(this);
         colorBorderButton.setOpaque(true);
         colorBorderButton.setBackground(DEFAULT_BORDER_COLOR);
-        label = new JLabel(messageBundle.getString("viewer.utilityPane.annotation.circle.colorBorderLabel"));
-        addGB(this, label, 0, 2, 1, 1);
-        addGB(this, colorBorderButton, 1, 2, 1, 1);
-
+        add(new JLabel(
+                messageBundle.getString("viewer.utilityPane.annotation.circle.colorBorderLabel")));
+        add(colorBorderButton);
         // fill type options
         fillTypeBox = new JComboBox(VISIBLE_TYPE_LIST);
         fillTypeBox.setSelectedIndex(DEFAULT_FILL_TYPE);
         fillTypeBox.addItemListener(this);
-        label = new JLabel(messageBundle.getString("viewer.utilityPane.annotation.circle.fillTypeLabel"));
-        addGB(this, label, 0, 3, 1, 1);
-        addGB(this, fillTypeBox, 1, 3, 1, 1);
-
+        add(new JLabel(messageBundle.getString("viewer.utilityPane.annotation.circle.fillTypeLabel")));
+        add(fillTypeBox);
         // interior colour
-        colorFillButton = new JButton(" ");
+        colorFillButton = new JButton();
         colorFillButton.addActionListener(this);
         colorFillButton.setOpaque(true);
         colorFillButton.setBackground(DEFAULT_INTERIOR_COLOR);
-        label = new JLabel(messageBundle.getString("viewer.utilityPane.annotation.circle.colorInteriorLabel"));
-        addGB(this, label, 0, 4, 1, 1);
-        addGB(this, colorFillButton, 1, 4, 1, 1);
-
-        // transparency slider
-        transparencySlider = buildAlphaSlider();
-        transparencySlider.setMajorTickSpacing(255);
-        transparencySlider.setPaintLabels(true);
-        transparencySlider.addChangeListener(this);
-        label = new JLabel(messageBundle.getString("viewer.utilityPane.annotation.circle.transparencyLabel"));
-        addGB(this, label, 0, 5, 1, 1);
-        addGB(this, transparencySlider, 1, 5, 1, 1);
+        add(new JLabel(
+                messageBundle.getString("viewer.utilityPane.annotation.circle.colorInteriorLabel")));
+        add(colorFillButton);
     }
 
     @Override
@@ -259,7 +225,6 @@ public class CircleAnnotationPanel extends AnnotationPanelAdapter implements Ite
         safeEnable(fillTypeBox, enabled);
         safeEnable(colorBorderButton, enabled);
         safeEnable(colorFillButton, enabled);
-        safeEnable(transparencySlider, enabled);
     }
 
     /**

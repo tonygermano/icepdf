@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2016 ICEsoft Technologies Inc.
+ * Copyright 2006-2014 ICEsoft Technologies Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the
@@ -20,9 +20,6 @@ import org.icepdf.core.application.ProductInfo;
 import org.icepdf.core.exceptions.PDFException;
 import org.icepdf.core.exceptions.PDFSecurityException;
 import org.icepdf.core.io.*;
-import org.icepdf.core.pobjects.acroform.FieldDictionary;
-import org.icepdf.core.pobjects.acroform.InteractiveForm;
-import org.icepdf.core.pobjects.annotations.AbstractWidgetAnnotation;
 import org.icepdf.core.pobjects.graphics.WatermarkCallback;
 import org.icepdf.core.pobjects.graphics.text.PageText;
 import org.icepdf.core.pobjects.security.SecurityManager;
@@ -80,6 +77,7 @@ public class Document {
 
     private static final String INCREMENTAL_UPDATER =
             "org.icepdf.core.util.IncrementalUpdater";
+
     public static boolean foundIncrementalUpdater;
 
     static {
@@ -121,22 +119,17 @@ public class Document {
 
     // disable/enable file caching, overrides fileCachingSize.
     private static boolean isCachingEnabled;
-    private static boolean isFileCachingEnabled;
-    private static int fileCacheMaxSize;
 
     // repository of all PDF object associated with this document.
     private Library library = null;
+
     private SeekableInput documentSeekableInput;
 
     static {
         // sets if file caching is enabled or disabled.
         isCachingEnabled =
                 Defs.sysPropertyBoolean("org.icepdf.core.streamcache.enabled",
-                        false);
-
-        isFileCachingEnabled = Defs.sysPropertyBoolean("org.icepdf.core.filecache.enabled",
-                true);
-        fileCacheMaxSize = Defs.intProperty("org.icepdf.core.filecache.size", 200000000);
+                        true);
     }
 
     /**
@@ -204,22 +197,28 @@ public class Document {
     public void setFile(String filepath)
             throws PDFException, PDFSecurityException, IOException {
         setDocumentOrigin(filepath);
-        File file = new File(filepath);
-        FileInputStream inputStream = new FileInputStream(file);
-        int fileLength = inputStream.available();
-        if (isFileCachingEnabled && file.length() > 0 && fileLength <= fileCacheMaxSize) {
-            // copy the file contents into byte[], for direct memory mapping.
-            byte[] data = new byte[fileLength];
-            inputStream.read(data);
-            setByteArray(data, 0, fileLength, filepath);
-        } else {
-            RandomAccessFileInputStream rafis =
-                    RandomAccessFileInputStream.build(new File(filepath));
-            setInputStream(rafis);
+        RandomAccessFileInputStream rafis =
+                RandomAccessFileInputStream.build(new File(filepath));
+        /*
+        // Test code for setByteArray(-)
+        if( true ) {
+            byte[] buffer = new byte[4096];
+            int read = buffer.length;
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream( 40960 );
+            while ((read = rafis.read(buffer, 0, buffer.length)) > 0){
+                byteArrayOutputStream.write(buffer, 0, read);
+            }
+            byteArrayOutputStream.flush();
+            byteArrayOutputStream.close();
+            rafis.close();
+            int length = byteArrayOutputStream.size();
+            byte[] data = byteArrayOutputStream.toByteArray();
+            setByteArray( data, 0, length, null );
+            return;
         }
-        if (inputStream != null) {
-            inputStream.close();
-        }
+        */
+
+        setInputStream(rafis);
     }
 
     /**
@@ -411,7 +410,7 @@ public class Document {
     /**
      * Sets the input stream of the PDF file to be rendered.
      *
-     * @param in inputStream containing PDF data stream
+     * @param in inputstream containing PDF data stream
      * @throws PDFException         if error occurs
      * @throws PDFSecurityException security error
      * @throws IOException          io error during stream handling
@@ -423,9 +422,6 @@ public class Document {
 
             // create library to hold all document objects
             library = new Library();
-
-            // reference the stream and origin with library so we can handle verification and writing of signatures.
-            library.setDocumentInput(documentSeekableInput);
 
             // if interactive show visual progress bar
             //ProgressMonitorInputStream monitor = null;
@@ -544,11 +540,8 @@ public class Document {
             throw new NullPointerException("Loading via xref failed to find catalog");
 
         boolean madeSecurityManager = makeSecurityManager(documentTrailer);
-        if (madeSecurityManager) {
+        if (madeSecurityManager)
             attemptAuthorizeSecurityManager();
-        }
-        // setup a signature permission dictionary
-        configurePermissions();
     }
 
     private long getInitialCrossReferencePosition(SeekableInput in) throws IOException {
@@ -704,9 +697,6 @@ public class Document {
             if (madeSecurityManager)
                 attemptAuthorizeSecurityManager();
         }
-
-        // setup a signature handler
-        configurePermissions();
     }
 
     /**
@@ -817,55 +807,24 @@ public class Document {
      * @param documentTrailer document trailer
      * @return Whether or not a SecurityManager was made, and set in the Library
      * @throws PDFSecurityException if there is an issue finding encryption libraries.
-     *
      */
-    @SuppressWarnings("unchecked")
     private boolean makeSecurityManager(PTrailer documentTrailer) throws PDFSecurityException {
         /**
-         * Before a security manager can be created or needs to be created
+         * Before a securtiy manager can be created or needs to be created
          * we need the following
          *      1.  The trailer object must have an encrypt entry
          *      2.  The trailer object must have an ID entry
          */
         boolean madeSecurityManager = false;
         HashMap<Object, Object> encryptDictionary = documentTrailer.getEncrypt();
-        List<StringObject> fileID = (List<StringObject>) documentTrailer.getID();
-        // check for a missing file ID.
-        if (fileID == null) {
-            // we have a couple malformed documents that don't specify a FILE ID.
-            // but proving two empty string allows the document to be decrypted.
-            fileID = new ArrayList<StringObject>(2);
-            fileID.add(new LiteralStringObject(""));
-            fileID.add(new LiteralStringObject(""));
-        }
-
+        List fileID = documentTrailer.getID();
         if (encryptDictionary != null && fileID != null) {
             // create new security manager
-            library.setSecurityManager(new SecurityManager(
-                    library, encryptDictionary, fileID));
+            library.securityManager = new SecurityManager(
+                    library, encryptDictionary, fileID);
             madeSecurityManager = true;
         }
         return madeSecurityManager;
-    }
-
-    /**
-     * Initializes permission object as it is uses with encrypt permission to define
-     * document characteristics at load time.
-     *
-     * @return true if permissions where found, false otherwise.
-     */
-    private boolean configurePermissions() {
-        if (catalog != null) {
-            Permissions permissions = catalog.getPermissions();
-            if (permissions != null) {
-                library.setPermissions(permissions);
-                if (logger.isLoggable(Level.FINER)) {
-                    logger.finer("Document perms dictionary found and configured. ");
-                }
-                return true;
-            }
-        }
-        return false;
     }
 
     /**
@@ -878,7 +837,7 @@ public class Document {
     private void attemptAuthorizeSecurityManager() throws PDFSecurityException {
         // check if pdf is password protected, by passing in black
         // password
-        if (!library.getSecurityManager().isAuthorized("")) {
+        if (!library.securityManager.isAuthorized("")) {
             // count password tries
             int count = 1;
             // store temporary password
@@ -900,7 +859,7 @@ public class Document {
 
                 // Verify new password,  proceed if authorized,
                 //    fatal exception otherwise.
-                if (library.getSecurityManager().isAuthorized(password)) {
+                if (library.securityManager.isAuthorized(password)) {
                     break;
                 }
                 count++;
@@ -926,7 +885,7 @@ public class Document {
      * @return page dimension for the specified page number
      * @see #getPageDimension(int, float, float)
      */
-    public PDimension getPageDimension(int pageNumber, float userRotation) throws InterruptedException {
+    public PDimension getPageDimension(int pageNumber, float userRotation) {
         Page page = catalog.getPageTree().getPage(pageNumber);
         page.init();
         return page.getSize(userRotation);
@@ -945,7 +904,7 @@ public class Document {
      * @return page dimension for the specified page number.
      * @see #getPageDimension(int, float)
      */
-    public PDimension getPageDimension(int pageNumber, float userRotation, float userZoom) throws InterruptedException {
+    public PDimension getPageDimension(int pageNumber, float userRotation, float userZoom) {
         Page page = catalog.getPageTree().getPage(pageNumber);
         if (page != null) {
             page.init();
@@ -1022,7 +981,7 @@ public class Document {
      * @param userZoom       Zoom factor to be applied to the rendered page.
      */
     public void paintPage(int pageNumber, Graphics g, final int renderHintType,
-                          final int pageBoundary, float userRotation, float userZoom) throws InterruptedException {
+                          final int pageBoundary, float userRotation, float userZoom) {
         Page page = catalog.getPageTree().getPage(pageNumber);
         page.init();
         PDimension sz = page.getSize(userRotation, userZoom);
@@ -1111,7 +1070,7 @@ public class Document {
                 Object[] argValues = {this, out, documentLength};
                 Method method = incrementalUpdaterClass.getDeclaredMethod(
                         "appendIncrementalUpdate",
-                        Document.class, OutputStream.class, Long.TYPE);
+                        new Class[]{Document.class, OutputStream.class, Long.TYPE});
                 long appendedLength = (Long) method.invoke(null, argValues);
                 return documentLength + appendedLength;
             } catch (Throwable e) {
@@ -1141,7 +1100,7 @@ public class Document {
      */
     public Image getPageImage(int pageNumber,
                               final int renderHintType, final int pageBoundary,
-                              float userRotation, float userZoom) throws InterruptedException {
+                              float userRotation, float userZoom) {
         Page page = catalog.getPageTree().getPage(pageNumber);
         page.init();
         PDimension sz = page.getSize(pageBoundary, userRotation, userZoom);
@@ -1149,7 +1108,9 @@ public class Document {
         int pageWidth = (int) sz.getWidth();
         int pageHeight = (int) sz.getHeight();
 
-        BufferedImage image = ImageUtility.createCompatibleImage(pageWidth, pageHeight);
+        BufferedImage image = new BufferedImage(pageWidth,
+                pageHeight,
+                BufferedImage.TYPE_INT_RGB);
         Graphics g = image.createGraphics();
 
         page.paint(g, renderHintType,
@@ -1191,7 +1152,7 @@ public class Document {
      *                   The page number is zero-based.
      * @return page PageText data Structure.
      */
-    public PageText getPageViewText(int pageNumber) throws InterruptedException {
+    public PageText getPageViewText(int pageNumber) {
         PageTree pageTree = catalog.getPageTree();
         if (pageNumber >= 0 && pageNumber < pageTree.getNumberOfPages()) {
             Page pg = pageTree.getPage(pageNumber);
@@ -1208,7 +1169,7 @@ public class Document {
      * @return security manager for document if available.
      */
     public SecurityManager getSecurityManager() {
-        return library.getSecurityManager();
+        return library.securityManager;
     }
 
     /**
@@ -1237,54 +1198,6 @@ public class Document {
     }
 
     /**
-     * Enables or disables the form widget annotation highlighting.  Generally not use for print but can be very
-     * useful for highlight input fields in a Viewer application.
-     *
-     * @param highlight true to enable highlight mode, otherwise; false.
-     */
-    public void setFormHighlight(boolean highlight) {
-        // iterate over the document annotations and set the appropriate highlight value.
-        if (catalog != null && catalog.getInteractiveForm() != null) {
-            InteractiveForm interactiveForm = catalog.getInteractiveForm();
-            ArrayList<Object> widgets = interactiveForm.getFields();
-            if (widgets != null) {
-                for (Object widget : widgets) {
-                    descendFormTree(widget, highlight);
-                }
-            }
-        }
-    }
-
-    /**
-     * Recursively set highlight on all the form fields.
-     *
-     * @param formNode root form node.
-     */
-    private void descendFormTree(Object formNode, boolean highLight) {
-        if (formNode instanceof AbstractWidgetAnnotation) {
-            ((AbstractWidgetAnnotation) formNode).setEnableHighlightedWidget(highLight);
-        } else if (formNode instanceof FieldDictionary) {
-            // iterate over the kid's array.
-            FieldDictionary child = (FieldDictionary) formNode;
-            formNode = child.getKids();
-            if (formNode != null) {
-                ArrayList kidsArray = (ArrayList) formNode;
-                for (Object kid : kidsArray) {
-                    if (kid instanceof Reference) {
-                        kid = library.getObject((Reference) kid);
-                    }
-                    if (kid instanceof AbstractWidgetAnnotation) {
-                        ((AbstractWidgetAnnotation) kid).setEnableHighlightedWidget(highLight);
-                    } else if (kid instanceof FieldDictionary) {
-                        descendFormTree(kid, highLight);
-                    }
-                }
-            }
-
-        }
-    }
-
-    /**
      * Gets a vector of Images where each index represents an image  inside
      * the specified page.  The images are returned in the size in which they
      * where embedded in the PDF document, which may be different than the
@@ -1293,7 +1206,7 @@ public class Document {
      * @param pageNumber page number to act on.  Zero-based page number.
      * @return vector of Images inside the current page
      */
-    public List<Image> getPageImages(int pageNumber) throws InterruptedException {
+    public List<Image> getPageImages(int pageNumber) {
         Page pg = catalog.getPageTree().getPage(pageNumber);
         pg.init();
         return pg.getImages();
