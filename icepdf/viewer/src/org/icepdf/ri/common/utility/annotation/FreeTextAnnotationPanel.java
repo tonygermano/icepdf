@@ -416,7 +416,7 @@ public class FreeTextAnnotationPanel extends AnnotationPanelAdapter implements I
 
         safeEnable(fillTypeBox, enabled);
         safeEnable(fillColorButton, enabled);
-
+        safeEnable(transparencySlider, enabled);
     }
 
     /**
