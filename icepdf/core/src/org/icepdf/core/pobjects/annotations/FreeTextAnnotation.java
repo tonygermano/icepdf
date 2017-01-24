@@ -124,7 +124,15 @@ public class FreeTextAnnotation extends MarkupAnnotation {
      * shall be less than the width of Rect.
      */
     public static final Name RD_KEY = new Name("RD");
-
+    /**
+     * (Optional; PDF 1.6) A border style dictionary (see Table 166) specifying
+     * the line width and dash pattern that shall be used in drawing the
+     * annotation’s border.
+     * <p/>
+     * The annotation dictionary’s AP entry, if present, takes precedence over
+     * the BS entry; see Table 164 and 12.5.5, “Appearance Streams”.
+     */
+    public static final Name BS_KEY = new Name("BS");
     /**
      * (Optional; meaningful only if CL is present; PDF 1.6) A name specifying
      * the line ending style that shall be used in drawing the callout line
@@ -222,7 +230,7 @@ public class FreeTextAnnotation extends MarkupAnnotation {
         super(l, h);
     }
 
-    public void init() throws InterruptedException {
+    public void init() throws InterruptedException{
         super.init();
 
         Appearance appearance = appearances.get(APPEARANCE_STREAM_NORMAL_KEY);
@@ -373,7 +381,12 @@ public class FreeTextAnnotation extends MarkupAnnotation {
 
         Appearance appearance = appearances.get(currentAppearance);
         AppearanceState appearanceState = appearance.getSelectedAppearanceState();
+        appearanceState.setMatrix(new AffineTransform());
+        appearanceState.setShapes(new Shapes());
+
         Rectangle2D bbox = appearanceState.getBbox();
+        bbox.setRect(0, 0, bbox.getWidth(), bbox.getHeight());
+
         AffineTransform matrix = appearanceState.getMatrix();
         Shapes shapes = appearanceState.getShapes();
 
@@ -391,7 +404,7 @@ public class FreeTextAnnotation extends MarkupAnnotation {
         // setup the space for the AP content stream.
         AffineTransform af = new AffineTransform();
         af.scale(1, -1);
-        af.translate(-bbox.getMinX(), -bbox.getMaxY());
+        af.translate(0, -bbox.getHeight());
         // adjust of the border offset, offset is define in viewer,
         // so we can't use the constant because of dependency issues.
         double insets = 5 * pageTransform.getScaleX();
