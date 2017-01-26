@@ -415,7 +415,7 @@ public class PageViewComponentImpl extends AbstractPageViewComponent implements 
                                             AnnotationComponentFactory.buildAnnotationComponent(
                                                     annotation, documentViewController,
                                                     parent, documentViewModel);
-                                    if (comp != null) {
+                                    if (comp != null ) {
                                         // add for painting
                                         annotationComponents.add(comp);
                                         // add to layout
